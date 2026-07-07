@@ -1,0 +1,249 @@
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { resolveAlias } from '../utils/aliases'
+
+/** BFS: shortest path from `start` to `end` using adjacency map. Returns path array or null. */
+function bfs(start, end, adjacency) {
+  if (start === end) return [start]
+  const queue = [[start]]
+  const visited = new Set([start])
+  while (queue.length) {
+    const path = queue.shift()
+    const node = path[path.length - 1]
+    for (const nb of (adjacency[node] ?? [])) {
+      if (nb === end) return [...path, nb]
+      if (!visited.has(nb)) {
+        visited.add(nb)
+        queue.push([...path, nb])
+      }
+    }
+  }
+  return null
+}
+
+function calcScore(optimal, actual) {
+  const extra = actual - optimal
+  if (extra === 0) return 1000
+  if (extra === 1) return 700
+  if (extra === 2) return 400
+  return 100
+}
+
+export default function BorderChainPanel({
+  startCountry, endCountry, adjacency, countries,
+  onWin, totalScore, history, onNext, onGiveUp
+}) {
+  const [chain, setChain]       = useState([startCountry?.properties?.NAME])
+  const [input, setInput]       = useState('')
+  const [error, setError]       = useState(null)
+  const [won, setWon]           = useState(false)
+  const [gaveUp, setGaveUp]     = useState(false)
+  const [optimalPath, setOptimalPath] = useState(null)
+  const inputRef = useRef(null)
+
+  const countryNames = useMemo(() => countries.map(f => f.properties.NAME), [countries])
+
+  const startName = startCountry?.properties?.NAME
+  const endName   = endCountry?.properties?.NAME
+
+  // Compute optimal path length hint (BFS distance from current tail to end)
+  const remaining = useMemo(() => {
+    const tail = chain[chain.length - 1]
+    if (!tail || !endName) return null
+    const path = bfs(tail, endName, adjacency)
+    return path ? path.length - 1 : null
+  }, [chain, endName, adjacency])
+
+  // Reset when new countries are given
+  useEffect(() => {
+    if (startName) {
+      setChain([startName])
+      setInput('')
+      setError(null)
+      setWon(false)
+      setGaveUp(false)
+      setOptimalPath(null)
+    }
+  }, [startName, endName])
+
+  useEffect(() => { inputRef.current?.focus() }, [won, gaveUp])
+
+  const trySubmit = () => {
+    const raw = input.trim()
+    if (!raw) return
+    const resolved = resolveAlias(raw, countryNames)
+    if (!resolved) { setError(`"${raw}" is not a recognised country.`); return }
+
+    const tail = chain[chain.length - 1]
+    const nbSet = new Set(adjacency[tail] ?? [])
+
+    if (!nbSet.has(resolved)) {
+      setError(`${resolved} does not border ${tail}.`)
+      return
+    }
+    if (chain.includes(resolved)) {
+      setError(`${resolved} is already in your chain.`)
+      return
+    }
+
+    const newChain = [...chain, resolved]
+    setChain(newChain)
+    setInput('')
+    setError(null)
+
+    if (resolved === endName) {
+      // Win — compute optimal for score
+      const optimal = bfs(startName, endName, adjacency)
+      const optLen  = optimal ? optimal.length - 1 : newChain.length - 1
+      const actual  = newChain.length - 1
+      const pts     = calcScore(optLen, actual)
+      setOptimalPath(optimal)
+      setWon(true)
+      onWin(pts, newChain, optimal)
+    }
+  }
+
+  const handleGiveUp = () => {
+    const optimal = bfs(startName, endName, adjacency)
+    setOptimalPath(optimal)
+    setGaveUp(true)
+    onGiveUp()
+  }
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); trySubmit() }
+  }
+
+  const lastResult = history.length > 0 ? history[history.length - 1] : null
+
+  return (
+    <>
+      <div className="panel-header">
+        <h2>🔗 Border Chain</h2>
+        <p className="panel-subtitle">
+          Connect the two countries by naming a chain of bordering nations.
+        </p>
+      </div>
+
+      {/* Score bar */}
+      <div className="locate-score-bar">
+        <span className="locate-score-num">{totalScore}</span>
+        <span className="locate-score-label">total points</span>
+        <span className="locate-round-count">{history.length} rounds</span>
+      </div>
+
+      {/* Start / End */}
+      <div className="bc-endpoints">
+        <div className="bc-endpoint bc-start">
+          <span className="bc-ep-label">From</span>
+          <span className="bc-ep-name">{startName}</span>
+        </div>
+        <div className="bc-arrow">→</div>
+        <div className="bc-endpoint bc-end">
+          <span className="bc-ep-label">To</span>
+          <span className="bc-ep-name">{endName}</span>
+        </div>
+      </div>
+
+      {/* Chain so far */}
+      <div className="bc-chain-wrap">
+        {chain.map((name, i) => (
+          <span key={i} className="bc-chain-item">
+            <span className={`bc-chip ${name === startName ? 'bc-chip-start' : name === endName ? 'bc-chip-end' : 'bc-chip-mid'}`}>
+              {name}
+            </span>
+            {i < chain.length - 1 && <span className="bc-chain-sep">→</span>}
+          </span>
+        ))}
+        {!won && !gaveUp && <span className="bc-chain-cursor">…</span>}
+      </div>
+
+      {/* Hint */}
+      {!won && !gaveUp && remaining !== null && (
+        <p className="bc-hint">
+          {remaining === 1
+            ? `${chain[chain.length - 1]} borders ${endName} — type it!`
+            : `~${remaining} more hop${remaining !== 1 ? 's' : ''} to go`}
+        </p>
+      )}
+
+      {/* Input */}
+      {!won && !gaveUp && (
+        <div className="input-wrap">
+          {error && <div className="bc-error">{error}</div>}
+          <div className="input-row">
+            <input
+              ref={inputRef}
+              className="country-input"
+              type="text"
+              placeholder="Next bordering country…"
+              value={input}
+              onChange={e => { setInput(e.target.value); setError(null) }}
+              onKeyDown={onKeyDown}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <button className="guess-btn" onClick={trySubmit}>Go</button>
+          </div>
+        </div>
+      )}
+
+      {/* Win result */}
+      {won && lastResult && (() => {
+        const { pts } = lastResult
+        const color = pts === 1000 ? '#39ff14' : pts >= 700 ? '#a3e635' : pts >= 400 ? '#eab308' : '#f97316'
+        const label = pts === 1000 ? 'Optimal!' : pts >= 700 ? 'Great!' : pts >= 400 ? 'Good' : 'Could be shorter'
+        return (
+          <div className="po-result" style={{ color }}>
+            🎉 {label} — {chain.length - 1} hop{chain.length - 1 !== 1 ? 's' : ''}, +{pts} pts
+            {optimalPath && optimalPath.length - 1 < chain.length - 1 && (
+              <div className="bc-optimal">
+                Shortest: {optimalPath.join(' → ')}
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Give up reveal */}
+      {gaveUp && optimalPath && (
+        <div className="give-up-reveal" style={{ padding: '12px 18px' }}>
+          Shortest path: <strong>{optimalPath.join(' → ')}</strong>
+        </div>
+      )}
+
+      {/* Next / Give up buttons */}
+      <div className="panel-footer">
+        {won || gaveUp ? (
+          <button className="new-game-btn" onClick={onNext}>Next →</button>
+        ) : (
+          <>
+            <button className="new-game-btn" onClick={onNext}>🔄 New Pair</button>
+            <button className="give-up-btn" onClick={handleGiveUp}>Give up</button>
+          </>
+        )}
+      </div>
+
+      {/* History */}
+      {history.length > 0 && (
+        <div className="guesses-section">
+          <h3 className="guesses-title">History <span className="guess-count">{history.length}</span></h3>
+          <ul className="guess-list">
+            {[...history].reverse().map((h, i) => {
+              const color = h.pts === 1000 ? '#39ff14' : h.pts >= 700 ? '#a3e635' : h.pts >= 400 ? '#eab308' : '#f97316'
+              return (
+                <li key={i} className="guess-item">
+                  <span className="guess-swatch" style={{ background: color }} />
+                  <span className="guess-name" style={{ fontSize: '0.75rem' }}>
+                    {h.chain[0]} → {h.chain[h.chain.length - 1]}
+                  </span>
+                  <span className="guess-dist">{h.chain.length - 1} hops</span>
+                  <span className="guess-dist" style={{ color }}>+{h.pts}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+    </>
+  )
+}
