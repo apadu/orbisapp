@@ -366,12 +366,16 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     const linkedName = LINKED_COUNTRIES[name]
     const guessColor = guessMap[name] ?? (linkedName ? guessMap[linkedName] : null)
     const isWinner = gameWon && name === mysteryName
+    const isEllipseHidden = hiddenSet?.has(name) ||
+      (soloMode && !guessColor && name !== highlightedName && !missedSet?.has(name) && !isWinner)
 
     ctx.save()
     ctx.translate(cx, cy)
     ctx.beginPath()
     ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
-    if (isWinner) {
+    if (isEllipseHidden) {
+      ctx.fillStyle = '#1254c0'  // exact ocean color → invisible
+    } else if (isWinner) {
       ctx.fillStyle = '#39ff14'
     } else if (name === highlightedName) {
       ctx.fillStyle = '#f97316'
@@ -379,8 +383,6 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
       ctx.fillStyle = guessColor
     } else if (missedSet?.has(name)) {
       ctx.fillStyle = '#ef4444'
-    } else if (hiddenSet?.has(name)) {
-      ctx.fillStyle = '#1a4fa8'
     } else {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
     }

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { resolveAlias } from '../utils/aliases'
 
 /** BFS: shortest path from `start` to `end` using adjacency map. Returns path array or null. */
@@ -28,24 +28,43 @@ function calcScore(optimal, actual) {
   return 100
 }
 
+function norm(s) {
+  return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim()
+}
+
+function getSuggestions(input, countryNames, max = 7) {
+  if (!input || input.length < 1) return []
+  const q = norm(input)
+  // prefix matches first, then contains
+  const prefix   = countryNames.filter(n => norm(n).startsWith(q))
+  const contains = countryNames.filter(n => !norm(n).startsWith(q) && norm(n).includes(q))
+  return [...prefix, ...contains].slice(0, max)
+}
+
 export default function BorderChainPanel({
   startCountry, endCountry, adjacency, countries,
   onWin, totalScore, history, onNext, onGiveUp
 }) {
-  const [chain, setChain]       = useState([startCountry?.properties?.NAME])
-  const [input, setInput]       = useState('')
-  const [error, setError]       = useState(null)
-  const [won, setWon]           = useState(false)
-  const [gaveUp, setGaveUp]     = useState(false)
+  const [chain,       setChain]       = useState([startCountry?.properties?.NAME])
+  const [input,       setInput]       = useState('')
+  const [error,       setError]       = useState(null)
+  const [won,         setWon]         = useState(false)
+  const [gaveUp,      setGaveUp]      = useState(false)
   const [optimalPath, setOptimalPath] = useState(null)
-  const inputRef = useRef(null)
+  const [activeIdx,   setActiveIdx]   = useState(-1)  // highlighted suggestion index
+  const inputRef      = useRef(null)
+  const dropdownRef   = useRef(null)
 
   const countryNames = useMemo(() => countries.map(f => f.properties.NAME), [countries])
 
   const startName = startCountry?.properties?.NAME
   const endName   = endCountry?.properties?.NAME
 
-  // Compute optimal path length hint (BFS distance from current tail to end)
+  const suggestions = useMemo(
+    () => (won || gaveUp) ? [] : getSuggestions(input, countryNames),
+    [input, countryNames, won, gaveUp]
+  )
+
   const remaining = useMemo(() => {
     const tail = chain[chain.length - 1]
     if (!tail || !endName) return null
@@ -53,7 +72,6 @@ export default function BorderChainPanel({
     return path ? path.length - 1 : null
   }, [chain, endName, adjacency])
 
-  // Reset when new countries are given
   useEffect(() => {
     if (startName) {
       setChain([startName])
@@ -62,45 +80,50 @@ export default function BorderChainPanel({
       setWon(false)
       setGaveUp(false)
       setOptimalPath(null)
+      setActiveIdx(-1)
     }
   }, [startName, endName])
 
   useEffect(() => { inputRef.current?.focus() }, [won, gaveUp])
 
-  const trySubmit = () => {
-    const raw = input.trim()
+  // Reset active index when suggestions change
+  useEffect(() => { setActiveIdx(-1) }, [suggestions.length])
+
+  // Scroll active item into view
+  useEffect(() => {
+    if (activeIdx < 0 || !dropdownRef.current) return
+    const el = dropdownRef.current.children[activeIdx]
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [activeIdx])
+
+  const trySubmit = useCallback((nameOverride) => {
+    const raw = (nameOverride ?? input).trim()
     if (!raw) return
     const resolved = resolveAlias(raw, countryNames)
-    if (!resolved) { setError(`"${raw}" is not a recognised country.`); return }
+    if (!resolved) { setError(`"${raw}" not recognised.`); return }
 
     const tail = chain[chain.length - 1]
     const nbSet = new Set(adjacency[tail] ?? [])
 
-    if (!nbSet.has(resolved)) {
-      setError(`${resolved} does not border ${tail}.`)
-      return
-    }
-    if (chain.includes(resolved)) {
-      setError(`${resolved} is already in your chain.`)
-      return
-    }
+    if (!nbSet.has(resolved)) { setError(`${resolved} doesn't border ${tail}.`); return }
+    if (chain.includes(resolved)) { setError(`${resolved} is already in your chain.`); return }
 
     const newChain = [...chain, resolved]
     setChain(newChain)
     setInput('')
     setError(null)
+    setActiveIdx(-1)
+    inputRef.current?.focus()
 
     if (resolved === endName) {
-      // Win — compute optimal for score
       const optimal = bfs(startName, endName, adjacency)
       const optLen  = optimal ? optimal.length - 1 : newChain.length - 1
-      const actual  = newChain.length - 1
-      const pts     = calcScore(optLen, actual)
+      const pts     = calcScore(optLen, newChain.length - 1)
       setOptimalPath(optimal)
       setWon(true)
       onWin(pts, newChain, optimal)
     }
-  }
+  }, [input, countryNames, chain, adjacency, endName, startName, onWin])
 
   const handleGiveUp = () => {
     const optimal = bfs(startName, endName, adjacency)
@@ -109,11 +132,40 @@ export default function BorderChainPanel({
     onGiveUp()
   }
 
-  const onKeyDown = (e) => {
+  const selectSuggestion = useCallback((name) => {
+    setInput(name)
+    setActiveIdx(-1)
+    // Submit immediately on click/selection
+    trySubmit(name)
+  }, [trySubmit])
+
+  const onKeyDown = useCallback((e) => {
+    if (suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setActiveIdx(i => Math.min(i + 1, suggestions.length - 1))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setActiveIdx(i => Math.max(i - 1, -1))
+        return
+      }
+      if ((e.key === 'Enter' || e.key === 'Tab') && activeIdx >= 0) {
+        e.preventDefault()
+        selectSuggestion(suggestions[activeIdx])
+        return
+      }
+      if (e.key === 'Escape') {
+        setActiveIdx(-1)
+        return
+      }
+    }
     if (e.key === 'Enter') { e.preventDefault(); trySubmit() }
-  }
+  }, [suggestions, activeIdx, selectSuggestion, trySubmit])
 
   const lastResult = history.length > 0 ? history[history.length - 1] : null
+  const showDropdown = suggestions.length > 0 && !won && !gaveUp
 
   return (
     <>
@@ -166,23 +218,40 @@ export default function BorderChainPanel({
         </p>
       )}
 
-      {/* Input */}
+      {/* Input + autocomplete */}
       {!won && !gaveUp && (
         <div className="input-wrap">
           {error && <div className="bc-error">{error}</div>}
-          <div className="input-row">
-            <input
-              ref={inputRef}
-              className="country-input"
-              type="text"
-              placeholder="Next bordering country…"
-              value={input}
-              onChange={e => { setInput(e.target.value); setError(null) }}
-              onKeyDown={onKeyDown}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button className="guess-btn" onClick={trySubmit}>Go</button>
+          <div className="bc-input-container">
+            <div className="input-row">
+              <input
+                ref={inputRef}
+                className="country-input"
+                type="text"
+                placeholder="Next bordering country…"
+                value={input}
+                onChange={e => { setInput(e.target.value); setError(null) }}
+                onKeyDown={onKeyDown}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button className="guess-btn" onClick={() => trySubmit()}>Go</button>
+            </div>
+
+            {showDropdown && (
+              <ul className="bc-dropdown" ref={dropdownRef}>
+                {suggestions.map((name, i) => (
+                  <li
+                    key={name}
+                    className={`bc-dropdown-item ${i === activeIdx ? 'bc-dd-active' : ''}`}
+                    onMouseDown={e => { e.preventDefault(); selectSuggestion(name) }}
+                    onMouseEnter={() => setActiveIdx(i)}
+                  >
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       )}

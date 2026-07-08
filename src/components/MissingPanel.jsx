@@ -15,7 +15,7 @@ const EXCLUDED = new Set([
 
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
-export default function MissingPanel({ gameCountries, countryInfo, onHiddenChange, onMissedChange }) {
+export default function MissingPanel({ gameCountries, countryInfo, onHiddenChange, onMissedChange, onFoundChange }) {
   const [phase,    setPhase]    = useState('idle')   // idle | playing | done
   const [target,   setTarget]   = useState([])       // 20 country names
   const [found,    setFound]    = useState([])       // names found so far (in order)
@@ -38,10 +38,12 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
   useEffect(() => {
     if (phase === 'playing') {
       onHiddenChange(new Set(target.filter(n => !found.includes(n))))
+      onFoundChange?.(found)
     } else {
       onHiddenChange(new Set())
+      if (phase === 'idle') onFoundChange?.([])
     }
-  }, [phase, found, target, onHiddenChange])
+  }, [phase, found, target, onHiddenChange, onFoundChange])
 
   // ── End game (timer expired or all found) ─────────────────────────────────
   const endGame = useCallback(() => {

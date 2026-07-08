@@ -189,6 +189,7 @@ export default function App() {
   // ── Blind Map (Missing Countries) state ─────────────────────────────────
   const [missingHidden,      setMissingHidden]      = useState(new Set())
   const [missingMissedNames, setMissingMissedNames] = useState([])
+  const [missingFound,       setMissingFound]       = useState([])
 
   // ── Seas Quiz state ──────────────────────────────────────────────────────
   const [seas,        setSeas]        = useState([])
@@ -521,6 +522,26 @@ export default function App() {
     }
   }, [mode, gameCountries, adjacency, bcStart, pickBcPair])
 
+  // ── Fly to midpoint between start & end when a new border-chain pair loads ─
+  useEffect(() => {
+    if (!bcStart || !bcEnd) return
+    const [lonA, latA] = geoCentroid(bcStart)
+    const [lonB, latB] = geoCentroid(bcEnd)
+    // Average lon, but handle antimeridian wrap: if diff > 180° go the short way
+    let dLon = lonB - lonA
+    if (dLon >  180) dLon -= 360
+    if (dLon < -180) dLon += 360
+    const midLon = lonA + dLon / 2
+    const midLat = (latA + latB) / 2
+    const midFeature = {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [midLon, midLat] },
+      properties: {},
+      _ts: Date.now(),
+    }
+    setFlyToFeature(midFeature)
+  }, [bcStart, bcEnd])
+
   // ── Population Order handlers ────────────────────────────────────────────
   const pickPopCountries = useCallback((exclude = []) => {
     const pool = gameCountries.filter(f => !exclude.includes(f))
@@ -850,6 +871,11 @@ export default function App() {
   const spotlightMissedFeatures = spotlightMissedNames.map(n => countries.find(f => f.properties.NAME === n)).filter(Boolean)
 
   // ── Derive guesses + highlighted for globe ───────────────────────────────
+  const missingGuesses = missingFound.map(name => {
+    const f = countries.find(c => c.properties.NAME === name)
+    return f ? { name, color: '#39ff14', feature: f } : null
+  }).filter(Boolean)
+
   const globeGuesses = mode === 'name-all-caps'
     ? capsFound.map(f => ({ name: f.name, color: '#39ff14', feature: f.feature }))
     : mode === 'spotlight'
@@ -857,6 +883,8 @@ export default function App() {
         const f = countries.find(c => c.properties.NAME === n)
         return f ? { name: n, color: '#39ff14', feature: f } : null
       }).filter(Boolean)
+    : mode === 'missing'
+    ? missingGuesses
     : mode === 'mystery'
     ? mysteryGuesses
     : mode === 'name-all'
@@ -907,6 +935,15 @@ export default function App() {
           <span className="topbar-tagline">Geography Games</span>
         </div>
         <div className="topbar-auth">
+          <a
+            className="bug-report-btn"
+            href="https://forms.gle/hDpMyhns9PD7ghdBA"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Report a bug"
+          >
+            🐛 Report bug
+          </a>
           <button
             className="theme-toggle"
             onClick={() => setLightMode(m => !m)}
@@ -922,8 +959,6 @@ export default function App() {
             <span className="topbar-avatar-letter">{profile.username.charAt(0).toUpperCase()}</span>
             <span className="topbar-avatar-name">{profile.username}</span>
           </button>
-          <button className="auth-btn auth-login">Log in</button>
-          <button className="auth-btn auth-register">Sign up</button>
         </div>
       </header>
 
@@ -1173,6 +1208,7 @@ export default function App() {
             countryInfo={COUNTRY_INFO}
             onHiddenChange={setMissingHidden}
             onMissedChange={setMissingMissedNames}
+            onFoundChange={setMissingFound}
           />
         )}
       </div>
