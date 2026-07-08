@@ -11,6 +11,7 @@ const EXCLUDED = new Set([
   'Trinidad and Tobago', 'Dominica',
   'Andorra', 'Liechtenstein', 'Monaco', 'Vatican', 'San Marino',
   'Bahrain', 'Singapore', 'Brunei', 'Timor-Leste',
+  'Gambia',
 ])
 
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
