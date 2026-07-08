@@ -46,7 +46,7 @@ export default function CapToCountryPanel({
   return (
     <>
       <div className="panel-header">
-        <h2>🏛️ Capital → Country</h2>
+        <h2>🏛️ Capital to Country</h2>
         <p className="panel-subtitle">Name the country whose capital is shown.</p>
       </div>
 

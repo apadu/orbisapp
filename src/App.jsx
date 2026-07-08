@@ -15,7 +15,7 @@ import LearnPanel from './components/LearnPanel'
 import SpotlightPanel from './components/SpotlightPanel'
 import NameAllCapitalsPanel from './components/NameAllCapitalsPanel'
 import { getDistanceInfo, computeAdjacency } from './utils/geoUtils'
-import { geoDistance, geoCentroid, geoContains } from 'd3-geo'
+import { geoDistance, geoCentroid, geoContains, geoBounds } from 'd3-geo'
 import { union } from '@turf/union'
 import { featureCollection } from '@turf/helpers'
 import { CAPITALS } from './utils/capitals'
@@ -37,16 +37,16 @@ const MARINE_URL =
 
 const DROP_TYPES = new Set(['Dependency', 'Lease', 'Occupied Territory', 'Indeterminate', 'Disputed', 'Commonwealth'])
 // Always keep these even if their TYPE would normally drop them
-const KEEP_ALWAYS = new Set(['Kosovo', 'Israel', 'W. Sahara'])
+const KEEP_ALWAYS = new Set(['Kosovo', 'Israel', 'W. Sahara', 'Antarctica'])
 
 // Merge these territories into the named target country (geometry union)
 const MERGE_INTO = {}
 // Rendered on the globe but not guessable in any game
-const DISPLAY_ONLY = new Set(['Greenland', 'W. Sahara'])
+const DISPLAY_ONLY = new Set(['Greenland', 'W. Sahara', 'Antarctica'])
 
 // Never include these regardless of TYPE
 const EXCLUDE_NAMES = new Set([
-  'Antarctica', 'Aruba', 'Curaçao', 'Curacao',
+  'Aruba', 'Curaçao', 'Curacao',
   'N. Cyprus', 'Northern Cyprus', 'Somaliland',
   'Abkhazia', 'South Ossetia', 'Siachen Glacier',
   'Bajo Nuevo Bank (Petrel Is.)', 'Serranilla Bank', 'Scarborough Reef',
@@ -114,6 +114,7 @@ export default function App() {
   const [stats,          setStats]         = useState(getStats)
   const [practiceMode,   setPracticeMode]  = useState(false)
   const [gaveUp,         setGaveUp]        = useState(false)
+  const [flyToFeature,   setFlyToFeature]  = useState(null)
 
   // ── Name All Countries state ─────────────────────────────────────────────
   const [found, setFound] = useState([]) // [{ name, feature }]
@@ -345,7 +346,11 @@ export default function App() {
     setC2cScore(s => ({ correct: s.correct + (isCorrect ? 1 : 0), total: s.total + 1, streak: newStreak }))
     setC2cHistory(h => [...h, { capital: c2cCurrent.capital, country: c2cCurrent.country, correct: isCorrect }])
     setProfile(recordC2cResult(isCorrect, newStreak))
-  }, [c2cCurrent, c2cAnswered, c2cScore])
+    if (isCorrect) {
+      const f = gameCountries.find(c => c.properties.NAME === c2cCurrent.country)
+      if (f) setFlyToFeature({ ...f, _ts: Date.now() })
+    }
+  }, [c2cCurrent, c2cAnswered, c2cScore, gameCountries])
 
   const handleC2cSkip = useCallback(() => {
     if (!c2cCurrent || c2cAnswered) return
@@ -371,6 +376,13 @@ export default function App() {
       setC2cCurrent(pickNextC2c(new Set(), gameCountries))
     }
   }, [mode, gameCountries, c2cCurrent, pickNextC2c])
+
+  // ── Fly to sea when it changes ───────────────────────────────────────────
+  useEffect(() => {
+    if (mode === 'seas' && seaCurrent) {
+      setFlyToFeature({ ...seaCurrent, _ts: Date.now() })
+    }
+  }, [seaCurrent, mode])
 
   // ── Flag Quiz handlers ───────────────────────────────────────────────────
   const calcFlagPoints = (streak) => {
@@ -600,6 +612,8 @@ export default function App() {
     const name = feature.properties.NAME
     if (mysteryGuesses.some(g => g.name === name)) return
 
+    setFlyToFeature({ ...feature, _ts: Date.now() })
+
     if (name === mystery.properties.NAME) {
       setMysteryGuesses(prev => [...prev, { name, km: 0, color: '#22c55e', angle: 0, isAdjacent: false, feature }])
       setGameWon(true)
@@ -704,7 +718,21 @@ export default function App() {
   const handleLocateClick = useCallback((lon, lat) => {
     if (locateGuessed || !locateCurrent) return
     let km = 0
-    if (!geoContains(locateCurrent, [lon, lat])) {
+    let isHit = geoContains(locateCurrent, [lon, lat])
+    if (!isHit) {
+      // Fallback for small island/ellipse countries: check padded geographic bounding box
+      try {
+        const [[minLon, minLat], [maxLon, maxLat]] = geoBounds(locateCurrent)
+        const w = maxLon - minLon
+        const h = maxLat - minLat
+        if (w < 12 && h < 12) {
+          const pad = 3.5
+          isHit = lon >= minLon - pad && lon <= maxLon + pad &&
+                  lat >= minLat - pad && lat <= maxLat + pad
+        }
+      } catch {}
+    }
+    if (!isHit) {
       const centroid = geoCentroid(locateCurrent)
       km = Math.round(geoDistance([lon, lat], centroid) * 6371)
     }
@@ -834,29 +862,37 @@ export default function App() {
         {/* ── Left sidebar nav ── */}
         <nav className="sidebar">
           {[
-            { id: 'mystery',        icon: '🔍', label: 'Mystery' },
-            { id: 'name-all',       icon: '🌍', label: 'Name All' },
-            { id: 'capital',        icon: '🏛️', label: 'Capitals' },
-            { id: 'name-all-caps',  icon: '🏙️', label: 'All Caps' },
+            { section: 'Guess' },
+            { id: 'mystery',        icon: '🔍', label: 'Mystery Country' },
+            { id: 'locate',         icon: '📍', label: 'Pinpoint Country' },
+            { id: 'missing',        icon: '🗺️', label: 'Blind Map' },
+            { section: 'Name' },
+            { id: 'name-all',       icon: '🌍', label: 'All Countries' },
+            { id: 'name-all-caps',  icon: '🏙️', label: 'All Capitals' },
             { id: 'seas',           icon: '🌊', label: 'Seas' },
-            { id: 'locate',         icon: '📍', label: 'Locate It' },
-            { id: 'cap-to-country', icon: '🗺️', label: 'Cap → Country' },
+            { section: 'Quiz' },
+            { id: 'capital',        icon: '🏛️', label: 'Capitals' },
+            { id: 'cap-to-country', icon: '🗺️', label: 'Cap to Country' },
+            { id: 'flag',           icon: '🚩', label: 'Flags' },
             { id: 'border-chain',   icon: '🔗', label: 'Borders' },
             { id: 'pop-order',      icon: '📊', label: 'Population' },
-            { id: 'flag',           icon: '🚩', label: 'Flags' },
+            { section: 'Explore' },
             { id: 'learn',          icon: '🎓', label: 'Learn' },
-            { id: 'missing',        icon: '🗺️', label: 'Blind Map' },
             { id: 'spotlight',      icon: '🔦', label: 'Solo Map' },
-          ].map(({ id, icon, label }) => (
-            <button
-              key={id}
-              className={`sidebar-btn ${mode === id ? 'active' : ''}`}
-              onClick={() => switchMode(id)}
-            >
-              <span className="sidebar-icon">{icon}</span>
-              <span className="sidebar-label">{label}</span>
-            </button>
-          ))}
+          ].map((item, i) =>
+            item.section ? (
+              <div key={`sec-${i}`} className="sidebar-section">{item.section}</div>
+            ) : (
+              <button
+                key={item.id}
+                className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
+                onClick={() => switchMode(item.id)}
+              >
+                <span className="sidebar-icon">{item.icon}</span>
+                <span className="sidebar-label">{item.label}</span>
+              </button>
+            )
+          )}
         </nav>
 
         {/* ── Globe pane ── */}
@@ -882,6 +918,7 @@ export default function App() {
                 locateMarker={mode === 'locate' ? locateMarker : null}
                 spinEnabled={globeSpin}
                 lightMode={lightMode}
+                flyToFeature={flyToFeature}
               />
               <button
                 className={`spin-toggle ${globeSpin ? 'spin-on' : 'spin-off'}`}

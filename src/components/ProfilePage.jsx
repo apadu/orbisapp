@@ -30,7 +30,7 @@ const MODE_STATS = [
   {
     id: 'nameAll',
     icon: '🌍',
-    label: 'Name All Countries',
+    label: 'All Countries',
     rows: p => [
       { label: 'World completions', value: p.nameAll.completions },
       { label: 'Best world time',   value: formatTime(p.nameAll.bestTimeWorld) },
@@ -66,7 +66,7 @@ const MODE_STATS = [
   {
     id: 'capToCountry',
     icon: '🗺️',
-    label: 'Capital → Country',
+    label: 'Capital to Country',
     rows: p => [
       { label: 'Games played', value: p.capToCountry.gamesPlayed },
       { label: 'Correct',      value: p.capToCountry.correct },
@@ -77,7 +77,7 @@ const MODE_STATS = [
   {
     id: 'locate',
     icon: '📍',
-    label: 'Locate It',
+    label: 'Pinpoint Country',
     rows: p => [
       { label: 'Rounds played',   value: p.locate.roundsPlayed },
       { label: 'High score',      value: p.locate.highScore },

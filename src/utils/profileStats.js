@@ -194,7 +194,7 @@ export const ACHIEVEMENTS = [
 
   // Name All
   { id: 'nameall_first',    icon: '🌍', label: 'World Named',        desc: 'Name all countries in the world',          check: p => p.nameAll.completions >= 1 },
-  { id: 'nameall_5',        icon: '🗺️', label: 'Cartographer',       desc: 'Complete Name All 5 times',                check: p => p.nameAll.completions >= 5 },
+  { id: 'nameall_5',        icon: '🗺️', label: 'Cartographer',       desc: 'Complete All Countries 5 times',           check: p => p.nameAll.completions >= 5 },
   { id: 'continent_all',    icon: '🏁', label: 'Continental',        desc: 'Complete all 5 continent speedruns',       check: p => Object.keys(p.nameAll.continentPBs).length >= 5 },
 
   // Flags
@@ -203,8 +203,8 @@ export const ACHIEVEMENTS = [
   { id: 'flag_100',         icon: '🏳️', label: 'Flag Collector',     desc: 'Play 100 flag rounds',                     check: p => p.flag.roundsPlayed >= 100 },
 
   // Locate
-  { id: 'locate_perfect',   icon: '📍', label: 'Bullseye',           desc: 'Score a perfect 1000 in Locate It',        check: p => p.locate.perfectRounds >= 1 },
-  { id: 'locate_10perfect', icon: '🎯', label: 'Sharpshooter',       desc: 'Score 10 perfect rounds in Locate It',     check: p => p.locate.perfectRounds >= 10 },
+  { id: 'locate_perfect',   icon: '📍', label: 'Bullseye',           desc: 'Score a perfect 1000 in Pinpoint Country',        check: p => p.locate.perfectRounds >= 1 },
+  { id: 'locate_10perfect', icon: '🎯', label: 'Sharpshooter',       desc: 'Score 10 perfect rounds in Pinpoint Country',     check: p => p.locate.perfectRounds >= 10 },
 
   // Border Chain
   { id: 'border_optimal',   icon: '🔗', label: 'Optimal Route',      desc: 'Solve a Border Chain with optimal hops',   check: p => p.borderChain.optimalSolves >= 1 },

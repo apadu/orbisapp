@@ -59,7 +59,11 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
     setDidYouMean(null)
   }
 
-  const sortedGuesses = [...guesses].sort((a, b) => a.km - b.km)
+  const sortedGuesses = [...guesses].sort((a, b) => {
+    if (a.km === 0 && a.name === mystery?.properties?.NAME) return -1
+    if (b.km === 0 && b.name === mystery?.properties?.NAME) return 1
+    return a.km - b.km
+  })
 
   const mysteryName    = mystery?.properties?.NAME ?? ''
   const mysteryCapital = CAPITALS[mysteryName]?.[0] ?? '—'

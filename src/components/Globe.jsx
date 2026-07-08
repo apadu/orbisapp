@@ -122,6 +122,17 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
   ctx.fillStyle = '#1254c0'
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
 
+  // ── Arctic ice cap (gradient band at top of equirectangular canvas) ────────
+  // lat 72°N → y = (90-72)/180 * CANVAS_H from top
+  const arcticY = (90 - 72) / 180 * CANVAS_H
+  const arcticGrad = ctx.createLinearGradient(0, 0, 0, arcticY)
+  arcticGrad.addColorStop(0,   'rgba(220,240,255,0.96)')
+  arcticGrad.addColorStop(0.65,'rgba(200,230,255,0.55)')
+  arcticGrad.addColorStop(1,   'rgba(200,230,255,0)')
+  ctx.fillStyle = arcticGrad
+  ctx.fillRect(0, 0, CANVAS_W, arcticY)
+
+
   // Build a lookup of merged-territory features keyed by host name
   const mergedFeatures = {}
   for (const feature of countries) {
@@ -147,6 +158,18 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     const linkedName = LINKED_COUNTRIES[name]
     const effectiveColor = guessMap[name] ?? (linkedName ? guessMap[linkedName] : null)
 
+    // Antarctica: solid white landmass, no game logic
+    if (name === 'Antarctica') {
+      ctx.beginPath()
+      path(feature)
+      ctx.fillStyle = '#ffffff'
+      ctx.fill()
+      ctx.strokeStyle = '#ccddee'
+      ctx.lineWidth = 0.7
+      ctx.stroke()
+      continue
+    }
+
     // In solo mode every country defaults to ocean unless it's highlighted / guessed / missed
     const isOcean =
       hiddenSet?.has(name) ||
@@ -165,7 +188,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
       fillStyle = '#f97316'
     } else if (effectiveColor) {
       fillStyle = effectiveColor
-    } else if (missedSet?.has(name)) {
+    } else if (missedSet?.has(name) || (linkedName && missedSet?.has(linkedName))) {
       fillStyle = '#ef4444'
     } else {
       fillStyle = '#22c45c'
@@ -266,17 +289,13 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
       blobFill   = '#1254c0'
       blobStroke = '#1254c0'
     } else if (isWinner) {
-      blobFill   = 'rgba(57,255,20,0.30)'; blobStroke = '#39ff14'
+      blobFill   = '#39ff14'; blobStroke = '#39ff14'
     } else if (name === highlightedName) {
-      blobFill   = 'rgba(249,115,22,0.28)'; blobStroke = '#f97316'
+      blobFill   = '#f97316'; blobStroke = '#f97316'
     } else if (guessColor) {
-      // Parse the hex guess color and draw semi-transparent
-      const r = parseInt(guessColor.slice(1,3),16)
-      const g = parseInt(guessColor.slice(3,5),16)
-      const b = parseInt(guessColor.slice(5,7),16)
-      blobFill   = `rgba(${r},${g},${b},0.30)`; blobStroke = guessColor
+      blobFill   = guessColor; blobStroke = guessColor
     } else if (missedSet?.has(name)) {
-      blobFill   = 'rgba(239,68,68,0.28)'; blobStroke = '#ef4444'
+      blobFill   = '#ef4444'; blobStroke = '#ef4444'
     } else {
       blobFill   = 'rgba(255,255,255,0.38)'; blobStroke = 'rgba(255,255,255,0.55)'
     }
@@ -397,7 +416,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
 }
 
 // ─── Globe Component ─────────────────────────────────────────────────────────
-export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, spinEnabled = true, hiddenCountries, soloMode, lightMode }) {
+export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, spinEnabled = true, hiddenCountries, soloMode, lightMode, flyToFeature }) {
   const mountRef  = useRef(null)
   const rendRef   = useRef(null)
   const sphereRef = useRef(null)
@@ -411,6 +430,7 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
   const autoTimer  = useRef(null)
   const raycaster  = useRef(new THREE.Raycaster())
   const spinRef    = useRef(spinEnabled)
+  const flyTarget  = useRef(null) // { y, x } target rotation in radians
 
   // ── Init Three.js scene ──────────────────────────────────────────────────
   useEffect(() => {
@@ -477,7 +497,23 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
 
     const animate = () => {
       animRef.current = requestAnimationFrame(animate)
-      if (autoRotate.current && !drag.current.active && spinRef.current) sphere.rotation.y += 0.0008
+      if (flyTarget.current) {
+        const t = flyTarget.current
+        // Shortest-path lerp on Y (handles wrapping)
+        let dy = t.y - sphere.rotation.y
+        if (dy >  Math.PI) dy -= Math.PI * 2
+        if (dy < -Math.PI) dy += Math.PI * 2
+        sphere.rotation.y += dy * 0.06
+        sphere.rotation.x += (t.x - sphere.rotation.x) * 0.06
+        // Stop when close enough
+        if (Math.abs(dy) < 0.001 && Math.abs(t.x - sphere.rotation.x) < 0.001) {
+          sphere.rotation.y = t.y
+          sphere.rotation.x = t.x
+          flyTarget.current = null
+        }
+      } else if (autoRotate.current && !drag.current.active && spinRef.current) {
+        sphere.rotation.y += 0.0008
+      }
       renderer.render(scene, camera)
     }
     animate()
@@ -507,6 +543,21 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, locateMarker, hiddenCountries, soloMode)
     texRef.current.needsUpdate = true
   }, [guesses, mystery, gameWon, countries, highlighted, missed, locateMarker, hiddenCountries, soloMode])
+
+  // ── Fly to feature when a guess is made ─────────────────────────────────
+  useEffect(() => {
+    if (!flyToFeature || !sphereRef.current) return
+    const [lon, lat] = geoCentroid(flyToFeature)
+    // Three.js SphereGeometry UV: rotation.y=0 shows ~90°W (Americas).
+    // To center longitude L: targetY = -π/2 - L*(π/180)
+    flyTarget.current = {
+      y: -(Math.PI / 2) - lon * (Math.PI / 180),
+      x:  lat * (Math.PI / 180),
+    }
+    autoRotate.current = false
+    clearTimeout(autoTimer.current)
+    autoTimer.current = setTimeout(() => { autoRotate.current = true }, 6000)
+  }, [flyToFeature])
 
   // ── Sync spinEnabled prop → ref ─────────────────────────────────────────
   useEffect(() => { spinRef.current = spinEnabled }, [spinEnabled])

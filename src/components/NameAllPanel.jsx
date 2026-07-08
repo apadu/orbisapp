@@ -181,7 +181,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     <>
       {/* Header */}
       <div className="panel-header">
-        <h2>🌍 Name All Countries</h2>
+        <h2>🌍 All Countries</h2>
         <p className="panel-subtitle">
           {isSpeedrun
             ? `Name all countries in ${subMode} as fast as you can.`

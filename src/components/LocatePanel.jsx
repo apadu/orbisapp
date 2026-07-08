@@ -19,7 +19,7 @@ export default function LocatePanel({ current, guessed, clickResult, totalScore,
     <>
       {/* Header */}
       <div className="panel-header">
-        <h2>📍 Locate It</h2>
+        <h2>📍 Pinpoint Country</h2>
         <p className="panel-subtitle">Click on the globe to place the country.</p>
       </div>
 
