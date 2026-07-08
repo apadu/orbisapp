@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import Globe from './components/Globe'
+import Globe, { FIXED_ELLIPSE_CENTERS, HULL_COUNTRY_NAMES } from './components/Globe'
 import HydroGlobe from './components/HydroGlobe'
 import GamePanel from './components/GamePanel'
 import NameAllPanel from './components/NameAllPanel'
@@ -13,6 +13,9 @@ import FlagPanel from './components/FlagPanel'
 import MissingPanel from './components/MissingPanel'
 import LearnPanel from './components/LearnPanel'
 import SpotlightPanel from './components/SpotlightPanel'
+import AreaPanel from './components/AreaPanel'
+import CurrencyPanel from './components/CurrencyPanel'
+import LanguagePanel from './components/LanguagePanel'
 import NameAllCapitalsPanel from './components/NameAllCapitalsPanel'
 import { getDistanceInfo, computeAdjacency } from './utils/geoUtils'
 import { geoDistance, geoCentroid, geoContains, geoBounds } from 'd3-geo'
@@ -21,13 +24,15 @@ import { featureCollection } from '@turf/helpers'
 import { CAPITALS } from './utils/capitals'
 import { COUNTRY_INFO } from './utils/countryInfo'
 import { pickDailyCountry, todayLabel } from './utils/daily'
-import { getStats, recordWin } from './utils/stats'
+import { getStats, recordWin, recordGiveUp } from './utils/stats'
 import {
   loadProfile, recordMysteryResult, recordNameAllCompletion, recordContinentPB,
   recordCapitalResult, recordLocateRound, recordC2cResult,
   recordBorderChainRound, recordPopOrderRound, recordFlagRound,
 } from './utils/profileStats'
 import ProfilePage from './components/ProfilePage'
+import HomePage from './components/HomePage'
+import Confetti from './components/Confetti'
 import './App.css'
 
 const GEO_URL =
@@ -101,7 +106,7 @@ export default function App() {
   }, [lightMode])
 
   // ── App page & profile ───────────────────────────────────────────────────
-  const [page,    setPage]    = useState('game') // 'game' | 'profile'
+  const [page,    setPage]    = useState('home') // 'home' | 'game' | 'profile'
   const [profile, setProfile] = useState(() => loadProfile())
 
   // ── Shared game mode ─────────────────────────────────────────────────────
@@ -177,6 +182,9 @@ export default function App() {
   // ── Learn mode state ─────────────────────────────────────────────────────
   const [learnSelected, setLearnSelected] = useState(null)   // feature
   const [learnHistory,  setLearnHistory]  = useState([])     // [name, ...]
+
+  // ── Bigger/Smaller (Area) state ──────────────────────────────────────────
+  const [areaPair, setAreaPair] = useState([]) // [featureA, featureB]
 
   // ── Blind Map (Missing Countries) state ─────────────────────────────────
   const [missingHidden,      setMissingHidden]      = useState(new Set())
@@ -604,6 +612,9 @@ export default function App() {
       setLearnSelected(null)
       setLearnHistory([])
     }
+    if (m !== 'area') {
+      setAreaPair([])
+    }
   }, [gameCountries, pickNextCapital])
 
   // ── Mystery: handle a guess ──────────────────────────────────────────────
@@ -699,7 +710,51 @@ export default function App() {
 
   // ── Learn mode handler ──────────────────────────────────────────────────
   const handleLearnClick = useCallback((lon, lat) => {
-    const hit = countries.find(f => geoContains(f, [lon, lat]))
+    // Canvas is 4096×2048 for 360°×180° → 1px ≈ 0.0879°; use 1.8× slack for click tolerance
+    const PX_TO_DEG = (180 / 2048) * 1.8
+
+    // 1. Fixed-ellipse countries (Fiji, Kiribati, Micronesia, etc.) — check by
+    //    proximity to their known visual center, scaled from canvas pixel radii
+    let hit = countries.find(f => {
+      const fe = FIXED_ELLIPSE_CENTERS[f.properties.NAME]
+      if (!fe) return false
+      const dLon = Math.abs(lon - fe.lon)
+      const dLat = Math.abs(lat - fe.lat)
+      return dLon < fe.rx * PX_TO_DEG && dLat < fe.ry * PX_TO_DEG
+    })
+
+    // 2. Hull countries (Bahamas, Solomon Is., etc.) — check before geoContains
+    //    so neighbouring large countries don't shadow them
+    if (!hit) {
+      hit = countries.find(f => {
+        if (!HULL_COUNTRY_NAMES.has(f.properties.NAME)) return false
+        try {
+          const [[minLon, minLat], [maxLon, maxLat]] = geoBounds(f)
+          const pad = 3.5
+          return lon >= minLon - pad && lon <= maxLon + pad &&
+                 lat >= minLat - pad && lat <= maxLat + pad
+        } catch { return false }
+      })
+    }
+
+    // 3. Exact polygon containment (covers all normal-sized countries)
+    if (!hit) hit = countries.find(f => geoContains(f, [lon, lat]))
+
+    // 4. Padded bounding-box fallback for remaining small countries
+    if (!hit) {
+      hit = countries.find(f => {
+        try {
+          const [[minLon, minLat], [maxLon, maxLat]] = geoBounds(f)
+          const w = maxLon - minLon
+          const h = maxLat - minLat
+          if (w >= 12 || h >= 12) return false
+          const pad = 3.5
+          return lon >= minLon - pad && lon <= maxLon + pad &&
+                 lat >= minLat - pad && lat <= maxLat + pad
+        } catch { return false }
+      })
+    }
+
     if (!hit) return
     const name = hit.properties.NAME
     setLearnSelected(hit)
@@ -710,22 +765,42 @@ export default function App() {
   }, [countries])
 
   // ── Locate It handlers ──────────────────────────────────────────────────
+  const LOCATE_EXCLUDE = new Set([
+    'Dominica', 'St. Lucia', 'Saint Kitts and Nevis', 'Saint Vincent and the Grenadines',
+    'Barbados', 'Antigua and Barbuda', 'Trinidad and Tobago',
+    'Luxembourg', 'Andorra', 'Monaco', 'San Marino', 'Vatican', 'Liechtenstein',
+    'Singapore', 'Timor-Leste', 'Bahrain', 'Brunei',
+  ])
+
   const pickLocateCountry = useCallback((exclude) => {
-    const pool = gameCountries.filter(f => f !== exclude)
+    const pool = gameCountries.filter(f => f !== exclude && !LOCATE_EXCLUDE.has(f.properties.NAME))
     return pool[Math.floor(Math.random() * pool.length)] ?? gameCountries[0]
   }, [gameCountries])
 
   const handleLocateClick = useCallback((lon, lat) => {
     if (locateGuessed || !locateCurrent) return
     let km = 0
-    let isHit = geoContains(locateCurrent, [lon, lat])
+    const name = locateCurrent.properties.NAME
+    const PX_TO_DEG = (180 / 2048) * 1.8
+
+    // Check fixed-ellipse center first (Fiji, Kiribati, Micronesia, etc.)
+    let isHit = false
+    const fe = FIXED_ELLIPSE_CENTERS[name]
+    if (fe) {
+      isHit = Math.abs(lon - fe.lon) < fe.rx * PX_TO_DEG &&
+              Math.abs(lat - fe.lat) < fe.ry * PX_TO_DEG
+    }
+
+    // Exact polygon containment
+    if (!isHit) isHit = geoContains(locateCurrent, [lon, lat])
+
+    // Padded bounding-box fallback for small/hull countries
     if (!isHit) {
-      // Fallback for small island/ellipse countries: check padded geographic bounding box
       try {
         const [[minLon, minLat], [maxLon, maxLat]] = geoBounds(locateCurrent)
         const w = maxLon - minLon
         const h = maxLat - minLat
-        if (w < 12 && h < 12) {
+        if (w < 30 && h < 30) {
           const pad = 3.5
           isHit = lon >= minLon - pad && lon <= maxLon + pad &&
                   lat >= minLat - pad && lat <= maxLat + pad
@@ -800,6 +875,8 @@ export default function App() {
             ]
           : mode === 'pop-order'
           ? popCountries.map(f => ({ name: f.properties.NAME, color: '#c77dff', feature: f }))
+          : mode === 'area'
+          ? areaPair.map((f, i) => ({ name: f.properties.NAME, color: i === 0 ? '#3b82f6' : '#f97316', feature: f }))
           : capHistory.map(h => ({
             name: h.country,
             color: h.correct ? '#39ff14' : '#ef4444',
@@ -824,7 +901,7 @@ export default function App() {
     <div className="app-shell">
       {/* ── Top bar ── */}
       <header className="topbar">
-        <div className="topbar-brand">
+        <div className="topbar-brand" onClick={() => setPage('home')} style={{ cursor: 'pointer' }}>
           <span className="topbar-logo">🌐</span>
           <span className="topbar-name">Orbis</span>
           <span className="topbar-tagline">Geography Games</span>
@@ -858,9 +935,17 @@ export default function App() {
         />
       )}
 
+      {page === 'home' && (
+        <HomePage
+          onEnter={() => setPage('game')}
+          onSelectMode={(id) => { switchMode(id); setPage('game') }}
+        />
+      )}
+
       <div className="layout" style={{ display: page === 'profile' ? 'none' : 'flex' }}>
+
         {/* ── Left sidebar nav ── */}
-        <nav className="sidebar">
+        <nav className="sidebar" style={{ display: page === 'home' ? 'none' : undefined }}>
           {[
             { section: 'Guess' },
             { id: 'mystery',        icon: '🔍', label: 'Mystery Country' },
@@ -876,6 +961,9 @@ export default function App() {
             { id: 'flag',           icon: '🚩', label: 'Flags' },
             { id: 'border-chain',   icon: '🔗', label: 'Borders' },
             { id: 'pop-order',      icon: '📊', label: 'Population' },
+            { id: 'area',           icon: '📏', label: 'Bigger or Smaller' },
+            { id: 'currency',       icon: '💰', label: 'Currency Quiz' },
+            { id: 'language',       icon: '🗣️', label: 'Language Quiz' },
             { section: 'Explore' },
             { id: 'learn',          icon: '🎓', label: 'Learn' },
             { id: 'spotlight',      icon: '🔦', label: 'Solo Map' },
@@ -920,6 +1008,7 @@ export default function App() {
                 lightMode={lightMode}
                 flyToFeature={flyToFeature}
               />
+              <Confetti active={mode === 'mystery' && gameWon} />
               <button
                 className={`spin-toggle ${globeSpin ? 'spin-on' : 'spin-off'}`}
                 onClick={() => setGlobeSpin(s => !s)}
@@ -931,7 +1020,7 @@ export default function App() {
           )}
         </div>
 
-      <div className="panel">
+      <div className="panel" style={{ display: page === 'home' ? 'none' : undefined }}>
         {mode === 'mystery' && (
           <GamePanel
             countries={gameCountries}
@@ -945,7 +1034,7 @@ export default function App() {
             practiceMode={practiceMode}
             onTogglePractice={handleTogglePractice}
             gaveUp={gaveUp}
-            onGiveUp={() => setGaveUp(true)}
+            onGiveUp={() => { setGaveUp(true); if (!practiceMode) setStats(recordGiveUp()) }}
           />
         )}
         {mode === 'name-all' && (
@@ -1015,6 +1104,18 @@ export default function App() {
             history={popHistory}
             onNext={handlePopNext}
           />
+        )}
+        {mode === 'area' && (
+          <AreaPanel
+            gameCountries={gameCountries}
+            onPairChange={setAreaPair}
+          />
+        )}
+        {mode === 'currency' && (
+          <CurrencyPanel />
+        )}
+        {mode === 'language' && (
+          <LanguagePanel />
         )}
         {mode === 'flag' && (
           <FlagPanel

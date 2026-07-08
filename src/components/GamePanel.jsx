@@ -6,8 +6,25 @@ import { resolveAlias, findClosestMatch } from '../utils/aliases'
 
 export default function GamePanel({ countries, guesses, mystery, gameWon, onGuess, onNewGame, stats, dateLabel, practiceMode, onTogglePractice, gaveUp, onGiveUp }) {
   const [input,      setInput]      = useState('')
-  const [didYouMean, setDidYouMean] = useState(null) // suggested country name
+  const [didYouMean, setDidYouMean] = useState(null)
+  const [copied,     setCopied]     = useState(false)
   const inputRef = useRef(null)
+
+  const handleShare = () => {
+    const emojiRow = guesses.map(g => {
+      if (g.km === 0)     return '🟩'
+      if (g.km < 1000)   return '🟥'
+      if (g.km < 3000)   return '🟧'
+      if (g.km < 7000)   return '🟨'
+      return '🟦'
+    }).join('')
+    const n = guesses.length
+    const text = `🌐 Orbis – Mystery Country\n${emojiRow}\nSolved in ${n} ${n === 1 ? 'guess' : 'guesses'}!\norbis.app`
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   // Sorted country names for autocomplete
   const countryNames = useMemo(
@@ -120,6 +137,9 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
               <strong>You got it!</strong>
               <p>{mysteryName} in {guesses.length} {guesses.length === 1 ? 'guess' : 'guesses'}</p>
             </div>
+            <button className="share-btn" onClick={handleShare}>
+              {copied ? '✅ Copied!' : '📤 Share'}
+            </button>
           </div>
           <div className="country-info-card">
             <span className="country-flag">{mysteryInfo?.flag ?? '🏳️'}</span>

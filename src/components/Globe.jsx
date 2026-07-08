@@ -84,6 +84,22 @@ const ELLIPSE_COUNTRIES = new Set([
   'Federated States of Micronesia', 'Micronesia', 'Samoa',
 ])
 
+// Canvas is 4096×2048 covering 360°×180° → 1 px ≈ 0.0879°
+// Exposed so App.jsx can use the same centers for click detection
+export const FIXED_ELLIPSE_CENTERS = {
+  'Malta':                          { lon:  14.4, lat:  35.9, rx: 14, ry: 11 },
+  'Fiji':                           { lon: 178,   lat: -18,   rx: 32, ry: 20 },
+  'Kiribati':                       { lon: 173,   lat:   1,   rx: 24, ry: 14 },
+  'Federated States of Micronesia': { lon: 153,   lat:   7,   rx: 44, ry: 14 },
+  'Tuvalu':                         { lon: 179,   lat:  -8,   rx: 10, ry: 24 },
+  'Marshall Islands':               { lon: 168,   lat:   7,   rx: 18, ry: 26 },
+  'Samoa':                          { lon: -172,  lat: -13.5, rx: 16, ry: 12 },
+}
+
+export const HULL_COUNTRY_NAMES = new Set([
+  'Bahamas', 'Solomon Islands', 'Marshall Islands', 'Comoros', 'Mauritius',
+])
+
 // When a country is guessed, these satellite countries get the same color
 const LINKED_COUNTRIES = {
   'Greenland': 'Denmark',
@@ -96,6 +112,7 @@ const DISPLAY_MERGE = {
 
 // Countries where geoBounds is unreliable (antimeridian crossers or weirdly shaped).
 // lon/lat = visual center to project; rx/ry = canvas pixels.
+// Note: keys here use the raw GeoJSON names (pre-override) for the rendering pass.
 const FIXED_ELLIPSE = {
   'Malta':            { lon:  14.4, lat:  35.9, rx: 14, ry: 11 },
   'Fiji':             { lon: 178,   lat: -18,  rx: 32, ry: 20 },
@@ -520,14 +537,20 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
 
     const onResize = () => {
       const w = el.clientWidth; const h = el.clientHeight
+      if (!w || !h) return
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
     }
     window.addEventListener('resize', onResize)
 
+    // Also watch the container directly so layout changes (panel show/hide) trigger a resize
+    const ro = new ResizeObserver(onResize)
+    ro.observe(el)
+
     return () => {
       window.removeEventListener('resize', onResize)
+      ro.disconnect()
       cancelAnimationFrame(animRef.current)
       renderer.dispose()
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement)

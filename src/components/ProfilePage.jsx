@@ -1,5 +1,90 @@
 import { useState } from 'react'
 import { ACHIEVEMENTS, getUnlockedAchievements, saveProfile } from '../utils/profileStats'
+import { getCalendar, getStats } from '../utils/stats'
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+function StreakCalendar() {
+  const calData = getCalendar(90) // fetch enough to cover any month
+  const stats   = getStats()
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  // Build a lookup: date string → result
+  const resultMap = {}
+  for (const d of calData) if (d.result) resultMap[d.date] = d.result
+
+  // Current month bounds
+  const now         = new Date()
+  const year        = now.getFullYear()
+  const month       = now.getMonth()
+  const monthLabel  = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  // Day-of-week of the 1st (0=Sun…6=Sat → convert to Mon-based 0–6)
+  const firstDow = new Date(year, month, 1).getDay()
+  const startPad = (firstDow + 6) % 7 // blanks before the 1st
+
+  // Build grid cells: nulls for padding, then 1…daysInMonth
+  const cells = [
+    ...Array(startPad).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ]
+
+  const dateStr = day => {
+    const m = String(month + 1).padStart(2, '0')
+    const d = String(day).padStart(2, '0')
+    return `${year}-${m}-${d}`
+  }
+
+  return (
+    <div className="streak-cal-wrap">
+      <div className="streak-cal-header">
+        <span className="streak-cal-title">🔥 {monthLabel}</span>
+        <div className="streak-cal-nums">
+          <span className="streak-cal-stat"><strong>{stats.streak}</strong> streak</span>
+          <span className="streak-cal-sep">·</span>
+          <span className="streak-cal-stat"><strong>{stats.bestStreak}</strong> best</span>
+        </div>
+      </div>
+
+      {/* Weekday headers */}
+      <div className="streak-cal-grid">
+        {WEEKDAYS.map(w => (
+          <div key={w} className="streak-cal-wday">{w}</div>
+        ))}
+
+        {/* Day cells */}
+        {cells.map((day, i) => {
+          if (!day) return <div key={`pad-${i}`} className="streak-cal-blank" />
+          const ds  = dateStr(day)
+          const res = resultMap[ds] ?? null
+          const isFuture = ds > todayStr
+          return (
+            <div
+              key={ds}
+              className={[
+                'streak-cal-day',
+                res === 'won'  ? 'cal-won'  : '',
+                res === 'lost' ? 'cal-lost' : '',
+                ds === todayStr ? 'cal-today' : '',
+                isFuture ? 'cal-future' : '',
+              ].filter(Boolean).join(' ')}
+              title={isFuture ? '' : res ? `${ds} — ${res}` : `${ds} — not played`}
+            >
+              {day}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="streak-cal-legend">
+        <span className="cal-legend-item"><span className="cal-dot cal-won" />Win</span>
+        <span className="cal-legend-item"><span className="cal-dot cal-lost" />Loss</span>
+        <span className="cal-legend-item"><span className="cal-dot" />No play</span>
+      </div>
+    </div>
+  )
+}
 
 function formatTime(secs) {
   if (!secs && secs !== 0) return '—'
@@ -202,6 +287,8 @@ export default function ProfilePage({ profile, onBack, onProfileUpdate }) {
 
       {/* Stats tab */}
       {activeTab === 'stats' && (
+        <>
+        <StreakCalendar />
         <div className="profile-stats-grid">
           {MODE_STATS.map(({ id, icon, label, rows }) => (
             <div key={id} className="profile-stat-card">
@@ -220,6 +307,7 @@ export default function ProfilePage({ profile, onBack, onProfileUpdate }) {
             </div>
           ))}
         </div>
+        </>
       )}
 
       {/* Achievements tab */}
