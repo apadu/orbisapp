@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
-import { normalizeInput } from '../utils/aliases'
-import { CAPITALS } from '../utils/capitals'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -10,11 +8,18 @@ function formatTime(secs) {
   return `${m}:${s}`
 }
 
-export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFoundChange, onMissedChange, onNewGame }) {
+function normMountain(str) {
+  return str.trim().toLowerCase()
+    .replace(/\b(mountains?|range|ranges|hills?|peak|peaks|massif|sierra|cordillera|alps?)\b/g, '')
+    .replace(/[^a-z0-9]/g, '')
+    .trim()
+}
+
+export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedChange, onNewGame }) {
   const [input,       setInput]       = useState('')
   const [flash,       setFlash]       = useState(null)
-  const [found,       setFound]       = useState([])   // [{name, capital, feature}]
-  const [timerMode,   setTimerMode]   = useState(null) // null | 'countdown' | 'countup'
+  const [found,       setFound]       = useState([]) // [feature, ...]
+  const [timerMode,   setTimerMode]   = useState(null)
   const [elapsed,     setElapsed]     = useState(0)
   const [remaining,   setRemaining]   = useState(COUNTDOWN_SECONDS)
   const [running,     setRunning]     = useState(false)
@@ -22,35 +27,27 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   const [confirmStop, setConfirmStop] = useState(false)
   const [gameOver,    setGameOver]    = useState(false)
 
-  const inputRef = useRef(null)
-  const tickRef  = useRef(null)
-  const foundRef = useRef([])
+  const inputRef  = useRef(null)
+  const tickRef   = useRef(null)
+  const foundRef  = useRef([])
   foundRef.current = found
 
-  // Build eligible pairs: countries that have a CAPITALS entry
-  const eligiblePairs = useMemo(() => {
-    const pairs = []
-    for (const f of gameCountries) {
-      const name = f.properties.NAME
-      const caps = CAPITALS[name]
-      if (caps) pairs.push({ name, capitals: caps, feature: f })
-    }
-    return pairs
-  }, [gameCountries])
-
-  // Reverse lookup: normalized capital → country name
-  const capToCountry = useMemo(() => {
+  // Build lookup: normalized name → feature
+  const rangeMap = useMemo(() => {
     const map = {}
-    for (const { name, capitals } of eligiblePairs) {
-      for (const cap of capitals) {
-        map[normalizeInput(cap)] = name
-      }
+    for (const f of ranges) {
+      const name = f.properties.NAME
+      if (!name) continue
+      map[normMountain(name)] = f
+      // Also index without stripping — plain normalized
+      const plain = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+      if (!map[plain]) map[plain] = f
     }
     return map
-  }, [eligiblePairs])
+  }, [ranges])
 
-  const total    = eligiblePairs.length
-  const foundSet = useMemo(() => new Set(found.map(f => f.name)), [found])
+  const total    = ranges.length
+  const foundSet = useMemo(() => new Set(found.map(f => f.properties.NAME)), [found])
   const allFound = found.length === total && total > 0
 
   useEffect(() => { inputRef.current?.focus() }, [])
@@ -72,19 +69,16 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   }, [running, timerMode])
 
   const revealMissed = useCallback(() => {
-    const missed = eligiblePairs.filter(p => !foundRef.current.some(f => f.name === p.name)).map(p => p.feature)
+    const foundNames = new Set(foundRef.current.map(f => f.properties.NAME))
+    const missed = ranges.filter(f => !foundNames.has(f.properties.NAME))
     onMissedChange(missed)
     setGameOver(true)
-  }, [eligiblePairs, onMissedChange])
+  }, [ranges, onMissedChange])
 
   useEffect(() => { if (expired) revealMissed() }, [expired, revealMissed])
 
-  // Stop timer when all found
   useEffect(() => {
-    if (allFound && running) {
-      clearInterval(tickRef.current)
-      setRunning(false)
-    }
+    if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
   }, [allFound, running])
 
   const startTimer = (mode) => {
@@ -126,16 +120,14 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
 
   const tryGuess = (raw) => {
     if (expired || gameOver) return
-    const q = normalizeInput(raw)
-    if (!q) return
-    const countryName = capToCountry[q]
-    if (!countryName) return
-    if (foundRef.current.some(f => f.name === countryName)) return
+    if (!raw.trim()) return
+    const q = normMountain(raw)
+    const q2 = raw.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+    const entry = rangeMap[q] || rangeMap[q2]
+    if (!entry) return
+    if (foundRef.current.some(f => f.properties.NAME === entry.properties.NAME)) return
 
-    const pair = eligiblePairs.find(p => p.name === countryName)
-    if (!pair) return
-
-    const next = [...foundRef.current, { name: countryName, capital: CAPITALS[countryName][0], feature: pair.feature }]
+    const next = [...foundRef.current, entry]
     foundRef.current = next
     setFound(next)
     onFoundChange(next)
@@ -147,16 +139,17 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   }
 
   const onInputChange = e => { const v = e.target.value; setInput(v); tryGuess(v) }
-  const onKeyDown    = e => { if (e.key === 'Enter') tryGuess(input) }
+  const onKeyDown     = e => { if (e.key === 'Enter') tryGuess(input) }
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
+  const sortedRanges    = useMemo(() => [...ranges].sort((a, b) => a.properties.NAME.localeCompare(b.properties.NAME)), [ranges])
 
   return (
     <>
       <div className="panel-header">
-        <h2>🏙️ Name All Capitals</h2>
+        <h2>⛰️ Name All Mountain Ranges</h2>
         <p className="panel-subtitle">
-          Type every capital city. Countries light up as you find them.
+          Type every mountain range. They light up on the globe as you find them.
         </p>
       </div>
 
@@ -193,7 +186,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       {/* Confirm stop */}
       {confirmStop && (
         <div className="na-confirm-stop">
-          <span>Stop? This will reveal missed capitals.</span>
+          <span>Stop? This will reveal missed ranges.</span>
           <div className="na-confirm-btns">
             <button className="na-confirm-yes" onClick={() => {
               clearInterval(tickRef.current); setRunning(false); setConfirmStop(false); revealMissed()
@@ -206,7 +199,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       {/* Time's up */}
       {expired && (
         <div className="na-expired">
-          ⌛ Time's up! You found <strong>{found.length}</strong> / {total} capitals.
+          ⌛ Time's up! You found <strong>{found.length}</strong> / {total} mountain ranges.
         </div>
       )}
 
@@ -215,7 +208,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
         <span className="na-count-num">{found.length}</span>
         <span className="na-count-sep"> / </span>
         <span className="na-count-total">{total}</span>
-        <span className="na-count-label"> capitals found</span>
+        <span className="na-count-label"> ranges found</span>
         <div className="na-progress-track">
           <div className="na-progress-fill" style={{ width: `${total ? (found.length / total) * 100 : 0}%` }} />
         </div>
@@ -228,9 +221,9 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
           <div>
             <strong>You got them all!</strong>
             <p>
-              Every capital named
-              {timerMode === 'countup'    ? ` in ${formatTime(elapsed)}` : ''}
-              {timerMode === 'countdown'  ? ` with ${formatTime(remaining)} remaining` : ''}
+              Every mountain range named
+              {timerMode === 'countup'   ? ` in ${formatTime(elapsed)}` : ''}
+              {timerMode === 'countdown' ? ` with ${formatTime(remaining)} remaining` : ''}
               !
             </p>
           </div>
@@ -245,7 +238,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder={!running ? 'Game paused' : 'Type a capital city…'}
+              placeholder={!running ? 'Game paused' : 'Type a mountain range…'}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
@@ -265,13 +258,12 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
             Missed <span className="guess-count" style={{ background: '#ef4444' }}>{total - found.length}</span>
           </h3>
           <ul className="guess-list">
-            {eligiblePairs
-              .filter(p => !foundSet.has(p.name))
-              .map(p => (
-                <li key={p.name} className="guess-item">
+            {sortedRanges
+              .filter(f => !foundSet.has(f.properties.NAME))
+              .map(f => (
+                <li key={f.properties.NAME} className="guess-item">
                   <span className="guess-swatch" style={{ background: '#ef4444' }} />
-                  <span className="guess-name">{p.capitals[0]}</span>
-                  <span className="guess-dist" style={{ color: '#888', fontSize: '0.78em' }}>&nbsp;({p.name})</span>
+                  <span className="guess-name">{f.properties.NAME}</span>
                 </li>
               ))}
           </ul>
@@ -284,10 +276,9 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
           <h3 className="guesses-title">Found <span className="guess-count">{found.length}</span></h3>
           <ul className="guess-list">
             {[...found].reverse().map(f => (
-              <li key={f.name} className="guess-item">
+              <li key={f.properties.NAME} className="guess-item">
                 <span className="guess-swatch" style={{ background: '#39ff14' }} />
-                <span className="guess-name">{f.capital}</span>
-                <span className="guess-dist" style={{ color: '#888', fontSize: '0.78em' }}>&nbsp;({f.name})</span>
+                <span className="guess-name">{f.properties.NAME}</span>
               </li>
             ))}
           </ul>

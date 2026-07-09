@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
-import { normalizeInput } from '../utils/aliases'
-import { CAPITALS } from '../utils/capitals'
+import { COUNTRY_CURRENCY } from '../utils/countryCurrency'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -10,11 +9,15 @@ function formatTime(secs) {
   return `${m}:${s}`
 }
 
-export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFoundChange, onMissedChange, onNewGame }) {
+function normCurrency(str) {
+  return str.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, onMissedChange, onNewGame }) {
   const [input,       setInput]       = useState('')
   const [flash,       setFlash]       = useState(null)
-  const [found,       setFound]       = useState([])   // [{name, capital, feature}]
-  const [timerMode,   setTimerMode]   = useState(null) // null | 'countdown' | 'countup'
+  const [found,       setFound]       = useState([]) // [{currencyName, code, countries:[{name,feature}]}]
+  const [timerMode,   setTimerMode]   = useState(null)
   const [elapsed,     setElapsed]     = useState(0)
   const [remaining,   setRemaining]   = useState(COUNTDOWN_SECONDS)
   const [running,     setRunning]     = useState(false)
@@ -22,35 +25,40 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   const [confirmStop, setConfirmStop] = useState(false)
   const [gameOver,    setGameOver]    = useState(false)
 
-  const inputRef = useRef(null)
-  const tickRef  = useRef(null)
-  const foundRef = useRef([])
+  const inputRef  = useRef(null)
+  const tickRef   = useRef(null)
+  const foundRef  = useRef([])
   foundRef.current = found
 
-  // Build eligible pairs: countries that have a CAPITALS entry
-  const eligiblePairs = useMemo(() => {
-    const pairs = []
+  // Build reverse map: normalized currency name/code → entry
+  const { currencyMap, allCurrencies } = useMemo(() => {
+    const byName = {}
     for (const f of gameCountries) {
       const name = f.properties.NAME
-      const caps = CAPITALS[name]
-      if (caps) pairs.push({ name, capitals: caps, feature: f })
+      const cur  = COUNTRY_CURRENCY[name]
+      if (!cur) continue
+      const key = normCurrency(cur.name)
+      if (!byName[key]) byName[key] = { currencyName: cur.name, code: cur.code, countries: [] }
+      byName[key].countries.push({ name, feature: f })
     }
-    return pairs
+    // Build lookup (includes code aliases)
+    const map = { ...byName }
+    for (const entry of Object.values(byName)) {
+      const codeKey = normCurrency(entry.code)
+      if (!map[codeKey]) map[codeKey] = entry
+    }
+    // Deduplicated sorted list
+    const seen = new Set()
+    const all  = []
+    for (const entry of Object.values(byName)) {
+      if (!seen.has(entry.currencyName)) { seen.add(entry.currencyName); all.push(entry) }
+    }
+    all.sort((a, b) => a.currencyName.localeCompare(b.currencyName))
+    return { currencyMap: map, allCurrencies: all }
   }, [gameCountries])
 
-  // Reverse lookup: normalized capital → country name
-  const capToCountry = useMemo(() => {
-    const map = {}
-    for (const { name, capitals } of eligiblePairs) {
-      for (const cap of capitals) {
-        map[normalizeInput(cap)] = name
-      }
-    }
-    return map
-  }, [eligiblePairs])
-
-  const total    = eligiblePairs.length
-  const foundSet = useMemo(() => new Set(found.map(f => f.name)), [found])
+  const total    = allCurrencies.length
+  const foundSet = useMemo(() => new Set(found.map(f => f.currencyName)), [found])
   const allFound = found.length === total && total > 0
 
   useEffect(() => { inputRef.current?.focus() }, [])
@@ -72,19 +80,21 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   }, [running, timerMode])
 
   const revealMissed = useCallback(() => {
-    const missed = eligiblePairs.filter(p => !foundRef.current.some(f => f.name === p.name)).map(p => p.feature)
-    onMissedChange(missed)
+    const foundNames = new Set(foundRef.current.map(f => f.currencyName))
+    const missedFeatures = []
+    for (const cur of allCurrencies) {
+      if (!foundNames.has(cur.currencyName)) {
+        for (const c of cur.countries) missedFeatures.push(c.feature)
+      }
+    }
+    onMissedChange(missedFeatures)
     setGameOver(true)
-  }, [eligiblePairs, onMissedChange])
+  }, [allCurrencies, onMissedChange])
 
   useEffect(() => { if (expired) revealMissed() }, [expired, revealMissed])
 
-  // Stop timer when all found
   useEffect(() => {
-    if (allFound && running) {
-      clearInterval(tickRef.current)
-      setRunning(false)
-    }
+    if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
   }, [allFound, running])
 
   const startTimer = (mode) => {
@@ -126,16 +136,13 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
 
   const tryGuess = (raw) => {
     if (expired || gameOver) return
-    const q = normalizeInput(raw)
+    const q = normCurrency(raw)
     if (!q) return
-    const countryName = capToCountry[q]
-    if (!countryName) return
-    if (foundRef.current.some(f => f.name === countryName)) return
+    const entry = currencyMap[q]
+    if (!entry) return
+    if (foundRef.current.some(f => f.currencyName === entry.currencyName)) return
 
-    const pair = eligiblePairs.find(p => p.name === countryName)
-    if (!pair) return
-
-    const next = [...foundRef.current, { name: countryName, capital: CAPITALS[countryName][0], feature: pair.feature }]
+    const next = [...foundRef.current, entry]
     foundRef.current = next
     setFound(next)
     onFoundChange(next)
@@ -147,16 +154,16 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   }
 
   const onInputChange = e => { const v = e.target.value; setInput(v); tryGuess(v) }
-  const onKeyDown    = e => { if (e.key === 'Enter') tryGuess(input) }
+  const onKeyDown     = e => { if (e.key === 'Enter') tryGuess(input) }
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
 
   return (
     <>
       <div className="panel-header">
-        <h2>🏙️ Name All Capitals</h2>
+        <h2>💰 Name All Currencies</h2>
         <p className="panel-subtitle">
-          Type every capital city. Countries light up as you find them.
+          Type every currency. Countries light up as you find them.
         </p>
       </div>
 
@@ -193,7 +200,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       {/* Confirm stop */}
       {confirmStop && (
         <div className="na-confirm-stop">
-          <span>Stop? This will reveal missed capitals.</span>
+          <span>Stop? This will reveal missed currencies.</span>
           <div className="na-confirm-btns">
             <button className="na-confirm-yes" onClick={() => {
               clearInterval(tickRef.current); setRunning(false); setConfirmStop(false); revealMissed()
@@ -206,7 +213,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       {/* Time's up */}
       {expired && (
         <div className="na-expired">
-          ⌛ Time's up! You found <strong>{found.length}</strong> / {total} capitals.
+          ⌛ Time's up! You found <strong>{found.length}</strong> / {total} currencies.
         </div>
       )}
 
@@ -215,7 +222,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
         <span className="na-count-num">{found.length}</span>
         <span className="na-count-sep"> / </span>
         <span className="na-count-total">{total}</span>
-        <span className="na-count-label"> capitals found</span>
+        <span className="na-count-label"> currencies found</span>
         <div className="na-progress-track">
           <div className="na-progress-fill" style={{ width: `${total ? (found.length / total) * 100 : 0}%` }} />
         </div>
@@ -228,9 +235,9 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
           <div>
             <strong>You got them all!</strong>
             <p>
-              Every capital named
-              {timerMode === 'countup'    ? ` in ${formatTime(elapsed)}` : ''}
-              {timerMode === 'countdown'  ? ` with ${formatTime(remaining)} remaining` : ''}
+              Every currency named
+              {timerMode === 'countup'   ? ` in ${formatTime(elapsed)}` : ''}
+              {timerMode === 'countdown' ? ` with ${formatTime(remaining)} remaining` : ''}
               !
             </p>
           </div>
@@ -245,7 +252,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder={!running ? 'Game paused' : 'Type a capital city…'}
+              placeholder={!running ? 'Game paused' : 'Type a currency name or code…'}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
@@ -265,13 +272,15 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
             Missed <span className="guess-count" style={{ background: '#ef4444' }}>{total - found.length}</span>
           </h3>
           <ul className="guess-list">
-            {eligiblePairs
-              .filter(p => !foundSet.has(p.name))
-              .map(p => (
-                <li key={p.name} className="guess-item">
+            {allCurrencies
+              .filter(c => !foundSet.has(c.currencyName))
+              .map(c => (
+                <li key={c.currencyName} className="guess-item">
                   <span className="guess-swatch" style={{ background: '#ef4444' }} />
-                  <span className="guess-name">{p.capitals[0]}</span>
-                  <span className="guess-dist" style={{ color: '#888', fontSize: '0.78em' }}>&nbsp;({p.name})</span>
+                  <span className="guess-name">{c.currencyName}</span>
+                  <span className="guess-dist" style={{ color: '#888', fontSize: '0.78em' }}>
+                    &nbsp;({c.code}) · {c.countries.length} {c.countries.length === 1 ? 'country' : 'countries'}
+                  </span>
                 </li>
               ))}
           </ul>
@@ -283,11 +292,13 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
         <div className="guesses-section">
           <h3 className="guesses-title">Found <span className="guess-count">{found.length}</span></h3>
           <ul className="guess-list">
-            {[...found].reverse().map(f => (
-              <li key={f.name} className="guess-item">
+            {[...found].reverse().map(c => (
+              <li key={c.currencyName} className="guess-item">
                 <span className="guess-swatch" style={{ background: '#39ff14' }} />
-                <span className="guess-name">{f.capital}</span>
-                <span className="guess-dist" style={{ color: '#888', fontSize: '0.78em' }}>&nbsp;({f.name})</span>
+                <span className="guess-name">{c.currencyName}</span>
+                <span className="guess-dist" style={{ color: '#888', fontSize: '0.78em' }}>
+                  &nbsp;({c.code}) · {c.countries.length} {c.countries.length === 1 ? 'country' : 'countries'}
+                </span>
               </li>
             ))}
           </ul>

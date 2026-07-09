@@ -45,6 +45,7 @@ export const COUNTRY_LANGUAGES = {
   'Cuba':                              ['Spanish'],
   'Cyprus':                            ['Greek', 'Turkish'],
   'Czechia':                           ['Czech'],
+  'Congo':                             ['French', 'Lingala', 'Kituba'],
   'Democratic Republic of Congo':      ['French', 'Lingala', 'Swahili'],
   'Denmark':                           ['Danish'],
   'Djibouti':                          ['Arabic', 'French', 'Somali'],

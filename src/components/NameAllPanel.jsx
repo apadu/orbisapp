@@ -196,7 +196,6 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
           <div className="na-timer-picker">
             <span className="na-timer-label">🌍 World</span>
             <button className="na-timer-opt" onClick={() => startTimer('countdown')}>⏳ 15 min countdown</button>
-            <button className="na-timer-opt" onClick={() => startTimer('countup')}>⏱ Count up</button>
           </div>
 
           {/* Continent speedrun options */}
@@ -292,21 +291,22 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       )}
 
       {/* Input */}
-      {!allFound && !expired && !gameOver && (
+      {timerMode && !allFound && !expired && !gameOver && (
         <div className="input-wrap">
           <div className={`input-row ${flash ? `flash-${flash}` : ''}`}>
             <input
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder={isSpeedrun ? `Type a ${subMode} country…` : 'Type a country name…'}
+              placeholder={!running ? 'Game paused' : isSpeedrun ? `Type a ${subMode} country…` : 'Type a country name…'}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
               autoComplete="off"
               spellCheck={false}
+              disabled={!running}
             />
-            <button className="guess-btn" onClick={() => tryGuess(input)}>Go</button>
+            <button className="guess-btn" onClick={() => tryGuess(input)} disabled={!running}>Go</button>
           </div>
         </div>
       )}
@@ -345,7 +345,10 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
 
       {/* Footer */}
       <div className="panel-footer">
-        <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
+        {!timerMode
+          ? <button className="new-game-btn na-start-default" onClick={() => startTimer('countup')}>▶ Start</button>
+          : <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
+        }
       </div>
     </>
   )

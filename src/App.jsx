@@ -17,10 +17,17 @@ import AreaPanel from './components/AreaPanel'
 import CurrencyPanel from './components/CurrencyPanel'
 import LanguagePanel from './components/LanguagePanel'
 import NameAllCapitalsPanel from './components/NameAllCapitalsPanel'
+import NameAllCurrenciesPanel from './components/NameAllCurrenciesPanel'
+import NameAllLanguagesPanel from './components/NameAllLanguagesPanel'
+import NameAllMountainsPanel from './components/NameAllMountainsPanel'
+import NameAllSeasPanel from './components/NameAllSeasPanel'
+import MountainGlobe from './components/MountainGlobe'
+import NameAllSeaGlobe from './components/NameAllSeaGlobe'
 import { getDistanceInfo, computeAdjacency } from './utils/geoUtils'
 import { geoDistance, geoCentroid, geoContains, geoBounds } from 'd3-geo'
 import { union } from '@turf/union'
 import { featureCollection } from '@turf/helpers'
+import { MOUNTAIN_RANGES } from './utils/mountainRanges'
 import { CAPITALS } from './utils/capitals'
 import { COUNTRY_INFO } from './utils/countryInfo'
 import { pickDailyCountry, todayLabel } from './utils/daily'
@@ -98,6 +105,33 @@ export default function App() {
   const [loading,    setLoading]    = useState(true)
   const [error,      setError]      = useState(null)
 
+  // ── Refocus last input after globe interaction ───────────────────────────
+  // Tracks the most recently focused <input> and restores focus on mouseup
+  // when the click didn't land on an interactive element (e.g. spinning the globe).
+  useEffect(() => {
+    let lastInput = null
+    const onFocus = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        lastInput = e.target
+      }
+    }
+    const onMouseUp = () => {
+      if (!lastInput) return
+      setTimeout(() => {
+        const tag = document.activeElement?.tagName?.toLowerCase()
+        if (!['input', 'textarea', 'button', 'select', 'a'].includes(tag)) {
+          lastInput.focus()
+        }
+      }, 80)
+    }
+    window.addEventListener('focus', onFocus, true)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('focus', onFocus, true)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
   // ── Theme ────────────────────────────────────────────────────────────────
   const [lightMode, setLightMode] = useState(() => localStorage.getItem('orbis-theme') === 'light')
 
@@ -163,10 +197,14 @@ export default function App() {
   // ── Locate It state ─────────────────────────────────────────────────────
   const [locateCurrent,  setLocateCurrent]  = useState(null)
   const [locateGuessed,  setLocateGuessed]  = useState(false)
-  const [locateResult,   setLocateResult]   = useState(null)  // { km, pts }
+  const [locateResult,   setLocateResult]   = useState(null)  // { km, pts, isHit }
   const [locateHistory,  setLocateHistory]  = useState([])
   const [locateScore,    setLocateScore]    = useState(0)
   const [locateMarker,   setLocateMarker]   = useState(null)  // { lon, lat }
+  const [locateMode,     setLocateMode]     = useState(null)  // null | 'classic' | 'sprint' | 'sudden'
+  const [locateUsedSet,  setLocateUsedSet]  = useState(() => new Set())
+  const [locateGameOver, setLocateGameOver] = useState(false)
+  const [locateExpired,  setLocateExpired]  = useState(false) // sprint time up
 
   // ── Globe controls ───────────────────────────────────────────────────────
   const [globeSpin,      setGlobeSpin]      = useState(true)
@@ -180,6 +218,23 @@ export default function App() {
   const [capsFound,      setCapsFound]      = useState([]) // [{name, capital, feature}]
   const [capsAllMissed,  setCapsAllMissed]  = useState([]) // features[]
 
+  // ── Name All Currencies state ────────────────────────────────────────────
+  const [currenciesFound,  setCurrenciesFound]  = useState([]) // [{currencyName, code, countries:[{name,feature}]}]
+  const [currenciesMissed, setCurrenciesMissed] = useState([]) // features[]
+
+  // ── Name All Languages state ─────────────────────────────────────────────
+  const [languagesFound,  setLanguagesFound]  = useState([]) // [{language, countries:[{name,feature}]}]
+  const [languagesMissed, setLanguagesMissed] = useState([]) // features[]
+
+  // ── Mountain Ranges state ────────────────────────────────────────────────
+  const mountains = MOUNTAIN_RANGES.features                   // static — no fetch needed
+  const [mountainsFound,   setMountainsFound]   = useState([]) // found features
+  const [mountainsMissed,  setMountainsMissed]  = useState([]) // missed features
+
+  // ── Name All Seas state ──────────────────────────────────────────────────
+  const [seasAllFound,  setSeasAllFound]  = useState([]) // found sea features
+  const [seasAllMissed, setSeasAllMissed] = useState([]) // missed sea features
+
   // ── Learn mode state ─────────────────────────────────────────────────────
   const [learnSelected, setLearnSelected] = useState(null)   // feature
   const [learnHistory,  setLearnHistory]  = useState([])     // [name, ...]
@@ -191,6 +246,7 @@ export default function App() {
   const [missingHidden,      setMissingHidden]      = useState(new Set())
   const [missingMissedNames, setMissingMissedNames] = useState([])
   const [missingFound,       setMissingFound]       = useState([])
+  const [missingComplete,    setMissingComplete]    = useState(false)
 
   // ── Seas Quiz state ──────────────────────────────────────────────────────
   const [seas,        setSeas]        = useState([])
@@ -607,6 +663,10 @@ export default function App() {
       setLocateHistory([])
       setLocateScore(0)
       setLocateMarker(null)
+      setLocateMode(null)
+      setLocateUsedSet(new Set())
+      setLocateGameOver(false)
+      setLocateExpired(false)
     }
     if (m === 'flag') {
       setFlagCurrent(null)
@@ -629,6 +689,22 @@ export default function App() {
     if (m !== 'name-all-caps') {
       setCapsFound([])
       setCapsAllMissed([])
+    }
+    if (m !== 'name-all-currencies') {
+      setCurrenciesFound([])
+      setCurrenciesMissed([])
+    }
+    if (m !== 'name-all-languages') {
+      setLanguagesFound([])
+      setLanguagesMissed([])
+    }
+    if (m !== 'mountains') {
+      setMountainsFound([])
+      setMountainsMissed([])
+    }
+    if (m !== 'name-all-seas') {
+      setSeasAllFound([])
+      setSeasAllMissed([])
     }
     if (m !== 'learn') {
       setLearnSelected(null)
@@ -792,80 +868,113 @@ export default function App() {
     'Barbados', 'Antigua and Barbuda', 'Trinidad and Tobago',
     'Luxembourg', 'Andorra', 'Monaco', 'San Marino', 'Vatican', 'Liechtenstein',
     'Singapore', 'Timor-Leste', 'Bahrain', 'Brunei',
+    'Gambia', 'Gambia, The',
   ])
 
-  const pickLocateCountry = useCallback((exclude) => {
-    const pool = gameCountries.filter(f => f !== exclude && !LOCATE_EXCLUDE.has(f.properties.NAME))
+  const pickLocateCountry = useCallback((usedSet = new Set()) => {
+    const eligible = gameCountries.filter(f => !LOCATE_EXCLUDE.has(f.properties.NAME) && !usedSet.has(f.properties.NAME))
+    // If all countries used, start a new cycle
+    const pool = eligible.length > 0 ? eligible : gameCountries.filter(f => !LOCATE_EXCLUDE.has(f.properties.NAME))
     return pool[Math.floor(Math.random() * pool.length)] ?? gameCountries[0]
   }, [gameCountries])
 
   const handleLocateClick = useCallback((lon, lat) => {
-    if (locateGuessed || !locateCurrent) return
-    let km = 0
-    const name = locateCurrent.properties.NAME
+    if (locateGuessed || !locateCurrent || locateGameOver || locateExpired) return
     const PX_TO_DEG = (180 / 2048) * 1.8
 
-    // Check fixed-ellipse center first (Fiji, Kiribati, Micronesia, etc.)
-    let isHit = false
-    const fe = FIXED_ELLIPSE_CENTERS[name]
-    if (fe) {
-      isHit = Math.abs(lon - fe.lon) < fe.rx * PX_TO_DEG &&
-              Math.abs(lat - fe.lat) < fe.ry * PX_TO_DEG
+    // ── Identify which country was actually clicked (same 4-step logic as Learn mode) ──
+    // Step 1: fixed-ellipse countries (Fiji, Kiribati, Micronesia, etc.)
+    let clicked = countries.find(f => {
+      const fe = FIXED_ELLIPSE_CENTERS[f.properties.NAME]
+      if (!fe) return false
+      return Math.abs(lon - fe.lon) < fe.rx * PX_TO_DEG &&
+             Math.abs(lat - fe.lat) < fe.ry * PX_TO_DEG
+    })
+    // Step 2: hull countries (Bahamas, Solomon Is., etc.) — padded bbox
+    if (!clicked) {
+      clicked = countries.find(f => {
+        if (!HULL_COUNTRY_NAMES.has(f.properties.NAME)) return false
+        try {
+          const [[w, s], [e, n]] = geoBounds(f)
+          const p = 3.5
+          return lon >= w - p && lon <= e + p && lat >= s - p && lat <= n + p
+        } catch { return false }
+      })
+    }
+    // Step 3: exact polygon containment
+    if (!clicked) clicked = countries.find(f => geoContains(f, [lon, lat]))
+    // Step 4: small country padded bbox fallback
+    if (!clicked) {
+      clicked = countries.find(f => {
+        try {
+          const [[w, s], [e, n]] = geoBounds(f)
+          if (e - w >= 12 || n - s >= 12) return false
+          const p = 3.5
+          return lon >= w - p && lon <= e + p && lat >= s - p && lat <= n + p
+        } catch { return false }
+      })
     }
 
-    // Exact polygon containment
-    if (!isHit) isHit = geoContains(locateCurrent, [lon, lat])
-
-    // Padded bounding-box fallback for small/hull countries
-    if (!isHit) {
-      try {
-        const [[minLon, minLat], [maxLon, maxLat]] = geoBounds(locateCurrent)
-        const w = maxLon - minLon
-        const h = maxLat - minLat
-        if (w < 30 && h < 30) {
-          const pad = 3.5
-          isHit = lon >= minLon - pad && lon <= maxLon + pad &&
-                  lat >= minLat - pad && lat <= maxLat + pad
-        }
-      } catch {}
-    }
-    if (!isHit) {
-      const centroid = geoCentroid(locateCurrent)
-      km = Math.round(geoDistance([lon, lat], centroid) * 6371)
-    }
+    // ── Compare clicked country to target ──────────────────────────────────
+    const isHit = clicked?.properties?.NAME === locateCurrent.properties.NAME
+    const km = isHit ? 0 : Math.round(geoDistance([lon, lat], geoCentroid(locateCurrent)) * 6371)
     const pts = Math.max(10, Math.round(1000 * Math.exp(-km / 2000)))
+
     setLocateMarker({ lon, lat })
-    setLocateResult({ km, pts })
+    setLocateResult({ km, pts, isHit })
     setLocateGuessed(true)
     setLocateScore(s => s + pts)
-    setLocateHistory(h => [...h, { name: locateCurrent.properties.NAME, km, pts }])
+    setLocateHistory(h => [...h, { name: locateCurrent.properties.NAME, km, pts, isHit }])
     setProfile(recordLocateRound(pts))
-  }, [locateGuessed, locateCurrent])
+
+    // Sudden death: score < 950 → game over after a brief pause to show the result
+    if (locateMode === 'sudden' && pts < 950) {
+      setTimeout(() => setLocateGameOver(true), 1200)
+    }
+  }, [locateGuessed, locateCurrent, locateGameOver, locateExpired, locateMode, countries])
 
   const handleLocateNext = useCallback(() => {
-    const next = pickLocateCountry(locateCurrent)
+    const newUsed = new Set(locateUsedSet)
+    if (locateCurrent) newUsed.add(locateCurrent.properties.NAME)
+    const next = pickLocateCountry(newUsed)
+    setLocateUsedSet(newUsed)
     setLocateCurrent(next)
     setLocateGuessed(false)
     setLocateResult(null)
     setLocateMarker(null)
-  }, [locateCurrent, pickLocateCountry])
+  }, [locateCurrent, locateUsedSet, pickLocateCountry])
 
-  const handleLocateNewGame = useCallback(() => {
-    const first = pickLocateCountry(null)
+  const handleLocateNewGame = useCallback((mode = null) => {
+    setLocateMode(mode)
+    setLocateGameOver(false)
+    setLocateExpired(false)
+    setLocateHistory([])
+    setLocateScore(0)
+    setLocateUsedSet(new Set())
+    if (mode === null) {
+      // Return to mode selection
+      setLocateCurrent(null)
+      setLocateGuessed(false)
+      setLocateResult(null)
+      setLocateMarker(null)
+      return
+    }
+    const first = pickLocateCountry(new Set())
     setLocateCurrent(first)
     setLocateGuessed(false)
     setLocateResult(null)
-    setLocateHistory([])
-    setLocateScore(0)
     setLocateMarker(null)
   }, [pickLocateCountry])
 
-  // Start locate game when switching to locate mode
+  // Auto-advance: sprint always, sudden death only on success (pts ≥ 950)
   useEffect(() => {
-    if (mode === 'locate' && gameCountries.length > 0 && !locateCurrent) {
-      handleLocateNewGame()
-    }
-  }, [mode, gameCountries, locateCurrent, handleLocateNewGame])
+    if (!locateGuessed || locateGameOver || locateExpired) return
+    const isSprint = locateMode === 'sprint'
+    const isSuddenSuccess = locateMode === 'sudden' && locateResult?.pts >= 950
+    if (!isSprint && !isSuddenSuccess) return
+    const t = setTimeout(handleLocateNext, 1200)
+    return () => clearTimeout(t)
+  }, [locateGuessed, locateMode, locateGameOver, locateExpired, locateResult, handleLocateNext])
 
   // ── Missed features for end-states (show red on globe) ──────────────────
   const missingMissedFeatures  = missingMissedNames.map(n => countries.find(f => f.properties.NAME === n)).filter(Boolean)
@@ -877,7 +986,15 @@ export default function App() {
     return f ? { name, color: '#39ff14', feature: f } : null
   }).filter(Boolean)
 
-  const globeGuesses = mode === 'name-all-caps'
+  const globeGuesses = mode === 'name-all-currencies'
+    ? currenciesFound.flatMap(c => c.countries.map(({ name, feature }) => ({ name, color: '#39ff14', feature })))
+    : mode === 'name-all-languages'
+    ? (() => {
+        const seen = new Set()
+        return languagesFound.flatMap(l => l.countries.map(({ name, feature }) => ({ name, color: '#39ff14', feature })))
+          .filter(g => { if (seen.has(g.name)) return false; seen.add(g.name); return true })
+      })()
+    : mode === 'name-all-caps'
     ? capsFound.map(f => ({ name: f.name, color: '#39ff14', feature: f.feature }))
     : mode === 'spotlight'
     ? spotlightFoundNames.map(n => {
@@ -988,12 +1105,16 @@ export default function App() {
             { id: 'mystery',        icon: '🔍', label: 'Mystery Country' },
             { id: 'locate',         icon: '📍', label: 'Pinpoint Country' },
             { id: 'missing',        icon: '🗺️', label: 'Blind Map' },
-            { section: 'Name' },
-            { id: 'name-all',       icon: '🌍', label: 'All Countries' },
-            { id: 'name-all-caps',  icon: '🏙️', label: 'All Capitals' },
-            { id: 'seas',           icon: '🌊', label: 'Seas' },
+            { section: 'Name All' },
+            { id: 'name-all',              icon: '🌍', label: 'Countries' },
+            { id: 'name-all-caps',         icon: '🏙️', label: 'Capitals' },
+            { id: 'name-all-currencies',   icon: '💰', label: 'Currencies' },
+            { id: 'name-all-languages',    icon: '🗣️', label: 'Languages' },
+            { id: 'mountains',             icon: '⛰️', label: 'Mountain Ranges' },
+            { id: 'name-all-seas',         icon: '🌊', label: 'Seas' },
             { section: 'Quiz' },
-            { id: 'capital',        icon: '🏛️', label: 'Capitals' },
+            { id: 'capital',        icon: '🏛️', label: 'Capitals Quiz' },
+            { id: 'seas',           icon: '🌊', label: 'Seas' },
             { id: 'cap-to-country', icon: '🗺️', label: 'Cap to Country' },
             { id: 'flag',           icon: '🚩', label: 'Flags' },
             { id: 'border-chain',   icon: '🔗', label: 'Borders' },
@@ -1028,6 +1149,20 @@ export default function App() {
               highlightedSea={seaCurrent}
               status={seaStatus}
             />
+          ) : mode === 'mountains' ? (
+            <MountainGlobe
+              countries={countries}
+              ranges={mountains}
+              foundNames={new Set(mountainsFound.map(f => f.properties.NAME))}
+              missedNames={new Set(mountainsMissed.map(f => f.properties.NAME))}
+            />
+          ) : mode === 'name-all-seas' ? (
+            <NameAllSeaGlobe
+              countries={countries}
+              seas={seas}
+              foundNames={new Set(seasAllFound.map(f => f.properties.NAME))}
+              missedNames={new Set(seasAllMissed.map(f => f.properties.NAME))}
+            />
           ) : (
             <>
               <Globe
@@ -1036,7 +1171,7 @@ export default function App() {
                 mystery={mode === 'mystery' ? mystery : null}
                 gameWon={mode === 'mystery' ? gameWon : false}
                 highlighted={globeHighlighted}
-                missed={mode === 'name-all' ? nameAllMissed : mode === 'name-all-caps' ? capsAllMissed : mode === 'missing' ? missingMissedFeatures : mode === 'spotlight' ? spotlightMissedFeatures : []}
+                missed={mode === 'name-all' ? nameAllMissed : mode === 'name-all-caps' ? capsAllMissed : mode === 'name-all-currencies' ? currenciesMissed : mode === 'name-all-languages' ? languagesMissed : mode === 'missing' ? missingMissedFeatures : mode === 'spotlight' ? spotlightMissedFeatures : []}
                 hiddenCountries={mode === 'missing' ? missingHidden : undefined}
                 soloMode={mode === 'spotlight'}
                 onGlobeClick={mode === 'locate' ? handleLocateClick : mode === 'learn' ? handleLearnClick : null}
@@ -1045,7 +1180,7 @@ export default function App() {
                 lightMode={lightMode}
                 flyToFeature={flyToFeature}
               />
-              <Confetti active={mode === 'mystery' && gameWon} />
+              <Confetti active={(mode === 'mystery' && gameWon) || missingComplete} />
               <button
                 className={`spin-toggle ${globeSpin ? 'spin-on' : 'spin-off'}`}
                 onClick={() => setGlobeSpin(s => !s)}
@@ -1103,6 +1238,38 @@ export default function App() {
             onFoundChange={setCapsFound}
             onMissedChange={setCapsAllMissed}
             onNewGame={() => { setCapsFound([]); setCapsAllMissed([]) }}
+          />
+        )}
+        {mode === 'name-all-currencies' && (
+          <NameAllCurrenciesPanel
+            gameCountries={gameCountries}
+            onFoundChange={setCurrenciesFound}
+            onMissedChange={setCurrenciesMissed}
+            onNewGame={() => { setCurrenciesFound([]); setCurrenciesMissed([]) }}
+          />
+        )}
+        {mode === 'name-all-languages' && (
+          <NameAllLanguagesPanel
+            gameCountries={gameCountries}
+            onFoundChange={setLanguagesFound}
+            onMissedChange={setLanguagesMissed}
+            onNewGame={() => { setLanguagesFound([]); setLanguagesMissed([]) }}
+          />
+        )}
+        {mode === 'mountains' && (
+          <NameAllMountainsPanel
+            ranges={mountains}
+            onFoundChange={setMountainsFound}
+            onMissedChange={setMountainsMissed}
+            onNewGame={() => { setMountainsFound([]); setMountainsMissed([]) }}
+          />
+        )}
+        {mode === 'name-all-seas' && (
+          <NameAllSeasPanel
+            seas={seas}
+            onFoundChange={setSeasAllFound}
+            onMissedChange={setSeasAllMissed}
+            onNewGame={() => { setSeasAllFound([]); setSeasAllMissed([]) }}
           />
         )}
         {mode === 'cap-to-country' && (
@@ -1175,7 +1342,13 @@ export default function App() {
             clickResult={locateResult}
             totalScore={locateScore}
             history={locateHistory}
+            gameMode={locateMode}
+            gameOver={locateGameOver}
+            onModeSelect={(m) => handleLocateNewGame(m)}
             onNext={handleLocateNext}
+            onNewGame={() => handleLocateNewGame(null)}
+            onTimeout={() => setLocateGameOver(true)}
+            onSprintExpired={() => setLocateExpired(true)}
           />
         )}
         {mode === 'seas' && (
@@ -1211,6 +1384,7 @@ export default function App() {
             onHiddenChange={setMissingHidden}
             onMissedChange={setMissingMissedNames}
             onFoundChange={setMissingFound}
+            onComplete={() => { setMissingComplete(true); setTimeout(() => setMissingComplete(false), 4000) }}
           />
         )}
       </div>

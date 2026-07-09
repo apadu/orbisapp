@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { normalizeInput, resolveAlias } from '../utils/aliases'
+import { resolveAlias } from '../utils/aliases'
 
 const TOTAL = 20
 const SECS  = 240   // 4 minutes
+const PB_KEY = 'orbis_blind_map_pb'
 
 // Too small to identify by shape on the globe
 const EXCLUDED = new Set([
@@ -16,20 +17,29 @@ const EXCLUDED = new Set([
 
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
-export default function MissingPanel({ gameCountries, countryInfo, onHiddenChange, onMissedChange, onFoundChange }) {
-  const [phase,    setPhase]    = useState('idle')   // idle | playing | done
-  const [target,   setTarget]   = useState([])       // 20 country names
-  const [found,    setFound]    = useState([])       // names found so far (in order)
-  const [timeLeft, setTimeLeft] = useState(SECS)
-  const [input,    setInput]    = useState('')
-  const [flash,    setFlash]    = useState(null)     // 'correct' | 'wrong' | null
+function loadPB() {
+  try { return JSON.parse(localStorage.getItem(PB_KEY)) ?? null } catch { return null }
+}
+function savePB(secs) {
+  try { localStorage.setItem(PB_KEY, JSON.stringify(secs)) } catch {}
+}
+
+export default function MissingPanel({ gameCountries, countryInfo, onHiddenChange, onMissedChange, onFoundChange, onComplete }) {
+  const [phase,      setPhase]      = useState('idle')
+  const [target,     setTarget]     = useState([])
+  const [found,      setFound]      = useState([])
+  const [timeLeft,   setTimeLeft]   = useState(SECS)
+  const [input,      setInput]      = useState('')
+  const [flash,      setFlash]      = useState(null)
+  const [pb,         setPb]         = useState(loadPB)       // seconds (lower = better), null if none
+  const [finishTime, setFinishTime] = useState(null)         // seconds used this run
+  const [isNewPB,    setIsNewPB]    = useState(false)
 
   const inputRef  = useRef(null)
   const timerRef  = useRef(null)
   const targetRef = useRef([])
   const foundRef  = useRef([])
 
-  // keep refs in sync with state so callbacks never go stale
   targetRef.current = target
   foundRef.current  = found
 
@@ -46,21 +56,34 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
     }
   }, [phase, found, target, onHiddenChange, onFoundChange])
 
-  // ── End game (timer expired or all found) ─────────────────────────────────
-  const endGame = useCallback(() => {
+  // ── End game ─────────────────────────────────────────────────────────────
+  const endGame = useCallback((completedAll = false, timeUsed = null) => {
     clearInterval(timerRef.current)
     setPhase('done')
     const missedNames = targetRef.current.filter(n => !foundRef.current.includes(n))
     onMissedChange(missedNames)
     onHiddenChange(new Set())
-  }, [onMissedChange, onHiddenChange])
+
+    if (completedAll && timeUsed !== null) {
+      setFinishTime(timeUsed)
+      const prevPB = loadPB()
+      if (prevPB === null || timeUsed < prevPB) {
+        savePB(timeUsed)
+        setPb(timeUsed)
+        setIsNewPB(true)
+      } else {
+        setIsNewPB(false)
+      }
+      onComplete?.()
+    }
+  }, [onMissedChange, onHiddenChange, onComplete])
 
   // ── Countdown timer ───────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== 'playing') return
     timerRef.current = setInterval(() => {
       setTimeLeft(t => {
-        if (t <= 1) { endGame(); return 0 }
+        if (t <= 1) { endGame(false, null); return 0 }
         return t - 1
       })
     }, 1000)
@@ -83,17 +106,19 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
     setTimeLeft(SECS)
     setInput('')
     setFlash(null)
+    setFinishTime(null)
+    setIsNewPB(false)
     setPhase('playing')
     setTimeout(() => inputRef.current?.focus(), 50)
   }
 
-  // ── Guess checking (runs on every keystroke, like NameAllPanel) ───────────
+  // ── Guess checking ────────────────────────────────────────────────────────
   const tryGuess = (raw) => {
     if (phase !== 'playing') return
     const resolved = resolveAlias(raw, targetRef.current)
     if (!resolved) return
     const curr = foundRef.current
-    if (curr.includes(resolved)) return   // already found
+    if (curr.includes(resolved)) return
 
     const next = [...curr, resolved]
     foundRef.current = next
@@ -101,7 +126,15 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
     setInput('')
     setFlash('correct')
     setTimeout(() => setFlash(null), 500)
-    if (next.length === targetRef.current.length) endGame()
+
+    if (next.length === targetRef.current.length) {
+      // All found — capture time used before clearing timer
+      setTimeLeft(t => {
+        const used = SECS - t
+        endGame(true, used)
+        return t
+      })
+    }
   }
 
   const handleInputChange = e => {
@@ -111,10 +144,9 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
   }
 
   const [confirmGiveUp, setConfirmGiveUp] = useState(false)
-
-  const handleGiveUp = () => setConfirmGiveUp(true)
-  const cancelGiveUp = () => { setConfirmGiveUp(false); inputRef.current?.focus() }
-  const confirmGiveUpFn = () => { setConfirmGiveUp(false); endGame() }
+  const handleGiveUp    = () => setConfirmGiveUp(true)
+  const cancelGiveUp    = () => { setConfirmGiveUp(false); inputRef.current?.focus() }
+  const confirmGiveUpFn = () => { setConfirmGiveUp(false); endGame(false, null) }
 
   const urgent = timeLeft <= 30 && phase === 'playing'
 
@@ -134,6 +166,9 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
             <li>🔴 Missed ones revealed in red at the end</li>
             <li>🔹 Really small countries are opted out</li>
           </ul>
+          {pb !== null && (
+            <div className="missing-pb-banner">🏆 Personal best: {fmt(pb)}</div>
+          )}
           <button
             className="missing-start-btn"
             onClick={startGame}
@@ -193,10 +228,18 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
       {/* Done banner */}
       {phase === 'done' && (
         <div className="missing-done-banner">
-          {found.length === TOTAL
-            ? <span className="missing-perfect">🎉 Perfect! All 20 found!</span>
-            : <span className="missing-score">{found.length === 0 ? 'No countries found.' : `Found ${found.length} of 20`}</span>
-          }
+          {found.length === TOTAL ? (
+            <div className="missing-perfect-wrap">
+              <span className="missing-perfect">🎉 Perfect! All 20 found!</span>
+              <span className="missing-finish-time">Time: {fmt(finishTime)}</span>
+              {isNewPB
+                ? <span className="missing-new-pb">🏆 New personal best!</span>
+                : pb !== null && <span className="missing-pb-ref">PB: {fmt(pb)}</span>
+              }
+            </div>
+          ) : (
+            <span className="missing-score">{found.length === 0 ? 'No countries found.' : `Found ${found.length} of 20`}</span>
+          )}
           <button className="missing-start-btn" onClick={startGame}>Play Again</button>
         </div>
       )}

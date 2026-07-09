@@ -304,6 +304,13 @@ html, body, #root { height: 100%; background: var(--bg); color: var(--text); fon
   transition: background 0.15s, border-color 0.15s;
 }
 .na-timer-opt:hover { background: var(--surface3, #1e1630); border-color: var(--accent); }
+.na-start-default {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.na-start-default:hover { opacity: 0.88; background: var(--accent); }
 
 .na-timer-bar {
   display: flex;
@@ -456,6 +463,139 @@ html, body, #root { height: 100%; background: var(--bg); color: var(--text); fon
 .locate-next-wrap {
   padding: 12px 18px;
   border-bottom: 1px solid var(--border);
+}
+.locate-newgame-link {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.locate-newgame-link:hover { color: var(--text); }
+
+/* Mode picker */
+.locate-mode-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+}
+.locate-mode-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--panel-bg, var(--bg));
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text);
+}
+.locate-mode-card:hover {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb, 0,200,150), 0.07);
+}
+.locate-mode-card strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.locate-mode-card p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.locate-mode-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+/* Timer bar */
+.locate-timer-bar {
+  position: relative;
+  height: 36px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.locate-timer-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--accent);
+  opacity: 0.35;
+  transition: width 0.9s linear;
+}
+.locate-timer-danger .locate-timer-fill {
+  background: #ef4444;
+  opacity: 0.5;
+}
+.locate-timer-text {
+  position: relative;
+  z-index: 1;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.locate-timer-danger .locate-timer-text { color: #ef4444; }
+
+/* Sprint "advancing" message */
+.locate-sprint-advancing {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* Game over / time's up screen */
+.locate-gameover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 18px 20px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.locate-gameover-icon { font-size: 2.4rem; }
+.locate-gameover-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.locate-gameover-country {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+.locate-gameover-stats {
+  display: flex;
+  gap: 24px;
+  margin: 8px 0;
+}
+.locate-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.locate-stat-num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+.locate-stat-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 /* ── Cap-to-Country ─────────────────────────────────────────────────────────── */
@@ -1838,6 +1978,33 @@ html, body, #root { height: 100%; background: var(--bg); color: var(--text); fon
 }
 .missing-perfect { font-size: 1rem; font-weight: 700; color: var(--green); }
 .missing-score   { font-size: 0.95rem; font-weight: 600; color: var(--text-dim); }
+.missing-perfect-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+.missing-finish-time {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.missing-new-pb {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f59e0b;
+}
+.missing-pb-ref {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.missing-pb-banner {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-bottom: 0.75rem;
+}
 
 /* ── Found / Missed lists ── */
 .missing-list-block {

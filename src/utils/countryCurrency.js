@@ -44,6 +44,7 @@ export const COUNTRY_CURRENCY = {
   'Cuba':                              { name: 'Cuban Peso',             symbol: '$',  code: 'CUP' },
   'Cyprus':                            { name: 'Euro',                   symbol: '€',  code: 'EUR' },
   'Czechia':                           { name: 'Czech Koruna',           symbol: 'Kč', code: 'CZK' },
+  'Congo':                             { name: 'Central African CFA Franc', symbol: 'Fr', code: 'XAF' },
   'Democratic Republic of Congo':      { name: 'Congolese Franc',        symbol: 'Fr', code: 'CDF' },
   'Denmark':                           { name: 'Danish Krone',           symbol: 'kr', code: 'DKK' },
   'Djibouti':                          { name: 'Djiboutian Franc',       symbol: 'Fr', code: 'DJF' },
