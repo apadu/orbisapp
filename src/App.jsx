@@ -34,7 +34,7 @@ import ProfilePage from './components/ProfilePage'
 import HomePage from './components/HomePage'
 import Confetti from './components/Confetti'
 import './App.css'
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 const GEO_URL =
   'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson'
@@ -927,6 +927,7 @@ export default function App() {
   )
 
   return (
+    <>
     <div className="app-shell">
       {/* ── Top bar ── */}
       <header className="topbar">
@@ -1215,5 +1216,7 @@ export default function App() {
       </div>
     </div>
     </div>
+    <Analytics />
+    </>
   )
 }
