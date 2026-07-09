@@ -34,6 +34,7 @@ import ProfilePage from './components/ProfilePage'
 import HomePage from './components/HomePage'
 import Confetti from './components/Confetti'
 import './App.css'
+import { Analytics } from "@vercel/analytics/next"
 
 const GEO_URL =
   'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson'

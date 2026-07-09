@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@turf/union": "^7.1.0",
+    "@vercel/analytics": "^2.0.1",
+    "d3-geo": "^3.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "three": "^0.169.0",
-    "d3-geo": "^3.1.1",
-    "@turf/union": "^7.1.0"
+    "three": "^0.169.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.2",
