@@ -598,6 +598,47 @@ html, body, #root { height: 100%; background: var(--bg); color: var(--text); fon
   letter-spacing: 0.06em;
 }
 
+/* ── Neighbor Challenge ─────────────────────────────────────────────────────── */
+.neighbor-target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.neighbor-target-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.neighbor-target-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+}
+.neighbor-actions {
+  display: flex;
+  justify-content: center;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.neighbor-giveup-btn {
+  background: none;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  border-radius: 6px;
+  padding: 6px 18px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.neighbor-giveup-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
 /* ── Cap-to-Country ─────────────────────────────────────────────────────────── */
 .cap-prompt {
   display: flex;

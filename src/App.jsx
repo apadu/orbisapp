@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Globe, { FIXED_ELLIPSE_CENTERS, HULL_COUNTRY_NAMES } from './components/Globe'
 import HydroGlobe from './components/HydroGlobe'
 import GamePanel from './components/GamePanel'
@@ -21,9 +21,11 @@ import NameAllCurrenciesPanel from './components/NameAllCurrenciesPanel'
 import NameAllLanguagesPanel from './components/NameAllLanguagesPanel'
 import NameAllMountainsPanel from './components/NameAllMountainsPanel'
 import NameAllSeasPanel from './components/NameAllSeasPanel'
+import NeighborPanel from './components/NeighborPanel'
 import MountainGlobe from './components/MountainGlobe'
 import NameAllSeaGlobe from './components/NameAllSeaGlobe'
 import { getDistanceInfo, computeAdjacency } from './utils/geoUtils'
+import { resolveAlias } from './utils/aliases'
 import { geoDistance, geoCentroid, geoContains, geoBounds } from 'd3-geo'
 import { union } from '@turf/union'
 import { featureCollection } from '@turf/helpers'
@@ -234,6 +236,14 @@ export default function App() {
   // ── Name All Seas state ──────────────────────────────────────────────────
   const [seasAllFound,  setSeasAllFound]  = useState([]) // found sea features
   const [seasAllMissed, setSeasAllMissed] = useState([]) // missed sea features
+
+  // ── Neighbor Challenge state ─────────────────────────────────────────────
+  const [neighborTarget,  setNeighborTarget]  = useState(null)
+  const [neighborFound,   setNeighborFound]   = useState([])
+  const [neighborMissed,  setNeighborMissed]  = useState([])
+  const [neighborDone,    setNeighborDone]    = useState(false)
+  const [neighborScore,   setNeighborScore]   = useState(0)
+  const [neighborHistory, setNeighborHistory] = useState([])
 
   // ── Learn mode state ─────────────────────────────────────────────────────
   const [learnSelected, setLearnSelected] = useState(null)   // feature
@@ -706,6 +716,14 @@ export default function App() {
       setSeasAllFound([])
       setSeasAllMissed([])
     }
+    if (m !== 'neighbor') {
+      setNeighborTarget(null)
+      setNeighborFound([])
+      setNeighborMissed([])
+      setNeighborDone(false)
+      setNeighborScore(0)
+      setNeighborHistory([])
+    }
     if (m !== 'learn') {
       setLearnSelected(null)
       setLearnHistory([])
@@ -869,6 +887,7 @@ export default function App() {
     'Luxembourg', 'Andorra', 'Monaco', 'San Marino', 'Vatican', 'Liechtenstein',
     'Singapore', 'Timor-Leste', 'Bahrain', 'Brunei',
     'Gambia', 'Gambia, The',
+    'Grenada',
   ])
 
   const pickLocateCountry = useCallback((usedSet = new Set()) => {
@@ -918,7 +937,7 @@ export default function App() {
     // ── Compare clicked country to target ──────────────────────────────────
     const isHit = clicked?.properties?.NAME === locateCurrent.properties.NAME
     const km = isHit ? 0 : Math.round(geoDistance([lon, lat], geoCentroid(locateCurrent)) * 6371)
-    const pts = Math.max(10, Math.round(1000 * Math.exp(-km / 2000)))
+    const pts = isHit ? 1000 : km < 500 ? Math.round(1000 * (1 - km / 500)) : 0
 
     setLocateMarker({ lon, lat })
     setLocateResult({ km, pts, isHit })
@@ -976,6 +995,76 @@ export default function App() {
     return () => clearTimeout(t)
   }, [locateGuessed, locateMode, locateGameOver, locateExpired, locateResult, handleLocateNext])
 
+  // ── Neighbor Challenge handlers ──────────────────────────────────────────
+  // Normalised name map: stripped → canonical, rebuilt when gameCountries loads
+  const countryNameMap = useMemo(() => {
+    const map = {}
+    for (const f of gameCountries) {
+      const n = f.properties.NAME
+      map[n.toLowerCase().replace(/[^a-z]/g, '')] = n
+    }
+    return map
+  }, [gameCountries])
+
+  const pickNeighborTarget = useCallback((exclude = null) => {
+    const pool = gameCountries.filter(f => {
+      if (f === exclude) return false
+      const nb = adjacency[f.properties.NAME]
+      return nb && nb.size >= 1
+    })
+    return pool[Math.floor(Math.random() * pool.length)] ?? null
+  }, [gameCountries, adjacency])
+
+  const handleNeighborGuess = useCallback((raw) => {
+    if (!neighborTarget || neighborDone) return false
+    const neighborNames = [...(adjacency[neighborTarget.properties.NAME] ?? new Set())]
+    const canonical = resolveAlias(raw, neighborNames)
+    if (!canonical) return false
+    const neighbors = adjacency[neighborTarget.properties.NAME] ?? new Set()
+    if (!neighbors.has(canonical) || neighborFound.includes(canonical)) return false
+
+    const newFound = [...neighborFound, canonical]
+    setNeighborFound(newFound)
+    setNeighborScore(s => s + 100)
+
+    if (newFound.length === neighbors.size) {
+      setNeighborDone(true)
+      setNeighborHistory(h => [...h, { target: neighborTarget.properties.NAME, found: newFound.length, total: neighbors.size }])
+    }
+    return true
+  }, [neighborTarget, neighborDone, neighborFound, adjacency, countryNameMap])
+
+  const handleNeighborGiveUp = useCallback(() => {
+    if (!neighborTarget || neighborDone) return
+    const neighbors = adjacency[neighborTarget.properties.NAME] ?? new Set()
+    const missed = [...neighbors].filter(n => !neighborFound.includes(n))
+    setNeighborMissed(missed)
+    setNeighborDone(true)
+    setNeighborHistory(h => [...h, { target: neighborTarget.properties.NAME, found: neighborFound.length, total: neighbors.size }])
+  }, [neighborTarget, neighborDone, neighborFound, adjacency])
+
+  const handleNeighborNext = useCallback(() => {
+    const next = pickNeighborTarget(neighborTarget)
+    setNeighborTarget(next)
+    setNeighborFound([])
+    setNeighborMissed([])
+    setNeighborDone(false)
+  }, [neighborTarget, pickNeighborTarget])
+
+  // Auto-start neighbor game
+  useEffect(() => {
+    if (mode === 'neighbor' && gameCountries.length > 0 && Object.keys(adjacency).length > 0 && !neighborTarget) {
+      setNeighborTarget(pickNeighborTarget())
+    }
+  }, [mode, gameCountries, adjacency, neighborTarget, pickNeighborTarget])
+
+  // Fly to neighbor target when it changes
+  useEffect(() => {
+    if (mode === 'neighbor' && neighborTarget) {
+      setFlyToFeature({ ...neighborTarget, _ts: Date.now() })
+    }
+  }, [neighborTarget, mode])
+
   // ── Missed features for end-states (show red on globe) ──────────────────
   const missingMissedFeatures  = missingMissedNames.map(n => countries.find(f => f.properties.NAME === n)).filter(Boolean)
   const spotlightMissedFeatures = spotlightMissedNames.map(n => countries.find(f => f.properties.NAME === n)).filter(Boolean)
@@ -1021,6 +1110,11 @@ export default function App() {
             ]
           : mode === 'pop-order'
           ? popCountries.map(f => ({ name: f.properties.NAME, color: '#c77dff', feature: f }))
+          : mode === 'neighbor'
+          ? [
+              ...neighborFound.map(n => { const f = gameCountries.find(c => c.properties.NAME === n); return f ? { name: n, color: '#39ff14', feature: f } : null }).filter(Boolean),
+              ...neighborMissed.map(n => { const f = gameCountries.find(c => c.properties.NAME === n); return f ? { name: n, color: '#ef4444', feature: f } : null }).filter(Boolean),
+            ]
           : mode === 'area'
           ? areaPair.map((f, i) => ({ name: f.properties.NAME, color: i === 0 ? '#3b82f6' : '#f97316', feature: f }))
           : capHistory.map(h => ({
@@ -1032,6 +1126,7 @@ export default function App() {
   const globeHighlighted = mode === 'spotlight' ? spotlightCurrentFeature
     : mode === 'capital' ? capCurrent
     : mode === 'learn' ? learnSelected
+    : mode === 'neighbor' ? neighborTarget
     : mode === 'flag' && flagAnswered ? gameCountries.find(f => f.properties.NAME === flagCurrent?.name) ?? null
     : null
 
@@ -1104,6 +1199,7 @@ export default function App() {
             { section: 'Guess' },
             { id: 'mystery',        icon: '🔍', label: 'Mystery Country' },
             { id: 'locate',         icon: '📍', label: 'Pinpoint Country' },
+            { id: 'neighbor',       icon: '📌', label: 'Neighbors' },
             { id: 'missing',        icon: '🗺️', label: 'Blind Map' },
             { section: 'Name All' },
             { id: 'name-all',              icon: '🌍', label: 'Countries' },
@@ -1176,6 +1272,11 @@ export default function App() {
                 soloMode={mode === 'spotlight'}
                 onGlobeClick={mode === 'locate' ? handleLocateClick : mode === 'learn' ? handleLearnClick : null}
                 locateMarker={mode === 'locate' ? locateMarker : null}
+                locateCorrectMarker={
+                  mode === 'locate' && locateGuessed && locateResult && !locateResult.isHit && locateCurrent
+                    ? (([lon, lat]) => ({ lon, lat }))(geoCentroid(locateCurrent))
+                    : null
+                }
                 spinEnabled={globeSpin}
                 lightMode={lightMode}
                 flyToFeature={flyToFeature}
@@ -1349,6 +1450,20 @@ export default function App() {
             onNewGame={() => handleLocateNewGame(null)}
             onTimeout={() => setLocateGameOver(true)}
             onSprintExpired={() => setLocateExpired(true)}
+          />
+        )}
+        {mode === 'neighbor' && (
+          <NeighborPanel
+            target={neighborTarget}
+            neighbors={[...(adjacency[neighborTarget?.properties?.NAME] ?? new Set())]}
+            found={neighborFound}
+            missed={neighborMissed}
+            done={neighborDone}
+            score={neighborScore}
+            history={neighborHistory}
+            onGuess={handleNeighborGuess}
+            onGiveUp={handleNeighborGiveUp}
+            onNext={handleNeighborNext}
           />
         )}
         {mode === 'seas' && (

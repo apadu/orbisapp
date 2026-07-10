@@ -5,6 +5,7 @@ import { geoEquirectangular, geoPath, geoCentroid, geoBounds } from 'd3-geo'
 const CANVAS_W = 4096
 const CANVAS_H = 2048
 
+
 // Countries that get a semi-transparent white ellipse marker.
 // Includes accent variants since Natural Earth NAME field varies by version.
 // Countries that get a convex-hull territory blob instead of an ellipse
@@ -128,7 +129,7 @@ const PAD   = 6   // extra px padding around the bounding box
 const MIN_R = 8   // minimum radius
 
 // ─── Draw all countries + tiny-country markers onto an offscreen canvas ──────
-function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highlightedName, missedSet, locateMarker, hiddenSet, soloMode) {
+function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highlightedName, missedSet, locateMarker, hiddenSet, soloMode, locateCorrectMarker) {
   const ctx = canvas.getContext('2d')
   const proj = geoEquirectangular()
     .scale(CANVAS_W / (2 * Math.PI))
@@ -432,10 +433,50 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
       ctx.restore()
     }
   }
+
+  // ── Correct-location marker: green pin at target country centroid ─────────
+  if (locateCorrectMarker) {
+    const proj2 = geoEquirectangular()
+      .scale(CANVAS_W / (2 * Math.PI))
+      .translate([CANVAS_W / 2, CANVAS_H / 2])
+    const pt = proj2([locateCorrectMarker.lon, locateCorrectMarker.lat])
+    if (pt) {
+      const [mx, my] = pt
+      const r = 13
+      const stem = 32
+
+      ctx.save()
+      ctx.translate(mx, my)
+
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'
+      ctx.shadowBlur = 12
+      ctx.shadowOffsetX = 4
+      ctx.shadowOffsetY = 6
+
+      ctx.beginPath()
+      ctx.arc(0, -stem + r, r, Math.PI * 0.15, Math.PI * 0.85, true)
+      ctx.lineTo(0, 0)
+      ctx.closePath()
+      ctx.fillStyle = '#22c55e'
+      ctx.fill()
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 3
+      ctx.stroke()
+
+      ctx.shadowColor = 'transparent'
+
+      ctx.beginPath()
+      ctx.arc(0, -stem + r, r * 0.38, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'
+      ctx.fill()
+
+      ctx.restore()
+    }
+  }
 }
 
 // ─── Globe Component ─────────────────────────────────────────────────────────
-export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, spinEnabled = true, hiddenCountries, soloMode, lightMode, flyToFeature }) {
+export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, locateCorrectMarker, spinEnabled = true, hiddenCountries, soloMode, lightMode, flyToFeature }) {
   const mountRef  = useRef(null)
   const rendRef   = useRef(null)
   const sphereRef = useRef(null)
@@ -450,6 +491,7 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
   const raycaster  = useRef(new THREE.Raycaster())
   const spinRef    = useRef(spinEnabled)
   const flyTarget  = useRef(null) // { y, x } target rotation in radians
+  const camTargetZ = useRef(null) // smooth camera zoom target
 
   // ── Init Three.js scene ──────────────────────────────────────────────────
   useEffect(() => {
@@ -533,6 +575,14 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
       } else if (autoRotate.current && !drag.current.active && spinRef.current) {
         sphere.rotation.y += 0.0008
       }
+      // Smooth camera zoom
+      if (camTargetZ.current !== null) {
+        camera.position.z += (camTargetZ.current - camera.position.z) * 0.05
+        if (Math.abs(camera.position.z - camTargetZ.current) < 0.005) {
+          camera.position.z = camTargetZ.current
+          camTargetZ.current = null
+        }
+      }
       renderer.render(scene, camera)
     }
     animate()
@@ -565,9 +615,9 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     const guessMap = {}
     for (const g of guesses) guessMap[g.name] = g.color
     const missedSet = missed?.length ? new Set(missed.map(f => f.properties.NAME)) : null
-    redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, locateMarker, hiddenCountries, soloMode)
+    redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, locateMarker, hiddenCountries, soloMode, locateCorrectMarker)
     texRef.current.needsUpdate = true
-  }, [guesses, mystery, gameWon, countries, highlighted, missed, locateMarker, hiddenCountries, soloMode])
+  }, [guesses, mystery, gameWon, countries, highlighted, missed, locateMarker, locateCorrectMarker, hiddenCountries, soloMode])
 
   // ── Fly to feature when a guess is made ─────────────────────────────────
   useEffect(() => {
@@ -583,6 +633,22 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     clearTimeout(autoTimer.current)
     autoTimer.current = setTimeout(() => { autoRotate.current = true }, 6000)
   }, [flyToFeature])
+
+  // ── Zoom out + fly to correct country on a wrong locate guess ───────────
+  useEffect(() => {
+    if (!locateCorrectMarker) {
+      camTargetZ.current = 3.0  // zoom back in when cleared
+      return
+    }
+    flyTarget.current = {
+      y: -(Math.PI / 2) - locateCorrectMarker.lon * (Math.PI / 180),
+      x:  locateCorrectMarker.lat * (Math.PI / 180),
+    }
+    autoRotate.current = false
+    clearTimeout(autoTimer.current)
+    autoTimer.current = setTimeout(() => { autoRotate.current = true }, 6000)
+    camTargetZ.current = 3.7
+  }, [locateCorrectMarker])
 
   // ── Sync spinEnabled prop → ref ─────────────────────────────────────────
   useEffect(() => { spinRef.current = spinEnabled }, [spinEnabled])

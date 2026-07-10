@@ -3,6 +3,7 @@ export default function HomePage({ onEnter, onSelectMode }) {
     { section: 'Guess' },
     { id: 'mystery',        icon: '🔍', label: 'Mystery Country',   desc: 'Guess the hidden country from distance clues' },
     { id: 'locate',         icon: '📍', label: 'Pinpoint Country',  desc: 'Click the globe to place the named country' },
+    { id: 'neighbor',       icon: '📌', label: 'Neighbors',         desc: 'Name all countries that share a border with the highlighted one' },
     { id: 'missing',        icon: '🗺️', label: 'Blind Map',         desc: 'Name countries on a blank map' },
     { section: 'Name All' },
     { id: 'name-all',            icon: '🌍', label: 'Countries',   desc: 'Name every country in the world against the clock' },
