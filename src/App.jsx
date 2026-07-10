@@ -22,6 +22,8 @@ import NameAllLanguagesPanel from './components/NameAllLanguagesPanel'
 import NameAllMountainsPanel from './components/NameAllMountainsPanel'
 import NameAllSeasPanel from './components/NameAllSeasPanel'
 import NeighborPanel from './components/NeighborPanel'
+import OddOneOutPanel from './components/OddOneOutPanel'
+import { generateQuestion } from './utils/oddOneOut'
 import MountainGlobe from './components/MountainGlobe'
 import NameAllSeaGlobe from './components/NameAllSeaGlobe'
 import { getDistanceInfo, computeAdjacency } from './utils/geoUtils'
@@ -244,6 +246,15 @@ export default function App() {
   const [neighborDone,    setNeighborDone]    = useState(false)
   const [neighborScore,   setNeighborScore]   = useState(0)
   const [neighborHistory, setNeighborHistory] = useState([])
+
+  // ── Odd One Out state ────────────────────────────────────────────────────
+  const [oooQuestion,  setOooQuestion]  = useState(null)
+  const [oooAnswered,  setOooAnswered]  = useState(false)
+  const [oooChosen,    setOooChosen]    = useState(null)
+  const [oooScore,     setOooScore]     = useState(0)
+  const [oooStreak,    setOooStreak]    = useState(0)
+  const [oooHistory,   setOooHistory]   = useState([])
+  const [oooLastCat,   setOooLastCat]   = useState(null)
 
   // ── Learn mode state ─────────────────────────────────────────────────────
   const [learnSelected, setLearnSelected] = useState(null)   // feature
@@ -724,6 +735,15 @@ export default function App() {
       setNeighborScore(0)
       setNeighborHistory([])
     }
+    if (m !== 'ooo') {
+      setOooQuestion(null)
+      setOooAnswered(false)
+      setOooChosen(null)
+      setOooScore(0)
+      setOooStreak(0)
+      setOooHistory([])
+      setOooLastCat(null)
+    }
     if (m !== 'learn') {
       setLearnSelected(null)
       setLearnHistory([])
@@ -1065,6 +1085,44 @@ export default function App() {
     }
   }, [neighborTarget, mode])
 
+  // ── Odd One Out handlers ─────────────────────────────────────────────────
+  const pickOooQuestion = useCallback((lastCat = null) => {
+    const q = generateQuestion(gameCountries, lastCat)
+    setOooQuestion(q)
+    setOooAnswered(false)
+    setOooChosen(null)
+    if (q) setOooLastCat(q.category)
+  }, [gameCountries])
+
+  const handleOooGuess = useCallback((index) => {
+    if (oooAnswered || !oooQuestion) return
+    const correct = index === oooQuestion.oddIndex
+    const streakMult = [1, 1, 1.5, 2, 3, 4]
+    const newStreak = correct ? oooStreak + 1 : 0
+    const mult = streakMult[Math.min(oooStreak, streakMult.length - 1)]
+    const pts = correct ? Math.round(100 * mult) : 0
+    setOooChosen(index)
+    setOooAnswered(true)
+    setOooStreak(newStreak)
+    if (pts) setOooScore(s => s + pts)
+    setOooHistory(h => [...h, {
+      odd: oooQuestion.options[oooQuestion.oddIndex].name,
+      correct,
+      pts,
+    }])
+  }, [oooAnswered, oooQuestion, oooStreak])
+
+  const handleOooNext = useCallback(() => {
+    pickOooQuestion(oooLastCat)
+  }, [pickOooQuestion, oooLastCat])
+
+  // Auto-start OOO
+  useEffect(() => {
+    if (mode === 'ooo' && gameCountries.length > 0 && !oooQuestion) {
+      pickOooQuestion(null)
+    }
+  }, [mode, gameCountries, oooQuestion, pickOooQuestion])
+
   // ── Missed features for end-states (show red on globe) ──────────────────
   const missingMissedFeatures  = missingMissedNames.map(n => countries.find(f => f.properties.NAME === n)).filter(Boolean)
   const spotlightMissedFeatures = spotlightMissedNames.map(n => countries.find(f => f.properties.NAME === n)).filter(Boolean)
@@ -1200,6 +1258,7 @@ export default function App() {
             { id: 'mystery',        icon: '🔍', label: 'Mystery Country' },
             { id: 'locate',         icon: '📍', label: 'Pinpoint Country' },
             { id: 'neighbor',       icon: '📌', label: 'Neighbors' },
+            { id: 'ooo',            icon: '🤔', label: 'Odd One Out' },
             { id: 'missing',        icon: '🗺️', label: 'Blind Map' },
             { section: 'Name All' },
             { id: 'name-all',              icon: '🌍', label: 'Countries' },
@@ -1464,6 +1523,18 @@ export default function App() {
             onGuess={handleNeighborGuess}
             onGiveUp={handleNeighborGiveUp}
             onNext={handleNeighborNext}
+          />
+        )}
+        {mode === 'ooo' && (
+          <OddOneOutPanel
+            question={oooQuestion}
+            answered={oooAnswered}
+            chosen={oooChosen}
+            score={oooScore}
+            streak={oooStreak}
+            history={oooHistory}
+            onGuess={handleOooGuess}
+            onNext={handleOooNext}
           />
         )}
         {mode === 'seas' && (
