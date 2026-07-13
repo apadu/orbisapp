@@ -5,84 +5,12 @@ import { geoEquirectangular, geoPath } from 'd3-geo'
 const CANVAS_W = 4096
 const CANVAS_H = 2048
 
-function lonLatToXY(lon, lat) {
-  return [
-    (lon + 180) / 360 * CANVAS_W,
-    (90 - lat)  / 180 * CANVAS_H,
-  ]
-}
+// River visual config
+const RIVER_UNFOUND = { stroke: 'rgba(130, 210, 255, 0.75)', width: 2.5 }
+const RIVER_FOUND   = { stroke: '#39ff14',                   width: 3.5 }
+const RIVER_MISSED  = { stroke: '#ef4444',                   width: 3.0 }
 
-const DEG_TO_PX = CANVAS_W / 360
-
-// Deterministic pseudo-random: 0..1 for any integer
-function pr(x) {
-  return ((Math.sin(x * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
-}
-
-// Draw a mountain range as rows of cartographic ▲ triangle symbols
-function drawMountainRange(ctx, feature, state) {
-  const { cLon, cLat, rx, ry, rotDeg } = feature.properties
-  const [cx, cy] = lonLatToXY(cLon, cLat)
-  const rxPx = rx * DEG_TO_PX
-  const ryPx = ry * DEG_TO_PX
-
-  const triH = Math.max(ryPx * 2.0, 28)
-  const triW = triH * 0.68
-
-  const nCols = Math.max(2, Math.round(rxPx * 2 / (triW * 1.5)))
-  const nRows = ry >= 3.5 ? 3 : ry >= 1.8 ? 2 : 1
-  const rowGap = ryPx * 1.1
-
-  const seed = Math.round(Math.abs(cLon * 13 + cLat * 7)) % 100
-
-  let fill, stroke, lw
-  if (state === 'found') {
-    fill = 'rgba(57, 255, 20, 0.92)';  stroke = '#39ff14';  lw = 2
-  } else if (state === 'missed') {
-    fill = 'rgba(239, 68, 68, 0.92)';  stroke = '#ef4444';  lw = 2
-  } else {
-    fill = 'rgba(192, 132, 48, 0.92)'; stroke = 'rgba(220, 160, 60, 1.0)'; lw = 1.5
-  }
-
-  ctx.save()
-  ctx.translate(cx, cy)
-  ctx.rotate(-rotDeg * Math.PI / 180)
-  ctx.fillStyle   = fill
-  ctx.strokeStyle = stroke
-  ctx.lineWidth   = lw
-
-  const colSpacing = rxPx * 2 / nCols
-
-  for (let row = 0; row < nRows; row++) {
-    const rowY    = (row - (nRows - 1) / 2) * rowGap
-    const stagger = row % 2 === 1 ? colSpacing * 0.5 : 0
-
-    for (let col = 0; col < nCols + 1; col++) {
-      const x = -rxPx + col * colSpacing + stagger - colSpacing * 0.5
-      const t = (x + rxPx) / (rxPx * 2)
-      if (t < 0.02 || t > 0.98) continue
-      const fade = Math.sin(Math.min(1, Math.max(0, t)) * Math.PI) ** 0.5
-      const rowScale = nRows > 1 && row === Math.floor(nRows / 2) ? 1.0 : 0.70
-      const sz = fade * rowScale * (0.72 + pr(col * 7 + row * 13 + seed) * 0.28)
-      if (sz < 0.08) continue
-
-      const w = triW * sz
-      const h = triH * sz
-
-      ctx.beginPath()
-      ctx.moveTo(x,     rowY - h)
-      ctx.lineTo(x - w, rowY + h * 0.18)
-      ctx.lineTo(x + w, rowY + h * 0.18)
-      ctx.closePath()
-      ctx.fill()
-      ctx.stroke()
-    }
-  }
-
-  ctx.restore()
-}
-
-function redrawMountains(canvas, countries, ranges, foundNames, missedNames) {
+function redrawRivers(canvas, countries, rivers, foundNames, missedNames) {
   const ctx  = canvas.getContext('2d')
   const proj = geoEquirectangular()
     .scale(CANVAS_W / (2 * Math.PI))
@@ -104,17 +32,45 @@ function redrawMountains(canvas, countries, ranges, foundNames, missedNames) {
     ctx.stroke()
   }
 
-  for (const f of ranges) {
+  // Draw unfound rivers first (they sit below found/missed)
+  for (const f of rivers) {
     const name = f.properties.NAME
-    if (!foundNames.has(name) && !missedNames.has(name)) drawMountainRange(ctx, f, 'unfound')
+    if (foundNames.has(name) || missedNames.has(name)) continue
+    ctx.beginPath()
+    path(f)
+    ctx.strokeStyle = RIVER_UNFOUND.stroke
+    ctx.lineWidth   = RIVER_UNFOUND.width
+    ctx.lineCap     = 'round'
+    ctx.lineJoin    = 'round'
+    ctx.stroke()
   }
-  for (const f of ranges) {
-    if (foundNames.has(f.properties.NAME))  drawMountainRange(ctx, f, 'found')
-    if (missedNames.has(f.properties.NAME)) drawMountainRange(ctx, f, 'missed')
+
+  // Found rivers — bright green
+  for (const f of rivers) {
+    if (!foundNames.has(f.properties.NAME)) continue
+    ctx.beginPath()
+    path(f)
+    ctx.strokeStyle = RIVER_FOUND.stroke
+    ctx.lineWidth   = RIVER_FOUND.width
+    ctx.lineCap     = 'round'
+    ctx.lineJoin    = 'round'
+    ctx.stroke()
+  }
+
+  // Missed rivers — red
+  for (const f of rivers) {
+    if (!missedNames.has(f.properties.NAME)) continue
+    ctx.beginPath()
+    path(f)
+    ctx.strokeStyle = RIVER_MISSED.stroke
+    ctx.lineWidth   = RIVER_MISSED.width
+    ctx.lineCap     = 'round'
+    ctx.lineJoin    = 'round'
+    ctx.stroke()
   }
 }
 
-export default function MountainGlobe({ countries, ranges, foundNames, missedNames, spinEnabled = true }) {
+export default function RiverGlobe({ countries, rivers, foundNames, missedNames, spinEnabled = true }) {
   const mountRef   = useRef(null)
   const rendRef    = useRef(null)
   const sphereRef  = useRef(null)
@@ -128,7 +84,6 @@ export default function MountainGlobe({ countries, ranges, foundNames, missedNam
   const spinRef    = useRef(spinEnabled)
   useEffect(() => { spinRef.current = spinEnabled }, [spinEnabled])
 
-  // Init Three.js scene
   useEffect(() => {
     if (!mountRef.current || countries.length === 0) return
     const el = mountRef.current
@@ -158,7 +113,7 @@ export default function MountainGlobe({ countries, ranges, foundNames, missedNam
     texture.minFilter  = THREE.LinearMipmapLinearFilter
     texture.generateMipmaps = true
     texRef.current = texture
-    redrawMountains(offscreen, countries, ranges, new Set(), new Set())
+    redrawRivers(offscreen, countries, rivers, new Set(), new Set())
     texture.needsUpdate = true
 
     const sphere = new THREE.Mesh(
@@ -211,14 +166,13 @@ export default function MountainGlobe({ countries, ranges, foundNames, missedNam
       renderer.dispose()
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement)
     }
-  }, [countries, ranges])
+  }, [countries, rivers])
 
-  // Redraw when found/missed sets change
   useEffect(() => {
     if (!canvasRef.current || !texRef.current) return
-    redrawMountains(canvasRef.current, countries, ranges, foundNames, missedNames)
+    redrawRivers(canvasRef.current, countries, rivers, foundNames, missedNames)
     texRef.current.needsUpdate = true
-  }, [foundNames, missedNames, countries, ranges])
+  }, [foundNames, missedNames, countries, rivers])
 
   const pauseAutoRotate = useCallback(() => {
     autoRotate.current = false

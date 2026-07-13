@@ -13,16 +13,16 @@ function redrawSeas(canvas, countries, seas, foundNames, missedNames) {
   const path = geoPath().projection(proj).context(ctx)
 
   // Ocean
-  ctx.fillStyle = '#1a4fa8'
+  ctx.fillStyle = '#1254c0'
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
 
   // Land
   for (const f of countries) {
     ctx.beginPath()
     path(f)
-    ctx.fillStyle = '#28b558'
+    ctx.fillStyle = '#22c45c'
     ctx.fill()
-    ctx.strokeStyle = '#05184a'
+    ctx.strokeStyle = '#071a42'
     ctx.lineWidth = 0.7
     ctx.stroke()
   }
@@ -40,14 +40,14 @@ function redrawSeas(canvas, countries, seas, foundNames, missedNames) {
     ctx.stroke()
   }
 
-  // Found seas — neon green
+  // Found seas — bright orange (distinct from green land)
   for (const f of seas) {
     if (!foundNames.has(f.properties.NAME)) continue
     ctx.beginPath()
     path(f)
-    ctx.fillStyle = 'rgba(57, 255, 20, 0.52)'
+    ctx.fillStyle = 'rgba(255, 149, 0, 0.55)'
     ctx.fill()
-    ctx.strokeStyle = '#39ff14'
+    ctx.strokeStyle = '#ff9500'
     ctx.lineWidth = 2.5
     ctx.stroke()
   }
@@ -65,7 +65,7 @@ function redrawSeas(canvas, countries, seas, foundNames, missedNames) {
   }
 }
 
-export default function NameAllSeaGlobe({ countries, seas, foundNames, missedNames }) {
+export default function NameAllSeaGlobe({ countries, seas, foundNames, missedNames, spinEnabled = true }) {
   const mountRef   = useRef(null)
   const rendRef    = useRef(null)
   const sphereRef  = useRef(null)
@@ -76,6 +76,8 @@ export default function NameAllSeaGlobe({ countries, seas, foundNames, missedNam
   const drag       = useRef({ active: false, prev: { x: 0, y: 0 } })
   const autoRotate = useRef(true)
   const autoTimer  = useRef(null)
+  const spinRef    = useRef(spinEnabled)
+  useEffect(() => { spinRef.current = spinEnabled }, [spinEnabled])
 
   useEffect(() => {
     if (!mountRef.current || countries.length === 0) return
@@ -89,10 +91,10 @@ export default function NameAllSeaGlobe({ countries, seas, foundNames, missedNam
     canvasRef.current = offscreen
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color('#08050f')
+    scene.background = new THREE.Color('#040c1c')
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 500)
-    camera.position.z = 2.6
+    camera.position.z = 3.0
     camRef.current = camera
 
     const renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -111,21 +113,21 @@ export default function NameAllSeaGlobe({ countries, seas, foundNames, missedNam
 
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(1, 72, 72),
-      new THREE.MeshPhongMaterial({ map: texture, specular: new THREE.Color(0x111111), shininess: 10 })
+      new THREE.MeshPhongMaterial({ map: texture, specular: new THREE.Color(0x222233), shininess: 20 })
     )
     scene.add(sphere)
     sphereRef.current = sphere
 
     scene.add(new THREE.Mesh(
       new THREE.SphereGeometry(1.025, 72, 72),
-      new THREE.MeshPhongMaterial({ color: '#4aa8ff', transparent: true, opacity: 0.13, side: THREE.FrontSide })
+      new THREE.MeshPhongMaterial({ color: '#5ab4ff', transparent: true, opacity: 0.18, side: THREE.FrontSide })
     ))
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.55))
-    const sun = new THREE.DirectionalLight(0xffd9a0, 0.9)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.65))
+    const sun = new THREE.DirectionalLight(0xfff0d0, 1.1)
     sun.position.set(5, 3, 5)
     scene.add(sun)
-    const fill = new THREE.DirectionalLight(0x4080ff, 0.2)
+    const fill = new THREE.DirectionalLight(0x4488ff, 0.3)
     fill.position.set(-5, -2, -3)
     scene.add(fill)
 
@@ -137,7 +139,7 @@ export default function NameAllSeaGlobe({ countries, seas, foundNames, missedNam
 
     const animate = () => {
       animRef.current = requestAnimationFrame(animate)
-      if (autoRotate.current && !drag.current.active) sphere.rotation.y += 0.0008
+      if (autoRotate.current && !drag.current.active && spinRef.current) sphere.rotation.y += 0.0008
       renderer.render(scene, camera)
     }
     animate()

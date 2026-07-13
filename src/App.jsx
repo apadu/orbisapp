@@ -21,6 +21,8 @@ import NameAllCurrenciesPanel from './components/NameAllCurrenciesPanel'
 import NameAllLanguagesPanel from './components/NameAllLanguagesPanel'
 import NameAllMountainsPanel from './components/NameAllMountainsPanel'
 import NameAllSeasPanel from './components/NameAllSeasPanel'
+import NameAllRiversPanel from './components/NameAllRiversPanel'
+import RiverGlobe from './components/RiverGlobe'
 import NeighborPanel from './components/NeighborPanel'
 import OddOneOutPanel from './components/OddOneOutPanel'
 import { generateQuestion } from './utils/oddOneOut'
@@ -32,6 +34,7 @@ import { geoDistance, geoCentroid, geoContains, geoBounds } from 'd3-geo'
 import { union } from '@turf/union'
 import { featureCollection } from '@turf/helpers'
 import { MOUNTAIN_RANGES } from './utils/mountainRanges'
+import { WORLD_RIVERS } from './utils/rivers'
 import { CAPITALS } from './utils/capitals'
 import { COUNTRY_INFO } from './utils/countryInfo'
 import { pickDailyCountry, todayLabel } from './utils/daily'
@@ -210,8 +213,8 @@ export default function App() {
   const [locateGameOver, setLocateGameOver] = useState(false)
   const [locateExpired,  setLocateExpired]  = useState(false) // sprint time up
 
-  // ── Globe controls ───────────────────────────────────────────────────────
-  const [globeSpin,      setGlobeSpin]      = useState(true)
+  // ── Globe spin: auto-on when idle (home page or learn mode), off during any game
+  const globeSpin = page === 'home' || mode === 'learn'
 
   // ── Solo Map (Spotlight) state ───────────────────────────────────────────
   const [spotlightCurrentFeature, setSpotlightCurrentFeature] = useState(null)
@@ -238,6 +241,11 @@ export default function App() {
   // ── Name All Seas state ──────────────────────────────────────────────────
   const [seasAllFound,  setSeasAllFound]  = useState([]) // found sea features
   const [seasAllMissed, setSeasAllMissed] = useState([]) // missed sea features
+
+  // ── Name All Rivers state ────────────────────────────────────────────────
+  const rivers = WORLD_RIVERS.features                 // static — no fetch needed
+  const [riversFound,  setRiversFound]  = useState([]) // found river features
+  const [riversMissed, setRiversMissed] = useState([]) // missed river features
 
   // ── Neighbor Challenge state ─────────────────────────────────────────────
   const [neighborTarget,  setNeighborTarget]  = useState(null)
@@ -336,7 +344,15 @@ export default function App() {
         // Marine polys use lowercase property names (name, scalerank)
         // Normalize to uppercase NAME so the rest of the app is consistent
         const features = data.features
-          .filter(f => f.geometry && f.properties.name && f.properties.scalerank <= 3)
+          .filter(f => {
+            if (!f.geometry || !f.properties.name) return false
+            if (f.properties.scalerank > 3) return false
+            // Exclude the five major oceans — keep only seas, gulfs, bays, channels etc.
+            const name = f.properties.name.toLowerCase()
+            if (name.endsWith('ocean')) return false
+            if (f.properties.featurecla === 'ocean') return false
+            return true
+          })
           .map(f => ({
             ...f,
             properties: { ...f.properties, NAME: f.properties.name },
@@ -727,6 +743,10 @@ export default function App() {
       setSeasAllFound([])
       setSeasAllMissed([])
     }
+    if (m !== 'name-all-rivers') {
+      setRiversFound([])
+      setRiversMissed([])
+    }
     if (m !== 'neighbor') {
       setNeighborTarget(null)
       setNeighborFound([])
@@ -797,6 +817,7 @@ export default function App() {
   }, [found])
 
   const [nameAllMissed, setNameAllMissed] = useState([])
+  const [nameAllBlind,  setNameAllBlind]  = useState(false)
 
   const handleNameAllNewGame = useCallback(() => {
     setFound([])
@@ -859,36 +880,34 @@ export default function App() {
       return dLon < fe.rx * PX_TO_DEG && dLat < fe.ry * PX_TO_DEG
     })
 
-    // 2. Hull countries (Bahamas, Solomon Is., etc.) — check before geoContains
-    //    so neighbouring large countries don't shadow them
+    // 2. geoContains — with bbox pre-filter to block wrongly-wound polygons
+    //    from claiming clicks thousands of km from their actual territory
     if (!hit) {
       hit = countries.find(f => {
-        if (!HULL_COUNTRY_NAMES.has(f.properties.NAME)) return false
         try {
-          const [[minLon, minLat], [maxLon, maxLat]] = geoBounds(f)
-          const pad = 3.5
-          return lon >= minLon - pad && lon <= maxLon + pad &&
-                 lat >= minLat - pad && lat <= maxLat + pad
+          const [[w, s], [e, n]] = geoBounds(f)
+          if (lon < w - 0.5 || lon > e + 0.5 || lat < s - 0.5 || lat > n + 0.5) return false
+          return geoContains(f, [lon, lat])
         } catch { return false }
       })
     }
 
-    // 3. Exact polygon containment (covers all normal-sized countries)
-    if (!hit) hit = countries.find(f => geoContains(f, [lon, lat]))
-
-    // 4. Padded bounding-box fallback for remaining small countries
+    // 3. Nearest centroid within 2°-padded bbox — catches multi-island nations
+    //    (Bahamas, etc.) and small islands where geoContains fails.
+    //    Using nearest-centroid instead of first-match avoids Bahamas shadowing Cuba.
     if (!hit) {
-      hit = countries.find(f => {
+      let best = null, bestDist = Infinity
+      for (const f of countries) {
         try {
-          const [[minLon, minLat], [maxLon, maxLat]] = geoBounds(f)
-          const w = maxLon - minLon
-          const h = maxLat - minLat
-          if (w >= 12 || h >= 12) return false
-          const pad = 3.5
-          return lon >= minLon - pad && lon <= maxLon + pad &&
-                 lat >= minLat - pad && lat <= maxLat + pad
-        } catch { return false }
-      })
+          const [[w, s], [e, n]] = geoBounds(f)
+          const p = 2.0
+          if (lon < w - p || lon > e + p || lat < s - p || lat > n + p) continue
+          const [clon, clat] = geoCentroid(f)
+          const d = Math.hypot(lon - clon, lat - clat)
+          if (d < bestDist) { bestDist = d; best = f }
+        } catch { /* skip */ }
+      }
+      hit = best
     }
 
     if (!hit) return
@@ -929,29 +948,31 @@ export default function App() {
       return Math.abs(lon - fe.lon) < fe.rx * PX_TO_DEG &&
              Math.abs(lat - fe.lat) < fe.ry * PX_TO_DEG
     })
-    // Step 2: hull countries (Bahamas, Solomon Is., etc.) — padded bbox
+    // Step 2: geoContains with bbox pre-filter
     if (!clicked) {
       clicked = countries.find(f => {
-        if (!HULL_COUNTRY_NAMES.has(f.properties.NAME)) return false
         try {
           const [[w, s], [e, n]] = geoBounds(f)
-          const p = 3.5
-          return lon >= w - p && lon <= e + p && lat >= s - p && lat <= n + p
+          if (lon < w - 0.5 || lon > e + 0.5 || lat < s - 0.5 || lat > n + 0.5) return false
+          return geoContains(f, [lon, lat])
         } catch { return false }
       })
     }
-    // Step 3: exact polygon containment
-    if (!clicked) clicked = countries.find(f => geoContains(f, [lon, lat]))
-    // Step 4: small country padded bbox fallback
+    // Step 3: nearest centroid within 2°-padded bbox
+    // (nearest-centroid avoids Bahamas/hull countries shadowing Cuba etc.)
     if (!clicked) {
-      clicked = countries.find(f => {
+      let best = null, bestDist = Infinity
+      for (const f of countries) {
         try {
           const [[w, s], [e, n]] = geoBounds(f)
-          if (e - w >= 12 || n - s >= 12) return false
-          const p = 3.5
-          return lon >= w - p && lon <= e + p && lat >= s - p && lat <= n + p
-        } catch { return false }
-      })
+          const p = 2.0
+          if (lon < w - p || lon > e + p || lat < s - p || lat > n + p) continue
+          const [clon, clat] = geoCentroid(f)
+          const d = Math.hypot(lon - clon, lat - clat)
+          if (d < bestDist) { bestDist = d; best = f }
+        } catch { /* skip */ }
+      }
+      clicked = best
     }
 
     // ── Compare clicked country to target ──────────────────────────────────
@@ -1267,6 +1288,7 @@ export default function App() {
             { id: 'name-all-languages',    icon: '🗣️', label: 'Languages' },
             { id: 'mountains',             icon: '⛰️', label: 'Mountain Ranges' },
             { id: 'name-all-seas',         icon: '🌊', label: 'Seas' },
+            { id: 'name-all-rivers',       icon: '🏞️', label: 'Rivers' },
             { section: 'Quiz' },
             { id: 'capital',        icon: '🏛️', label: 'Capitals Quiz' },
             { id: 'seas',           icon: '🌊', label: 'Seas' },
@@ -1303,6 +1325,7 @@ export default function App() {
               countries={countries}
               highlightedSea={seaCurrent}
               status={seaStatus}
+              spinEnabled={false}
             />
           ) : mode === 'mountains' ? (
             <MountainGlobe
@@ -1310,6 +1333,7 @@ export default function App() {
               ranges={mountains}
               foundNames={new Set(mountainsFound.map(f => f.properties.NAME))}
               missedNames={new Set(mountainsMissed.map(f => f.properties.NAME))}
+              spinEnabled={false}
             />
           ) : mode === 'name-all-seas' ? (
             <NameAllSeaGlobe
@@ -1317,6 +1341,15 @@ export default function App() {
               seas={seas}
               foundNames={new Set(seasAllFound.map(f => f.properties.NAME))}
               missedNames={new Set(seasAllMissed.map(f => f.properties.NAME))}
+              spinEnabled={false}
+            />
+          ) : mode === 'name-all-rivers' ? (
+            <RiverGlobe
+              countries={countries}
+              rivers={rivers}
+              foundNames={new Set(riversFound.map(f => f.properties.NAME))}
+              missedNames={new Set(riversMissed.map(f => f.properties.NAME))}
+              spinEnabled={false}
             />
           ) : (
             <>
@@ -1328,7 +1361,7 @@ export default function App() {
                 highlighted={globeHighlighted}
                 missed={mode === 'name-all' ? nameAllMissed : mode === 'name-all-caps' ? capsAllMissed : mode === 'name-all-currencies' ? currenciesMissed : mode === 'name-all-languages' ? languagesMissed : mode === 'missing' ? missingMissedFeatures : mode === 'spotlight' ? spotlightMissedFeatures : []}
                 hiddenCountries={mode === 'missing' ? missingHidden : undefined}
-                soloMode={mode === 'spotlight'}
+                soloMode={mode === 'spotlight' || (mode === 'name-all' && nameAllBlind)}
                 onGlobeClick={mode === 'locate' ? handleLocateClick : mode === 'learn' ? handleLearnClick : null}
                 locateMarker={mode === 'locate' ? locateMarker : null}
                 locateCorrectMarker={
@@ -1341,13 +1374,6 @@ export default function App() {
                 flyToFeature={flyToFeature}
               />
               <Confetti active={(mode === 'mystery' && gameWon) || missingComplete} />
-              <button
-                className={`spin-toggle ${globeSpin ? 'spin-on' : 'spin-off'}`}
-                onClick={() => setGlobeSpin(s => !s)}
-                title={globeSpin ? 'Stop globe spin' : 'Start globe spin'}
-              >
-                {globeSpin ? '⏸' : '▶'}
-              </button>
             </>
           )}
         </div>
@@ -1377,6 +1403,8 @@ export default function App() {
             onNewGame={handleNameAllNewGame}
             onMissed={handleNameAllMissed}
             countryInfo={COUNTRY_INFO}
+            blindMode={nameAllBlind}
+            onBlindChange={setNameAllBlind}
           />
         )}
         {mode === 'capital' && (
@@ -1430,6 +1458,14 @@ export default function App() {
             onFoundChange={setSeasAllFound}
             onMissedChange={setSeasAllMissed}
             onNewGame={() => { setSeasAllFound([]); setSeasAllMissed([]) }}
+          />
+        )}
+        {mode === 'name-all-rivers' && (
+          <NameAllRiversPanel
+            rivers={rivers}
+            onFoundChange={setRiversFound}
+            onMissedChange={setRiversMissed}
+            onNewGame={() => { setRiversFound([]); setRiversMissed([]) }}
           />
         )}
         {mode === 'cap-to-country' && (

@@ -21,11 +21,13 @@ function savePersonalBest(continent, secs) {
   try { localStorage.setItem(PB_KEY(continent), String(secs)) } catch {}
 }
 
-export default function NameAllPanel({ countries, found, onGuess, onNewGame, onMissed, countryInfo }) {
+export default function NameAllPanel({ countries, found, onGuess, onNewGame, onMissed, countryInfo, blindMode = false, onBlindChange }) {
   const [input, setInput]               = useState('')
   const [flash, setFlash]               = useState(null)
   // 'world' | continent name
   const [subMode, setSubMode]           = useState('world')
+  // null | 'normal' | 'blind'
+  const [mapStyle, setMapStyle]         = useState(null)
   // timer
   const [timerMode, setTimerMode]       = useState(null)  // null | 'countdown' | 'countup' | 'speedrun'
   const [elapsed, setElapsed]           = useState(0)
@@ -131,10 +133,16 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     revealMissed()
   }
 
+  const handlePickMapStyle = (style) => {
+    setMapStyle(style)
+    onBlindChange?.(style === 'blind')
+  }
+
   const handleReset = () => {
     clearInterval(tickRef.current)
     setRunning(false)
     setTimerMode(null)
+    setMapStyle(null)
     setElapsed(0)
     setRemaining(COUNTDOWN_SECONDS)
     setExpired(false)
@@ -144,6 +152,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     setSubMode('world')
     onMissed([])
     onNewGame()
+    onBlindChange?.(false)
   }
 
   const tryGuess = (raw) => {
@@ -185,12 +194,35 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
         <p className="panel-subtitle">
           {isSpeedrun
             ? `Name all countries in ${subMode} as fast as you can.`
-            : 'Type every country in the world. Countries turn green as you find them.'}
+            : blindMode
+              ? 'Globe starts empty — countries appear as you name them.'
+              : 'Type every country in the world. Countries turn green as you find them.'}
         </p>
       </div>
 
-      {/* Mode picker — only when idle */}
-      {!timerMode && !allFound && (
+      {/* Step 1: Map style picker */}
+      {!mapStyle && !allFound && (
+        <div className="na-map-picker">
+          <p className="na-map-picker-label">How do you want to play?</p>
+          <button className="na-map-opt" onClick={() => handlePickMapStyle('normal')}>
+            <span className="na-map-opt-icon">🗺️</span>
+            <div className="na-map-opt-text">
+              <strong>Normal globe</strong>
+              <span>Countries are visible on the globe</span>
+            </div>
+          </button>
+          <button className="na-map-opt" onClick={() => handlePickMapStyle('blind')}>
+            <span className="na-map-opt-icon">🙈</span>
+            <div className="na-map-opt-text">
+              <strong>Empty globe</strong>
+              <span>Globe starts empty — countries appear as you name them</span>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Step 2: Timer / mode picker (after map style chosen) */}
+      {mapStyle && !timerMode && !allFound && (
         <>
           {/* World timer options */}
           <div className="na-timer-picker">
@@ -345,9 +377,11 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
 
       {/* Footer */}
       <div className="panel-footer">
-        {!timerMode
+        {!timerMode && mapStyle
           ? <button className="new-game-btn na-start-default" onClick={() => startTimer('countup')}>▶ Start</button>
-          : <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
+          : timerMode
+          ? <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
+          : null
         }
       </div>
     </>

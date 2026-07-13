@@ -277,7 +277,47 @@ html, body, #root { height: 100%; background: var(--bg); color: var(--text); fon
   box-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
 }
 
-/* ── Name-All timer ────────────────────────────────────────────────────────── */
+/* ── Name-All map style picker ─────────────────────────────────────────────── */
+.na-map-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.na-map-picker-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0 0 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.na-map-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.na-map-opt:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+}
+.na-map-opt-icon { font-size: 1.4rem; flex-shrink: 0; }
+.na-map-opt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.na-map-opt-text strong { font-size: 0.88rem; }
+.na-map-opt-text span { font-size: 0.74rem; color: var(--text-secondary); }
+
 .na-timer-picker {
   display: flex;
   align-items: center;

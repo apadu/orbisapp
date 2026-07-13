@@ -13,6 +13,7 @@ export default function HomePage({ onEnter, onSelectMode }) {
     { id: 'name-all-languages',  icon: '🗣️', label: 'Languages',       desc: 'Type languages — countries light up as you go' },
     { id: 'mountains',           icon: '⛰️', label: 'Mountain Ranges', desc: 'Name every major mountain range on the globe' },
     { id: 'name-all-seas',       icon: '🌊', label: 'Seas',            desc: 'Name every ocean and sea — they light up as you go' },
+    { id: 'name-all-rivers',     icon: '🏞️', label: 'Rivers',          desc: 'Name every major river in the world — they light up as you go' },
     { section: 'Quiz' },
     { id: 'capital',        icon: '🏛️', label: 'Capitals Quiz',     desc: 'Match countries to their capitals' },
     { id: 'seas',           icon: '🌊', label: 'Seas',              desc: 'Identify oceans and seas on the globe' },
