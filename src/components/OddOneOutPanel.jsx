@@ -1,4 +1,24 @@
+import { useState } from 'react'
+import GameIntro from './GameIntro'
+
 export default function OddOneOutPanel({ question, answered, chosen, score, streak, history, onGuess, onNext }) {
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🤔"
+      title="Odd One Out"
+      desc="Four countries appear — three share something in common. Find the one that doesn't belong."
+      rules={[
+        '🌍 Could be continent, coastline, population, language…',
+        '🔥 Correct answers build a streak multiplier',
+        '💡 The connection is revealed after each question',
+        '⚡ No timer — go at your own pace',
+      ]}
+      onStart={() => setStarted(true)}
+      disabled={!question}
+    />
+  )
+
   if (!question) return (
     <div className="panel-header">
       <h2>🤔 Odd One Out</h2>

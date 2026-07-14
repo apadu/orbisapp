@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { COUNTRY_LANGUAGES } from '../utils/countryLanguages'
+import GameIntro from './GameIntro'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -157,6 +158,22 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
   const onKeyDown     = e => { if (e.key === 'Enter') tryGuess(input) }
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🗣️"
+      title="Name All Languages"
+      desc="Type official languages — countries that speak them light up on the globe."
+      rules={[
+        '⏱ Choose countdown or free play',
+        '🌐 Multiple countries may share a language',
+        '💡 All official languages count',
+        '📈 Track your progress as you go',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getPopulation } from '../utils/population.js'
+import GameIntro from './GameIntro'
 
 function formatPop(millions) {
   if (millions >= 1000) return (millions / 1000).toFixed(2) + 'B'
@@ -44,6 +45,22 @@ export default function PopOrderPanel({ countries, onScore, totalScore, history,
   }
 
   const lastResult = revealed && history.length > 0 ? history[history.length - 1] : null
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="📊"
+      title="Population Order"
+      desc="Three countries appear — rank them by population, largest first."
+      rules={[
+        '🖱️ Click the countries in order: most → least populous',
+        '⭐ 1000 points for a perfect ranking',
+        '📉 Partial credit for partially correct answers',
+        '🔄 New trio every round',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>

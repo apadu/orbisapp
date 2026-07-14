@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import GameIntro from './GameIntro'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -143,6 +144,22 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
   const sortedRanges    = useMemo(() => [...ranges].sort((a, b) => a.properties.NAME.localeCompare(b.properties.NAME)), [ranges])
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="⛰️"
+      title="Name All Mountain Ranges"
+      desc="Type every major mountain range in the world — they appear on the globe as you name them."
+      rules={[
+        '⏱ Choose countdown or free play',
+        '🏔️ All major ranges across all continents',
+        '💡 Abbreviations and nicknames accepted',
+        '📈 Track your progress as you go',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>

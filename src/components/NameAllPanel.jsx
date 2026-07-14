@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { normalizeInput, resolveAlias } from '../utils/aliases'
+import GameIntro from './GameIntro'
+import { playCorrect, playWin } from '../utils/sounds'
 
 const normalize = normalizeInput
 const COUNTDOWN_SECONDS = 15 * 60
-
-const CONTINENTS = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania']
 
 function formatTime(secs) {
   const m = Math.floor(Math.abs(secs) / 60).toString().padStart(2, '0')
@@ -12,49 +12,29 @@ function formatTime(secs) {
   return `${m}:${s}`
 }
 
-const PB_KEY = (continent) => `orbis_pb_${continent}`
-
-function getPersonalBest(continent) {
-  try { return parseInt(localStorage.getItem(PB_KEY(continent)) ?? '', 10) || null } catch { return null }
-}
-function savePersonalBest(continent, secs) {
-  try { localStorage.setItem(PB_KEY(continent), String(secs)) } catch {}
-}
-
 export default function NameAllPanel({ countries, found, onGuess, onNewGame, onMissed, countryInfo, blindMode = false, onBlindChange }) {
-  const [input, setInput]               = useState('')
-  const [flash, setFlash]               = useState(null)
-  // 'world' | continent name
-  const [subMode, setSubMode]           = useState('world')
+  const [input, setInput]             = useState('')
+  const [flash, setFlash]             = useState(null)
   // null | 'normal' | 'blind'
-  const [mapStyle, setMapStyle]         = useState(null)
-  // timer
-  const [timerMode, setTimerMode]       = useState(null)  // null | 'countdown' | 'countup' | 'speedrun'
-  const [elapsed, setElapsed]           = useState(0)
-  const [remaining, setRemaining]       = useState(COUNTDOWN_SECONDS)
-  const [running, setRunning]           = useState(false)
-  const [expired, setExpired]           = useState(false)
-  const [confirmStop, setConfirmStop]   = useState(false)
-  const [gameOver, setGameOver]         = useState(false)
-  const [newPb, setNewPb]               = useState(false)
+  const [mapStyle, setMapStyle]       = useState(null)
+  // null | 'countdown' | 'countup'
+  const [timerMode, setTimerMode]     = useState(null)
+  const [elapsed, setElapsed]         = useState(0)
+  const [remaining, setRemaining]     = useState(COUNTDOWN_SECONDS)
+  const [running, setRunning]         = useState(false)
+  const [expired, setExpired]         = useState(false)
+  const [confirmStop, setConfirmStop] = useState(false)
+  const [gameOver, setGameOver]       = useState(false)
 
   const inputRef = useRef(null)
   const tickRef  = useRef(null)
 
-  // Filter countries for current sub-mode
-  const activeCountries = useMemo(() => {
-    if (subMode === 'world' || !countryInfo) return countries
-    return countries.filter(f => countryInfo[f.properties.NAME]?.continent === subMode)
-  }, [countries, subMode, countryInfo])
-
-  const total    = activeCountries.length
-  const countryNames = activeCountries.map(f => f.properties.NAME)
+  const total        = countries.length
+  const countryNames = countries.map(f => f.properties.NAME)
   const activeNames  = new Set(countryNames)
-
-  // Only count found countries that belong to the active set
-  const activeFound = found.filter(f => activeNames.has(f.name))
-  const foundSet    = new Set(activeFound.map(f => f.name))
-  const allFound    = activeFound.length === total && total > 0
+  const activeFound  = found.filter(f => activeNames.has(f.name))
+  const foundSet     = new Set(activeFound.map(f => f.name))
+  const allFound     = activeFound.length === total && total > 0
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
@@ -74,26 +54,15 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     return () => clearInterval(tickRef.current)
   }, [running, timerMode])
 
-  // Expire → reveal missed
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (expired) revealMissed() }, [expired])
 
-  // All found → stop timer, check PB for speedrun
   useEffect(() => {
-    if (allFound && running) {
-      clearInterval(tickRef.current)
-      setRunning(false)
-      if (timerMode === 'speedrun') {
-        const pb = getPersonalBest(subMode)
-        if (!pb || elapsed < pb) {
-          savePersonalBest(subMode, elapsed)
-          setNewPb(true)
-        }
-      }
-    }
-  }, [allFound, running, timerMode, elapsed, subMode])
+    if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
+  }, [allFound, running])
 
   const revealMissed = () => {
-    const missed = activeCountries.filter(f => !foundSet.has(f.properties.NAME))
+    const missed = countries.filter(f => !foundSet.has(f.properties.NAME))
     onMissed(missed)
     setGameOver(true)
   }
@@ -106,31 +75,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     setExpired(false)
     setConfirmStop(false)
     setGameOver(false)
-    setNewPb(false)
     setRunning(true)
-  }
-
-  const startSpeedrun = (continent) => {
-    setSubMode(continent)
-    onNewGame()
-    setTimerMode('speedrun')
-    setElapsed(0)
-    setExpired(false)
-    setConfirmStop(false)
-    setGameOver(false)
-    setNewPb(false)
-    setRunning(true)
-  }
-
-  const togglePause = () => setRunning(r => !r)
-  const handleStopClick = () => setConfirmStop(true)
-  const cancelStop = () => setConfirmStop(false)
-
-  const confirmStopTimer = () => {
-    clearInterval(tickRef.current)
-    setRunning(false)
-    setConfirmStop(false)
-    revealMissed()
   }
 
   const handlePickMapStyle = (style) => {
@@ -148,8 +93,6 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     setExpired(false)
     setConfirmStop(false)
     setGameOver(false)
-    setNewPb(false)
-    setSubMode('world')
     onMissed([])
     onNewGame()
     onBlindChange?.(false)
@@ -160,19 +103,18 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     const q = normalize(raw)
     if (!q) return
     const resolved = resolveAlias(raw, countryNames)
-    const match = resolved ? activeCountries.find(f => f.properties.NAME === resolved) : null
+    const match = resolved ? countries.find(f => f.properties.NAME === resolved) : null
     if (match && !foundSet.has(match.properties.NAME)) {
       onGuess(match)
       setInput('')
-      triggerFlash('hit')
+      setFlash('hit')
+      setTimeout(() => setFlash(null), 500)
+      const newFoundCount = foundSet.size + 1
+      if (newFoundCount >= countries.length) playWin()
+      else playCorrect()
       return true
     }
     return false
-  }
-
-  const triggerFlash = (type) => {
-    setFlash(type)
-    setTimeout(() => setFlash(null), 500)
   }
 
   const onInputChange = (e) => { const val = e.target.value; setInput(val); tryGuess(val) }
@@ -180,11 +122,24 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
   const missedCountries = gameOver
-    ? activeCountries.filter(f => !foundSet.has(f.properties.NAME)).map(f => f.properties.NAME).sort()
+    ? countries.filter(f => !foundSet.has(f.properties.NAME)).map(f => f.properties.NAME).sort()
     : []
 
-  const isSpeedrun = timerMode === 'speedrun'
-  const pb = isSpeedrun ? getPersonalBest(subMode) : null
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🌍"
+      title="Name All Countries"
+      desc="Type every country in the world. Countries light up on the globe as you name them."
+      rules={[
+        '⏱ Choose countdown or free play',
+        '🙈 Optional: start with an empty globe',
+        '💡 Alternate spellings and aliases accepted',
+        '🌐 All 196 countries included',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>
@@ -192,11 +147,9 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       <div className="panel-header">
         <h2>🌍 All Countries</h2>
         <p className="panel-subtitle">
-          {isSpeedrun
-            ? `Name all countries in ${subMode} as fast as you can.`
-            : blindMode
-              ? 'Globe starts empty — countries appear as you name them.'
-              : 'Type every country in the world. Countries turn green as you find them.'}
+          {blindMode
+            ? 'Globe starts empty — countries appear as you name them.'
+            : 'Type every country in the world. Countries light up as you find them.'}
         </p>
       </div>
 
@@ -210,6 +163,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
               <strong>Normal globe</strong>
               <span>Countries are visible on the globe</span>
             </div>
+            <span className="na-map-opt-arrow">›</span>
           </button>
           <button className="na-map-opt" onClick={() => handlePickMapStyle('blind')}>
             <span className="na-map-opt-icon">🙈</span>
@@ -217,35 +171,18 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
               <strong>Empty globe</strong>
               <span>Globe starts empty — countries appear as you name them</span>
             </div>
+            <span className="na-map-opt-arrow">›</span>
           </button>
         </div>
       )}
 
-      {/* Step 2: Timer / mode picker (after map style chosen) */}
+      {/* Step 2: Timer picker */}
       {mapStyle && !timerMode && !allFound && (
-        <>
-          {/* World timer options */}
-          <div className="na-timer-picker">
-            <span className="na-timer-label">🌍 World</span>
-            <button className="na-timer-opt" onClick={() => startTimer('countdown')}>⏳ 15 min countdown</button>
-          </div>
-
-          {/* Continent speedrun options */}
-          {countryInfo && (
-            <div className="na-timer-picker na-continent-picker">
-              <span className="na-timer-label">🏁 Continent Speedrun</span>
-              {CONTINENTS.map(c => {
-                const cpb = getPersonalBest(c)
-                return (
-                  <button key={c} className="na-timer-opt na-continent-opt" onClick={() => startSpeedrun(c)}>
-                    {c}
-                    {cpb && <span className="na-pb-badge">PB {formatTime(cpb)}</span>}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </>
+        <div className="na-timer-picker">
+          <span className="na-timer-label">Choose mode</span>
+          <button className="na-timer-opt" onClick={() => startTimer('countdown')}>⏳ 15 min countdown</button>
+          <button className="na-timer-opt" onClick={() => startTimer('countup')}>⏱ Free play</button>
+        </div>
       )}
 
       {/* Active timer bar */}
@@ -255,19 +192,16 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? '⏳ countdown'
-              : isSpeedrun ? `🏁 ${subMode}`
-              : '⏱ count up'}
+            {timerMode === 'countdown' ? '⏳ countdown' : '⏱ free play'}
           </span>
-          {pb && !allFound && (
-            <span className="na-pb-live">PB {formatTime(pb)}</span>
-          )}
           <div className="na-timer-controls">
             {!expired && !allFound && !gameOver && (
-              <button className="na-timer-btn" onClick={togglePause}>{running ? '⏸' : '▶'}</button>
+              <button className="na-timer-btn" onClick={() => setRunning(r => !r)}>
+                {running ? '⏸' : '▶'}
+              </button>
             )}
             {!gameOver && (
-              <button className="na-timer-btn na-timer-stop" onClick={handleStopClick} title="Stop">✕</button>
+              <button className="na-timer-btn na-timer-stop" onClick={() => setConfirmStop(true)} title="Stop">✕</button>
             )}
           </div>
         </div>
@@ -278,8 +212,10 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
         <div className="na-confirm-stop">
           <span>Stop? This will reveal missed countries.</span>
           <div className="na-confirm-btns">
-            <button className="na-confirm-yes" onClick={confirmStopTimer}>Stop</button>
-            <button className="na-confirm-no" onClick={cancelStop}>Keep going</button>
+            <button className="na-confirm-yes" onClick={() => {
+              clearInterval(tickRef.current); setRunning(false); setConfirmStop(false); revealMissed()
+            }}>Stop</button>
+            <button className="na-confirm-no" onClick={() => setConfirmStop(false)}>Keep going</button>
           </div>
         </div>
       )}
@@ -293,10 +229,12 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
 
       {/* Counter */}
       <div className="na-counter">
-        <span className="na-count-num">{activeFound.length}</span>
-        <span className="na-count-sep"> / </span>
-        <span className="na-count-total">{total}</span>
-        <span className="na-count-label"> {isSpeedrun ? `${subMode} countries` : 'countries found'}</span>
+        <div className="na-counter-row">
+          <span className="na-count-num">{activeFound.length}</span>
+          <span className="na-count-sep">/</span>
+          <span className="na-count-total">{total}</span>
+          <span className="na-count-label">countries found</span>
+        </div>
         <div className="na-progress-track">
           <div className="na-progress-fill" style={{ width: `${total ? (activeFound.length / total) * 100 : 0}%` }} />
         </div>
@@ -305,18 +243,14 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       {/* Win banner */}
       {allFound && (
         <div className="win-banner">
-          <span className="win-emoji">{newPb ? '🏆' : '🎉'}</span>
+          <span className="win-emoji">🎉</span>
           <div>
-            <strong>{newPb ? 'New personal best!' : 'You got them all!'}</strong>
+            <strong>You got them all!</strong>
             <p>
-              {isSpeedrun ? `${subMode} completed in ${formatTime(elapsed)}!` : (
-                <>
-                  Every country named
-                  {timerMode === 'countup' ? ` in ${formatTime(elapsed)}` : ''}
-                  {timerMode === 'countdown' ? ` with ${formatTime(remaining)} remaining` : ''}
-                  !
-                </>
-              )}
+              Every country named
+              {timerMode === 'countup'   ? ` in ${formatTime(elapsed)}` : ''}
+              {timerMode === 'countdown' ? ` with ${formatTime(remaining)} to spare` : ''}
+              !
             </p>
           </div>
         </div>
@@ -330,7 +264,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder={!running ? 'Game paused' : isSpeedrun ? `Type a ${subMode} country…` : 'Type a country name…'}
+              placeholder={!running ? 'Paused…' : 'Type a country name…'}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
@@ -347,11 +281,11 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       {gameOver && missedCountries.length > 0 && (
         <div className="guesses-section">
           <h3 className="guesses-title">
-            Missed <span className="guess-count" style={{ background: '#ef4444' }}>{missedCountries.length}</span>
+            Missed <span className="guess-count guess-count-missed">{missedCountries.length}</span>
           </h3>
           <ul className="guess-list">
             {missedCountries.map(name => (
-              <li key={name} className="guess-item">
+              <li key={name} className="guess-item guess-item-missed">
                 <span className="guess-swatch" style={{ background: '#ef4444' }} />
                 <span className="guess-name">{name}</span>
               </li>
@@ -363,7 +297,9 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       {/* Found list */}
       {activeFound.length > 0 && (
         <div className="guesses-section">
-          <h3 className="guesses-title">Found <span className="guess-count">{activeFound.length}</span></h3>
+          <h3 className="guesses-title">
+            Found <span className="guess-count">{activeFound.length}</span>
+          </h3>
           <ul className="guess-list">
             {[...activeFound].reverse().map(f => (
               <li key={f.name} className="guess-item">
@@ -380,7 +316,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
         {!timerMode && mapStyle
           ? <button className="new-game-btn na-start-default" onClick={() => startTimer('countup')}>▶ Start</button>
           : timerMode
-          ? <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
+          ? <button className="new-game-btn" onClick={handleReset}>↩ Reset</button>
           : null
         }
       </div>

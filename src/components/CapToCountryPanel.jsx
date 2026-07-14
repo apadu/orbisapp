@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { resolveAlias, findClosestMatch } from '../utils/aliases'
+import GameIntro from './GameIntro'
 
 export default function CapToCountryPanel({
   current, answered, correct, countryNames,
@@ -42,6 +43,22 @@ export default function CapToCountryPanel({
     if (e.key === 'Enter') { e.preventDefault(); trySubmit() }
     if (e.key === 'Escape') setDidYouMean(null)
   }
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🗺️"
+      title="Capital to Country"
+      desc="You're given a capital city — name the country it belongs to."
+      rules={[
+        '⌨️ Type the country name to answer',
+        '↩ Skip to pass on any question',
+        '📈 Streak multiplier for consecutive correct answers',
+        '🌐 All world capitals included',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>

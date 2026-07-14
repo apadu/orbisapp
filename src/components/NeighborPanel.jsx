@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
+import GameIntro from './GameIntro'
+import { playCorrect, playWrong } from '../utils/sounds'
 
 function norm(s) {
   return s.trim().toLowerCase().replace(/[^a-z]/g, '')
 }
 
-export default function NeighborPanel({ target, neighbors, found, missed, done, score, history, onGuess, onGiveUp, onNext }) {
+export default function NeighborPanel({ target, neighbors, found, missed, done, score, history, onGuess, onGiveUp, onNext, onGameStart }) {
   const [input, setInput] = useState('')
   const [flash, setFlash] = useState(null)
   const inputRef = useRef(null)
@@ -26,6 +28,7 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
       setInput('')
       setFlash('hit')
       setTimeout(() => setFlash(null), 400)
+      playCorrect()
     }
   }
 
@@ -35,6 +38,23 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
     setInput(v)
     if (v.endsWith(',')) tryGuess(v.replace(',', ''))
   }
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="📌"
+      title="Neighbor Challenge"
+      desc="A country is highlighted — name all countries that share a border with it."
+      rules={[
+        '🗺️ Countries that share a land border count',
+        '❌ Missed ones revealed in red',
+        '🔄 New country every round',
+        '📈 Build a streak for bonus points',
+      ]}
+      onStart={() => { setStarted(true); onGameStart?.() }}
+      disabled={!target}
+    />
+  )
 
   if (!target) return (
     <div className="panel-header">
@@ -110,7 +130,7 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
       {/* Buttons */}
       <div className="neighbor-actions">
         {!done
-          ? <button className="neighbor-giveup-btn" onClick={onGiveUp}>Give Up</button>
+          ? <button className="neighbor-giveup-btn" onClick={() => { playWrong(); onGiveUp() }}>Give Up</button>
           : <button className="new-game-btn" onClick={onNext}>Next country →</button>
         }
       </div>

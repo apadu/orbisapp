@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { COUNTRY_LANGUAGES } from '../utils/countryLanguages'
 import { COUNTRY_INFO } from '../utils/countryInfo'
+import GameIntro from './GameIntro'
+import { playCorrect, playWrong, playStreak } from '../utils/sounds'
 
 const ELIGIBLE = Object.keys(COUNTRY_LANGUAGES).filter(name => COUNTRY_INFO[name])
 
@@ -75,16 +77,18 @@ export default function LanguagePanel() {
     if (isAnswered) return
     if (isMatch(val, round.official)) {
       const pts = streakPts
+      const newStreak = streak + 1
       setStatus('correct')
       setScore(s => s + pts)
-      setStreak(s => s + 1)
+      setStreak(newStreak)
       setLastPts(pts)
       setHistory(h => [
         { country: round.country, official: round.official, all: round.all, pts, won: true },
         ...h.slice(0, 9),
       ])
+      if (newStreak >= 3) playStreak(); else playCorrect()
     }
-  }, [isAnswered, round, streakPts])
+  }, [isAnswered, round, streakPts, streak])
 
   const skip = useCallback(() => {
     if (isAnswered) return
@@ -95,6 +99,7 @@ export default function LanguagePanel() {
       { country: round.country, official: round.official, all: round.all, pts: 0, won: false },
       ...h.slice(0, 9),
     ])
+    playWrong()
   }, [isAnswered, round])
 
   const next = useCallback(() => {
@@ -120,6 +125,22 @@ export default function LanguagePanel() {
   }, [done, isAnswered, next, skip])
 
   useEffect(() => { if (!done) inputRef.current?.focus() }, [idx, done])
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🗣️"
+      title="Language Quiz"
+      desc="A country is highlighted on the globe — name one of its official languages."
+      rules={[
+        '⌨️ Type any official language of that country',
+        '↩ Skip to pass on any country',
+        '🌐 Countries with multiple languages have several valid answers',
+        '📈 Build a streak for a score multiplier',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   if (done) {
     return (

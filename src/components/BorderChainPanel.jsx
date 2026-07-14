@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { resolveAlias } from '../utils/aliases'
+import GameIntro from './GameIntro'
 
 /** BFS: shortest path from `start` to `end` using adjacency map. Returns path array or null. */
 function bfs(start, end, adjacency) {
@@ -166,6 +167,23 @@ export default function BorderChainPanel({
 
   const lastResult = history.length > 0 ? history[history.length - 1] : null
   const showDropdown = suggestions.length > 0 && !won && !gaveUp
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🔗"
+      title="Border Chain"
+      desc="Connect two highlighted countries through a chain of shared borders."
+      rules={[
+        '🗺️ Each step must share a land border with the previous',
+        '⭐ Fewer steps = more points',
+        '💡 The optimal path is calculated — try to match it',
+        '🔄 New challenge after each round',
+      ]}
+      onStart={() => setStarted(true)}
+      disabled={!startCountry || !endCountry}
+    />
+  )
 
   return (
     <>

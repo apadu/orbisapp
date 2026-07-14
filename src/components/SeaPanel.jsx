@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import GameIntro from './GameIntro'
 
 /** Loose sea name matching — accepts partial names without "Sea", "Ocean", etc. */
 function normalizeSea(s) {
@@ -18,7 +19,7 @@ export function checkSea(canonicalName, typed) {
   return nt.length >= 3 && nt === nn
 }
 
-export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGame, score, history }) {
+export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGame, score, history, onGameStart }) {
   const [input,  setInput]  = useState('')
   const [status, setStatus] = useState(null) // 'correct' | 'wrong'
   const inputRef = useRef(null)
@@ -51,6 +52,22 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
     if (e.key === 'Enter') submit()
     if (e.key === 'Escape') skip()
   }
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🌊"
+      title="Seas Quiz"
+      desc="A body of water is highlighted on the globe — name it."
+      rules={[
+        '🌍 Oceans, seas, gulfs, and bays are all fair game',
+        '↩ Skip to pass on any question',
+        '📈 Build a streak for a score multiplier',
+        '🗺️ Rotate the globe to get a better view',
+      ]}
+      onStart={() => { setStarted(true); onGameStart?.() }}
+    />
+  )
 
   return (
     <>

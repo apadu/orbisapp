@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { normalizeInput } from '../utils/aliases'
 import { CAPITALS } from '../utils/capitals'
+import GameIntro from './GameIntro'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -150,6 +151,22 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   const onKeyDown    = e => { if (e.key === 'Enter') tryGuess(input) }
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🏙️"
+      title="Name All Capitals"
+      desc="Type every capital city in the world. Countries light up on the globe as you find them."
+      rules={[
+        '⏱ Choose countdown or free play',
+        '💡 Countries light up when you name their capital',
+        '✅ Common spelling variants accepted',
+        '🌐 195 countries covered',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>

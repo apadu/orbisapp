@@ -434,45 +434,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     }
   }
 
-  // ── Correct-location marker: green pin at target country centroid ─────────
-  if (locateCorrectMarker) {
-    const proj2 = geoEquirectangular()
-      .scale(CANVAS_W / (2 * Math.PI))
-      .translate([CANVAS_W / 2, CANVAS_H / 2])
-    const pt = proj2([locateCorrectMarker.lon, locateCorrectMarker.lat])
-    if (pt) {
-      const [mx, my] = pt
-      const r = 13
-      const stem = 32
-
-      ctx.save()
-      ctx.translate(mx, my)
-
-      ctx.shadowColor = 'rgba(0,0,0,0.5)'
-      ctx.shadowBlur = 12
-      ctx.shadowOffsetX = 4
-      ctx.shadowOffsetY = 6
-
-      ctx.beginPath()
-      ctx.arc(0, -stem + r, r, Math.PI * 0.15, Math.PI * 0.85, true)
-      ctx.lineTo(0, 0)
-      ctx.closePath()
-      ctx.fillStyle = '#22c55e'
-      ctx.fill()
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 3
-      ctx.stroke()
-
-      ctx.shadowColor = 'transparent'
-
-      ctx.beginPath()
-      ctx.arc(0, -stem + r, r * 0.38, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(255,255,255,0.85)'
-      ctx.fill()
-
-      ctx.restore()
-    }
-  }
+  // Correct-location pin removed — country stays highlighted green, no pin drawn
 }
 
 // ─── Globe Component ─────────────────────────────────────────────────────────
@@ -577,7 +539,7 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
       }
       // Smooth camera zoom
       if (camTargetZ.current !== null) {
-        camera.position.z += (camTargetZ.current - camera.position.z) * 0.05
+        camera.position.z += (camTargetZ.current - camera.position.z) * 0.14
         if (Math.abs(camera.position.z - camTargetZ.current) < 0.005) {
           camera.position.z = camTargetZ.current
           camTargetZ.current = null

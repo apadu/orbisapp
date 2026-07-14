@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { COUNTRY_INFO } from '../utils/countryInfo'
 import { COUNTRY_AREA } from '../utils/countryArea'
+import GameIntro from './GameIntro'
+import { playCorrect, playWrong, playStreak } from '../utils/sounds'
 
 function formatArea(km2) {
   return km2.toLocaleString() + ' km²'
@@ -65,11 +67,29 @@ export default function AreaPanel({ gameCountries, onPairChange }) {
     setStreak(newStreak)
     setScore(s => s + pts)
     setHistory(h => [{ left, right, chosenSide: side, correct, pts }, ...h].slice(0, 20))
+    if (correct) { if (newStreak >= 3) playStreak(); else playCorrect() }
+    else playWrong()
   }
 
   const handleNext = () => {
     pickPair(history.slice(0, 6).flatMap(h => [h.left.name, h.right.name]))
   }
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="📏"
+      title="Bigger or Smaller?"
+      desc="Two countries appear side by side — pick which one has the larger land area."
+      rules={[
+        '🌍 Land area only — not population or GDP',
+        '🔥 Streak multiplier for consecutive correct answers',
+        '⚡ No timer — go at your own pace',
+        '🔄 Endless random country pairs',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   if (!left || !right) return (
     <div className="panel-header">

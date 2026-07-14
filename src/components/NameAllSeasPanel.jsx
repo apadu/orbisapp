@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import GameIntro from './GameIntro'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -143,6 +144,22 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
   const sortedSeas = useMemo(() => [...seas].sort((a, b) => a.properties.NAME.localeCompare(b.properties.NAME)), [seas])
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🌊"
+      title="Name All Seas"
+      desc="Type every ocean and sea — they light up on the globe as you name them."
+      rules={[
+        '⏱ Choose countdown or free play',
+        '🌊 Oceans, seas, gulfs, and bays all count',
+        '💡 Abbreviations accepted (e.g. "Pacific")',
+        '📈 Track your progress as you go',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { resolveAlias, findClosestMatch } from '../utils/aliases'
+import GameIntro from './GameIntro'
 
 /** Streak multiplier: 1x, 1.5x, 2x, 3x, 4x (capped) */
 function calcPoints(streak) {
@@ -61,6 +62,22 @@ export default function FlagPanel({
   }
 
   const lastResult = history.length > 0 ? history[history.length - 1] : null
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🚩"
+      title="Flags Quiz"
+      desc="A flag appears — name the country it belongs to."
+      rules={[
+        '⌨️ Type the country name to answer',
+        '↩ Skip to pass on any question',
+        '🔥 Streak multiplier for consecutive correct answers',
+        '🌍 All 196 countries included',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>

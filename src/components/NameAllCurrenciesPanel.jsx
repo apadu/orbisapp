@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { COUNTRY_CURRENCY } from '../utils/countryCurrency'
+import GameIntro from './GameIntro'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -157,6 +158,22 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
   const onKeyDown     = e => { if (e.key === 'Enter') tryGuess(input) }
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="💰"
+      title="Name All Currencies"
+      desc="Type world currencies — countries that use them light up on the globe as you go."
+      rules={[
+        '⏱ Choose countdown or free play',
+        '💡 Currency codes accepted too (e.g. USD, EUR)',
+        '🌐 Countries sharing a currency all light up at once',
+        '📈 Track your progress as you go',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>

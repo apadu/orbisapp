@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ACHIEVEMENTS, getUnlockedAchievements, saveProfile } from '../utils/profileStats'
 import { getCalendar, getStats } from '../utils/stats'
+import { DAILY_CHALLENGES, getChallengeProgress } from '../utils/dailyChallenges'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -191,7 +192,7 @@ const MODE_STATS = [
   },
 ]
 
-export default function ProfilePage({ profile, onBack, onProfileUpdate }) {
+export default function ProfilePage({ profile, onBack, onProfileUpdate, dailyProgress = {}, dailyStreak = 0 }) {
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput]     = useState(profile.username)
   const [activeTab, setActiveTab]     = useState('stats') // 'stats' | 'achievements' | 'friends'
@@ -288,6 +289,35 @@ export default function ProfilePage({ profile, onBack, onProfileUpdate }) {
       {/* Stats tab */}
       {activeTab === 'stats' && (
         <>
+        {/* Daily Challenges card */}
+        <div className="profile-daily-card">
+          <div className="profile-daily-header">
+            <span className="profile-daily-title">📅 Today's Challenges</span>
+            {dailyStreak > 0 && <span className="profile-daily-streak">🔥 {dailyStreak} day streak</span>}
+          </div>
+          <div className="profile-daily-list">
+            {DAILY_CHALLENGES.map(ch => {
+              const { done, value, target } = getChallengeProgress(ch.id, dailyProgress)
+              const pct = Math.min((value / target) * 100, 100)
+              return (
+                <div key={ch.id} className={`profile-daily-ch${done ? ' pdc-done' : ''}`}>
+                  <span className="pdc-icon">{ch.icon}</span>
+                  <div className="pdc-body">
+                    <span className="pdc-label">{ch.task}</span>
+                    {!done && target > 1 && (
+                      <div className="pdc-bar">
+                        <div className="pdc-bar-fill" style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
+                  </div>
+                  <span className={`pdc-status${done ? ' pdc-check' : ''}`}>
+                    {done ? '✓' : `${value}/${target}`}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
         <StreakCalendar />
         <div className="profile-stats-grid">
           {MODE_STATS.map(({ id, icon, label, rows }) => (

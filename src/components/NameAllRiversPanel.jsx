@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import GameIntro from './GameIntro'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -277,6 +278,22 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
   const sortedRivers    = useMemo(() => [...rivers].sort((a, b) => a.properties.NAME.localeCompare(b.properties.NAME)), [rivers])
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🏞️"
+      title="Name All Rivers"
+      desc="Type every major river in the world — they trace across the globe as you name them."
+      rules={[
+        '⏱ Choose countdown or free play',
+        '🌊 Major rivers from all continents',
+        '💡 Common name variations accepted',
+        '📈 Track your progress as you go',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   return (
     <>

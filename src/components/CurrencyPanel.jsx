@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { COUNTRY_CURRENCY } from '../utils/countryCurrency'
 import { COUNTRY_INFO } from '../utils/countryInfo'
+import GameIntro from './GameIntro'
+import { playCorrect, playWrong, playStreak } from '../utils/sounds'
 
 const ELIGIBLE = Object.keys(COUNTRY_CURRENCY).filter(name => COUNTRY_INFO[name])
 
@@ -77,16 +79,18 @@ export default function CurrencyPanel() {
     if (isAnswered) return
     if (isMatch(val, round.correct, round.code)) {
       const pts = streakPts
+      const newStreak = streak + 1
       setStatus('correct')
       setScore(s => s + pts)
-      setStreak(s => s + 1)
+      setStreak(newStreak)
       setLastPts(pts)
       setHistory(h => [
         { country: round.country, correct: round.correct, pts, won: true },
         ...h.slice(0, 9),
       ])
+      if (newStreak >= 3) playStreak(); else playCorrect()
     }
-  }, [isAnswered, round, streakPts])
+  }, [isAnswered, round, streakPts, streak])
 
   const skip = useCallback(() => {
     if (isAnswered) return
@@ -97,6 +101,7 @@ export default function CurrencyPanel() {
       { country: round.country, correct: round.correct, pts: 0, won: false },
       ...h.slice(0, 9),
     ])
+    playWrong()
   }, [isAnswered, round])
 
   // next: advance deck index after feedback is shown
@@ -123,6 +128,22 @@ export default function CurrencyPanel() {
   }, [done, isAnswered, next, skip])
 
   useEffect(() => { if (!done) inputRef.current?.focus() }, [idx, done])
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="💰"
+      title="Currency Quiz"
+      desc="A country is highlighted on the globe — name its official currency."
+      rules={[
+        '⌨️ Type the currency name to answer',
+        '↩ Skip to pass on any country',
+        '💡 Currency codes accepted (e.g. USD, EUR)',
+        '📈 Build a streak for a score multiplier',
+      ]}
+      onStart={() => setStarted(true)}
+    />
+  )
 
   if (done) {
     return (

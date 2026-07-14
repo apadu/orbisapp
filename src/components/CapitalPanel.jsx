@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { CAPITALS, checkCapital } from '../utils/capitals'
+import GameIntro from './GameIntro'
 
-export default function CapitalPanel({ countries, current, answered, onCorrect, onSkip, onNewGame, score, history }) {
+export default function CapitalPanel({ countries, current, answered, onCorrect, onSkip, onNewGame, score, history, onGameStart }) {
   const [input, setInput]   = useState('')
   const [status, setStatus] = useState(null) // 'correct' | 'wrong' | 'skipped'
   const inputRef = useRef(null)
@@ -39,6 +40,22 @@ export default function CapitalPanel({ countries, current, answered, onCorrect, 
     if (e.key === 'Enter') submit()
     if (e.key === 'Escape') skip()
   }
+
+  const [started, setStarted] = useState(false)
+  if (!started) return (
+    <GameIntro
+      icon="🏙️"
+      title="Capitals Quiz"
+      desc="A country is highlighted on the globe — type its capital city."
+      rules={[
+        '⌨️ Type the capital city name to answer',
+        '↩ Press Escape or skip to pass',
+        '✅ Spelling variants accepted',
+        '📊 Track your accuracy as you go',
+      ]}
+      onStart={() => { setStarted(true); onGameStart?.() }}
+    />
+  )
 
   return (
     <>
