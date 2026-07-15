@@ -24,6 +24,7 @@ export default function FlagPanel({
 }) {
   const [input, setInput]           = useState('')
   const [didYouMean, setDidYouMean] = useState(null)
+  const [started, setStarted]       = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -63,7 +64,6 @@ export default function FlagPanel({
 
   const lastResult = history.length > 0 ? history[history.length - 1] : null
 
-  const [started, setStarted] = useState(false)
   if (!started) return (
     <GameIntro
       icon="🚩"

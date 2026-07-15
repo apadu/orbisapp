@@ -8,6 +8,7 @@ export default function CapToCountryPanel({
 }) {
   const [input, setInput]           = useState('')
   const [didYouMean, setDidYouMean] = useState(null)
+  const [started, setStarted]       = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -44,7 +45,6 @@ export default function CapToCountryPanel({
     if (e.key === 'Escape') setDidYouMean(null)
   }
 
-  const [started, setStarted] = useState(false)
   if (!started) return (
     <GameIntro
       icon="🗺️"
