@@ -43,7 +43,16 @@ export default function CapToCountryPanel({
   const onKeyDown = (e) => {
     if (e.key === 'Enter') { e.preventDefault(); trySubmit() }
     if (e.key === 'Escape') setDidYouMean(null)
+    if (e.key === 'Tab') { e.preventDefault(); if (!answered) onSkip() }
   }
+
+  // Enter to advance once answered
+  useEffect(() => {
+    if (!answered) return
+    const handler = (e) => { if (e.key === 'Enter') onNext() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [answered, onNext])
 
   if (!started) return (
     <GameIntro

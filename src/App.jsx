@@ -110,6 +110,37 @@ const NAME_OVERRIDES = {
   'Micronesia':               'Federated States of Micronesia',
 }
 
+const NAV_ITEMS = [
+  { section: 'Guess' },
+  { id: 'mystery',             icon: '🔍', label: 'Mystery Country' },
+  { id: 'locate',              icon: '📍', label: 'Pinpoint Country' },
+  { id: 'neighbor',            icon: '📌', label: 'Neighbors' },
+  { id: 'ooo',                 icon: '🤔', label: 'Odd One Out' },
+  { id: 'missing',             icon: '🗺️', label: 'Blind Map' },
+  { id: 'spotlight',           icon: '🔦', label: 'Solo Map' },
+  { section: 'Name All' },
+  { id: 'name-all',            icon: '🌍', label: 'Countries' },
+  { id: 'name-all-caps',       icon: '🏙️', label: 'Capitals' },
+  { id: 'name-all-currencies', icon: '💰', label: 'Currencies' },
+  { id: 'name-all-languages',  icon: '🗣️', label: 'Languages' },
+  { id: 'mountains',           icon: '⛰️', label: 'Mountain Ranges' },
+  { id: 'name-all-seas',       icon: '🌊', label: 'Seas' },
+  { id: 'name-all-rivers',     icon: '🏞️', label: 'Rivers' },
+  { id: 'history-maps',        icon: '🏛️', label: 'History' },
+  { section: 'Quiz' },
+  { id: 'capital',             icon: '🏛️', label: 'Capitals Quiz' },
+  { id: 'seas',                icon: '🌊', label: 'Seas' },
+  { id: 'cap-to-country',      icon: '🗺️', label: 'Cap to Country' },
+  { id: 'flag',                icon: '🚩', label: 'Flags' },
+  { id: 'border-chain',        icon: '🔗', label: 'Borders' },
+  { id: 'pop-order',           icon: '📊', label: 'Population' },
+  { id: 'area',                icon: '📏', label: 'Bigger or Smaller' },
+  { id: 'currency',            icon: '💰', label: 'Currency Quiz' },
+  { id: 'language',            icon: '🗣️', label: 'Language Quiz' },
+  { section: 'Explore' },
+  { id: 'learn',               icon: '🎓', label: 'Learn' },
+]
+
 export default function App() {
   const [countries,      setCountries]      = useState([]) // all features (globe rendering)
   const [gameCountries,  setGameCountries]  = useState([]) // guessable subset
@@ -166,7 +197,8 @@ export default function App() {
   const refreshDaily = () => setDailyProgress(loadDailyProgress())
 
   // ── App page & profile ───────────────────────────────────────────────────
-  const [page,    setPage]    = useState('home') // 'home' | 'game' | 'profile'
+  const [page,        setPage]        = useState('home') // 'home' | 'game' | 'profile'
+  const [drawerOpen,  setDrawerOpen]  = useState(false)
   const [profile, setProfile] = useState(() => loadProfile())
 
   // ── Shared game mode ─────────────────────────────────────────────────────
@@ -1282,10 +1314,15 @@ export default function App() {
     <div className="app-shell">
       {/* ── Top bar ── */}
       <header className="topbar">
-        <div className="topbar-brand" onClick={() => setPage('home')} style={{ cursor: 'pointer' }}>
-          <span className="topbar-logo">🌐</span>
-          <span className="topbar-name">Orbis</span>
-          <span className="topbar-tagline">Geography Games</span>
+        <div className="topbar-left">
+          <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
+            ☰
+          </button>
+          <div className="topbar-brand" onClick={() => setPage('home')} style={{ cursor: 'pointer' }}>
+            <span className="topbar-logo">🌐</span>
+            <span className="topbar-name">Orbis</span>
+            <span className="topbar-tagline">Geography Games</span>
+          </div>
         </div>
         <div className="topbar-auth">
           <StreakBadge
@@ -1346,40 +1383,39 @@ export default function App() {
         />
       )}
 
+      {/* ── Mobile drawer ── */}
+      {drawerOpen && (
+        <div className="mobile-drawer-backdrop" onClick={() => setDrawerOpen(false)}>
+          <nav className="mobile-drawer" onClick={e => e.stopPropagation()}>
+            <div className="drawer-header">
+              <span className="drawer-title">🌐 Orbis</span>
+              <button className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
+            </div>
+            <div className="drawer-scroll">
+              {NAV_ITEMS.map((item, i) =>
+                item.section ? (
+                  <div key={`sec-${i}`} className="sidebar-section">{item.section}</div>
+                ) : (
+                  <button
+                    key={item.id}
+                    className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
+                    onClick={() => { switchMode(item.id); setDrawerOpen(false); if (page !== 'game') setPage('game') }}
+                  >
+                    <span className="sidebar-icon">{item.icon}</span>
+                    <span className="sidebar-label">{item.label}</span>
+                  </button>
+                )
+              )}
+            </div>
+          </nav>
+        </div>
+      )}
+
       <div className="layout" style={{ display: page === 'profile' ? 'none' : 'flex' }}>
 
         {/* ── Left sidebar nav ── */}
         <nav className="sidebar" style={{ display: page === 'home' ? 'none' : undefined }}>
-          {[
-            { section: 'Guess' },
-            { id: 'mystery',        icon: '🔍', label: 'Mystery Country' },
-            { id: 'locate',         icon: '📍', label: 'Pinpoint Country' },
-            { id: 'neighbor',       icon: '📌', label: 'Neighbors' },
-            { id: 'ooo',            icon: '🤔', label: 'Odd One Out' },
-            { id: 'missing',        icon: '🗺️', label: 'Blind Map' },
-            { section: 'Name All' },
-            { id: 'name-all',              icon: '🌍', label: 'Countries' },
-            { id: 'name-all-caps',         icon: '🏙️', label: 'Capitals' },
-            { id: 'name-all-currencies',   icon: '💰', label: 'Currencies' },
-            { id: 'name-all-languages',    icon: '🗣️', label: 'Languages' },
-            { id: 'mountains',             icon: '⛰️', label: 'Mountain Ranges' },
-            { id: 'name-all-seas',         icon: '🌊', label: 'Seas' },
-            { id: 'name-all-rivers',       icon: '🏞️', label: 'Rivers' },
-            { id: 'history-maps',          icon: '🏛️', label: 'History' },
-            { section: 'Quiz' },
-            { id: 'capital',        icon: '🏛️', label: 'Capitals Quiz' },
-            { id: 'seas',           icon: '🌊', label: 'Seas' },
-            { id: 'cap-to-country', icon: '🗺️', label: 'Cap to Country' },
-            { id: 'flag',           icon: '🚩', label: 'Flags' },
-            { id: 'border-chain',   icon: '🔗', label: 'Borders' },
-            { id: 'pop-order',      icon: '📊', label: 'Population' },
-            { id: 'area',           icon: '📏', label: 'Bigger or Smaller' },
-            { id: 'currency',       icon: '💰', label: 'Currency Quiz' },
-            { id: 'language',       icon: '🗣️', label: 'Language Quiz' },
-            { section: 'Explore' },
-            { id: 'learn',          icon: '🎓', label: 'Learn' },
-            { id: 'spotlight',      icon: '🔦', label: 'Solo Map' },
-          ].map((item, i) =>
+          {NAV_ITEMS.map((item, i) =>
             item.section ? (
               <div key={`sec-${i}`} className="sidebar-section">{item.section}</div>
             ) : (

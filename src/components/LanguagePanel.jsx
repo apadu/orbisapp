@@ -119,6 +119,7 @@ export default function LanguagePanel() {
     const handler = (e) => {
       if (done) return
       if (e.key === 'Enter') { if (isAnswered) next(); else skip() }
+      if (e.key === 'Tab') { e.preventDefault(); if (!isAnswered) skip() }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)

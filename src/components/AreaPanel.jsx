@@ -54,7 +54,7 @@ export default function AreaPanel({ gameCountries, onPairChange }) {
     if (eligible.length >= 2 && !left) pickPair()
   }, [eligible.length])
 
-  const handleGuess = (side) => {
+  const handleGuess = useCallback((side) => {
     if (answered) return
     setAnswered(true)
     setChoice(side)
@@ -69,11 +69,22 @@ export default function AreaPanel({ gameCountries, onPairChange }) {
     setHistory(h => [{ left, right, chosenSide: side, correct, pts }, ...h].slice(0, 20))
     if (correct) { if (newStreak >= 3) playStreak(); else playCorrect() }
     else playWrong()
-  }
+  }, [answered, left, right, streak])
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     pickPair(history.slice(0, 6).flatMap(h => [h.left.name, h.right.name]))
-  }
+  }, [history, pickPair])
+
+  // Keyboard: ←/1 = left, →/2 = right, Enter = next
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'ArrowLeft'  || e.key === '1') handleGuess('left')
+      if (e.key === 'ArrowRight' || e.key === '2') handleGuess('right')
+      if (e.key === 'Enter' && answered) handleNext()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [answered, handleGuess, handleNext])
 
   const [started, setStarted] = useState(false)
   if (!started) return (

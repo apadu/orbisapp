@@ -39,7 +39,16 @@ export default function CapitalPanel({ countries, current, answered, onCorrect, 
   const onKeyDown = (e) => {
     if (e.key === 'Enter') submit()
     if (e.key === 'Escape') skip()
+    if (e.key === 'Tab') { e.preventDefault(); skip() }
   }
+
+  // Enter to advance to next question once answered
+  useEffect(() => {
+    if (!answered) return
+    const handler = (e) => { if (e.key === 'Enter') onCorrect() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [answered, onCorrect])
 
   const [started, setStarted] = useState(false)
   if (!started) return (

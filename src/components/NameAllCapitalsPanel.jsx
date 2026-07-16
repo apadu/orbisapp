@@ -162,7 +162,6 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
         '⏱ Choose countdown or free play',
         '💡 Countries light up when you name their capital',
         '✅ Common spelling variants accepted',
-        '🌐 195 countries covered',
       ]}
       onStart={() => setStarted(true)}
     />

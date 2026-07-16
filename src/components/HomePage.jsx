@@ -21,7 +21,8 @@ const MODES = [
   { id: 'locate',              icon: '📍', label: 'Pinpoint',           desc: 'Drop the pin for the given country',         category: 'guess'     },
   { id: 'neighbor',            icon: '📌', label: 'Neighbors',          desc: 'Name all countries sharing a border',           category: 'guess'     },
   { id: 'ooo',                 icon: '🤔', label: 'Odd One Out',        desc: 'Find the country that doesn\'t fit',            category: 'guess'     },
-  { id: 'missing',             icon: '🗺️', label: 'Blind Map',          desc: '20 random countries are missing. Guess them before the time is up',                 category: 'guess'     },
+  { id: 'missing',             icon: '🗺️', label: 'Blind Map',          desc: '20 random countries are missing. Guess them before the time is up', category: 'guess'     },
+  { id: 'spotlight',           icon: '🔦', label: 'Solo Map',            desc: 'Fill in a blank map at your own pace',          category: 'guess'     },
   { id: 'name-all',            icon: '🌍', label: 'Countries',          desc: 'Name every country in the world',               category: 'name-all'  },
   { id: 'name-all-caps',       icon: '🏙️', label: 'Capitals',           desc: 'Name every capital city',                       category: 'name-all'  },
   { id: 'name-all-currencies', icon: '💰', label: 'Currencies',         desc: 'Name every currency',          category: 'name-all'  },
@@ -40,7 +41,6 @@ const MODES = [
   { id: 'currency',            icon: '💰', label: 'Currency Quiz',       desc: 'Name the currency of each country',             category: 'quiz'      },
   { id: 'language',            icon: '🗣️', label: 'Language Quiz',       desc: 'Type the official language for each country',   category: 'quiz'      },
   { id: 'learn',               icon: '🎓', label: 'Learn',               desc: 'Click any country to explore its facts',        category: 'explore'   },
-  { id: 'spotlight',           icon: '🔦', label: 'Solo Map',            desc: 'Fill in a blank map at your own pace',          category: 'explore'   },
 ]
 
 export default function HomePage({ onEnter, onSelectMode, dailyProgress = {}, dailyStreak = 0 }) {

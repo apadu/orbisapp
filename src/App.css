@@ -3356,3 +3356,135 @@ html, body, #root { height: 100%; background: var(--bg); color: var(--text); fon
   color: var(--accent);
   white-space: nowrap;
 }
+
+/* ── Mobile layout ───────────────────────────────────────────────────────────── */
+
+/* Hamburger button — hidden on desktop */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.mobile-menu-btn:hover { background: var(--surface2); }
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Mobile drawer */
+.mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 200;
+  display: flex;
+}
+
+.mobile-drawer {
+  width: 260px;
+  height: 100%;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  animation: drawerSlideIn 0.2s ease;
+  overflow: hidden;
+}
+
+@keyframes drawerSlideIn {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.drawer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.drawer-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.drawer-close:hover { background: var(--surface2); }
+
+.drawer-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+@media (max-width: 640px) {
+  /* Show hamburger, keep topbar compact */
+  .mobile-menu-btn  { display: flex; align-items: center; }
+  .topbar-tagline   { display: none; }
+  .bug-report-btn   { display: none; }
+  .topbar           { padding: 0 10px; }
+  .topbar-avatar-name { display: none; }
+
+  /* Stack layout vertically */
+  .layout { flex-direction: column; }
+
+  /* Hide desktop sidebar */
+  .sidebar { display: none !important; }
+
+  /* Globe takes top ~42% */
+  .globe-pane {
+    flex: 0 0 42vh;
+    min-height: 0;
+  }
+
+  /* Panel goes full width below globe */
+  .panel {
+    width: 100%;
+    flex: 1;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* Home screen adjustments */
+  .home-overlay { padding: 0; }
+  .home-content { padding: 16px 12px 24px; gap: 14px; }
+  .home-brand   { padding: 8px 0 0; }
+  .home-title   { font-size: 2rem; }
+  .home-modes-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .home-cat-tabs { gap: 6px; }
+  .home-cat-tab  { padding: 6px 10px; font-size: 0.75rem; }
+
+  /* Daily hub on home */
+  .daily-hub { margin: 0; }
+
+  /* Topbar avatar */
+  .topbar-avatar { padding: 4px 8px; }
+
+  /* Streak popover — anchor right on mobile */
+  .streak-popover { width: 260px; right: -8px; }
+}
