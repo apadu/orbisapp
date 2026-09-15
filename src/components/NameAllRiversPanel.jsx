@@ -145,7 +145,7 @@ const ALIASES = {
   'darling':        'Darling',
 }
 
-export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChange, onNewGame }) {
+export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChange, onNewGame, onComplete }) {
   const [input,       setInput]       = useState('')
   const [flash,       setFlash]       = useState(null)
   const [found,       setFound]       = useState([]) // [feature, ...]
@@ -216,7 +216,22 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
     if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
   }, [allFound, running])
 
+  const firedComplete = useRef(false)
+  useEffect(() => {
+    if (!allFound || !timerMode || firedComplete.current) return
+    firedComplete.current = true
+    const timeLabel = timerMode === 'countup'
+      ? `in ${formatTime(elapsed)}`
+      : `with ${formatTime(remaining)} to spare`
+    onComplete?.({
+      game: 'Rivers', icon: '🏞️', total,
+      foundNames: found.map(f => f.properties.NAME),
+      timeLabel, type: 'rivers',
+    })
+  }, [allFound, timerMode])
+
   const startTimer = (mode) => {
+    firedComplete.current = false
     onNewGame()
     onMissedChange([])
     onFoundChange([])

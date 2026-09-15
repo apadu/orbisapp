@@ -12,7 +12,7 @@ function formatTime(secs) {
   return `${m}:${s}`
 }
 
-export default function NameAllPanel({ countries, found, onGuess, onNewGame, onMissed, countryInfo, blindMode = false, onBlindChange }) {
+export default function NameAllPanel({ countries, found, onGuess, onNewGame, onMissed, countryInfo, blindMode = false, onBlindChange, onComplete }) {
   const [input, setInput]             = useState('')
   const [flash, setFlash]             = useState(null)
   // null | 'normal' | 'blind'
@@ -61,6 +61,22 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
   }, [allFound, running])
 
+  const firedComplete = useRef(false)
+  useEffect(() => {
+    if (!allFound || !timerMode || firedComplete.current) return
+    firedComplete.current = true
+    const timeLabel = timerMode === 'countup'
+      ? `in ${formatTime(elapsed)}`
+      : timerMode === 'countdown'
+      ? `with ${formatTime(remaining)} to spare`
+      : ''
+    onComplete?.({
+      game: 'Countries', icon: '🌍', total,
+      foundNames: activeFound.map(f => f.name),
+      timeLabel, type: 'countries',
+    })
+  }, [allFound, timerMode])
+
   const revealMissed = () => {
     const missed = countries.filter(f => !foundSet.has(f.properties.NAME))
     onMissed(missed)
@@ -68,6 +84,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
   }
 
   const startTimer = (mode) => {
+    firedComplete.current = false
     onNewGame()
     setTimerMode(mode)
     setElapsed(0)

@@ -30,6 +30,13 @@ import OddOneOutPanel from './components/OddOneOutPanel'
 import { generateQuestion } from './utils/oddOneOut'
 import { setSoundEnabled, playCorrect, playWrong, playStreak, playWin } from './utils/sounds'
 import StreakBadge from './components/StreakBadge'
+import ScramblePanel from './components/ScramblePanel'
+import MissingVowelsPanel from './components/MissingVowelsPanel'
+import FlagColorsPanel from './components/FlagColorsPanel'
+import ConnectionsPanel from './components/ConnectionsPanel'
+import EmojiQuizPanel from './components/EmojiQuizPanel'
+import CountryFactPanel from './components/CountryFactPanel'
+import QuizHub from './components/QuizHub'
 import { loadDailyProgress, markDailyComplete, incrementDailyCount, getDailyStreak } from './utils/dailyChallenges'
 import MountainGlobe from './components/MountainGlobe'
 import NameAllSeaGlobe from './components/NameAllSeaGlobe'
@@ -52,6 +59,7 @@ import {
 import ProfilePage from './components/ProfilePage'
 import HomePage from './components/HomePage'
 import Confetti from './components/Confetti'
+import CompletionModal from './components/CompletionModal'
 import './App.css'
 import { Analytics } from "@vercel/analytics/react"
 
@@ -67,7 +75,7 @@ const KEEP_ALWAYS = new Set(['Kosovo', 'Israel', 'W. Sahara', 'Antarctica'])
 // Merge these territories into the named target country (geometry union)
 const MERGE_INTO = {}
 // Rendered on the globe but not guessable in any game
-const DISPLAY_ONLY = new Set(['Greenland', 'W. Sahara', 'Antarctica'])
+const DISPLAY_ONLY = new Set(['Greenland', 'W. Sahara', 'Antarctica', 'N. Pole'])
 
 // Never include these regardless of TYPE
 const EXCLUDE_NAMES = new Set([
@@ -110,6 +118,31 @@ const NAME_OVERRIDES = {
   'Micronesia':               'Federated States of Micronesia',
 }
 
+// Quiz modes that render on the dedicated quiz page (no globe)
+const QUIZ_MODES = new Set([
+  'scramble', 'flag', 'capital', 'cap-to-country',
+  'currency', 'language', 'area', 'pop-order', 'border-chain', 'ooo',
+  'missing-vowels', 'flag-colors', 'connections', 'emoji-quiz', 'country-fact',
+])
+
+const QUIZ_LABELS = {
+  scramble:         '🔤 Scramble',
+  flag:             '🚩 Flags Quiz',
+  capital:          '🏛️ Capitals Quiz',
+  'cap-to-country': '🗺️ Cap → Country',
+  currency:         '💰 Currency Quiz',
+  language:         '🗣️ Language Quiz',
+  area:             '📏 Bigger or Smaller',
+  'pop-order':      '📊 Population Rank',
+  'border-chain':   '🔗 Border Chain',
+  ooo:              '🤔 Odd One Out',
+  'missing-vowels': '🔡 Missing Vowels',
+  'flag-colors':    '🎨 Flag Colors',
+  connections:      '🔗 Connections',
+  'emoji-quiz':     '🌍 Country Emoji',
+  'country-fact':   '📖 Country by Fact',
+}
+
 const NAV_ITEMS = [
   { section: 'Guess' },
   { id: 'mystery',             icon: '🔍', label: 'Mystery Country' },
@@ -128,6 +161,7 @@ const NAV_ITEMS = [
   { id: 'name-all-rivers',     icon: '🏞️', label: 'Rivers' },
   { id: 'history-maps',        icon: '🏛️', label: 'History' },
   { section: 'Quiz' },
+  { id: 'scramble',            icon: '🔤', label: 'Scramble' },
   { id: 'capital',             icon: '🏛️', label: 'Capitals Quiz' },
   { id: 'seas',                icon: '🌊', label: 'Seas' },
   { id: 'cap-to-country',      icon: '🗺️', label: 'Cap to Country' },
@@ -137,6 +171,11 @@ const NAV_ITEMS = [
   { id: 'area',                icon: '📏', label: 'Bigger or Smaller' },
   { id: 'currency',            icon: '💰', label: 'Currency Quiz' },
   { id: 'language',            icon: '🗣️', label: 'Language Quiz' },
+  { id: 'missing-vowels',      icon: '🔡', label: 'Missing Vowels' },
+  { id: 'flag-colors',         icon: '🎨', label: 'Flag Colors' },
+  { id: 'connections',         icon: '🔗', label: 'Connections' },
+  { id: 'emoji-quiz',          icon: '🌍', label: 'Country Emoji' },
+  { id: 'country-fact',        icon: '📖', label: 'Country by Fact' },
   { section: 'Explore' },
   { id: 'learn',               icon: '🎓', label: 'Learn' },
 ]
@@ -197,8 +236,10 @@ export default function App() {
   const refreshDaily = () => setDailyProgress(loadDailyProgress())
 
   // ── App page & profile ───────────────────────────────────────────────────
-  const [page,        setPage]        = useState('home') // 'home' | 'game' | 'profile'
-  const [drawerOpen,  setDrawerOpen]  = useState(false)
+  const [page,        setPage]        = useState('home') // 'home' | 'game' | 'quiz' | 'profile'
+  const [drawerOpen,     setDrawerOpen]     = useState(false)
+  const [completionStats,     setCompletionStats]     = useState(null)
+  const [scrambleHighlighted, setScrambleHighlighted] = useState(null)
   const [profile, setProfile] = useState(() => loadProfile())
 
   // ── Shared game mode ─────────────────────────────────────────────────────
@@ -264,7 +305,7 @@ export default function App() {
   const [locateExpired,  setLocateExpired]  = useState(false) // sprint time up
 
   // ── Globe spin: auto-on when idle (home page or learn mode), off during any game
-  const globeSpin = page === 'home' || mode === 'learn'
+  const globeSpin = (page === 'home' || page === 'quiz') || mode === 'learn'
 
   // ── Solo Map (Spotlight) state ───────────────────────────────────────────
   const [spotlightCurrentFeature, setSpotlightCurrentFeature] = useState(null)
@@ -380,8 +421,6 @@ export default function App() {
           features.splice(srcIdx, 1)
         }
 
-        console.log(`Loaded ${features.length} countries:`,
-          features.map(f => `${f.properties.NAME} (${f.properties.TYPE})`).sort().join('\n'))
         const game = features.filter(f => !DISPLAY_ONLY.has(f.properties.NAME))
         setCountries(features)
         setGameCountries(game)
@@ -418,7 +457,6 @@ export default function App() {
             ...f,
             properties: { ...f.properties, NAME: f.properties.name },
           }))
-        console.log(`Loaded ${features.length} seas:`, features.map(f => f.properties.NAME).sort().join(', '))
         setSeas(features)
         setSeaCurrent(pickNextSea(new Set(), features))
       })
@@ -1299,14 +1337,24 @@ export default function App() {
     : mode === 'learn' ? learnSelected
     : mode === 'neighbor' ? (neighborGameStarted ? neighborTarget : null)
     : mode === 'flag' && flagAnswered ? gameCountries.find(f => f.properties.NAME === flagCurrent?.name) ?? null
+    : mode === 'scramble' ? scrambleHighlighted
     : null
 
   // ── Render ───────────────────────────────────────────────────────────────
   if (loading) return (
-    <div className="loading-screen"><div className="spinner" /><p>Loading the globe…</p></div>
+    <div className="loading-screen">
+      <div className="loading-globe">🌐</div>
+      <h1 className="loading-title">Orbis</h1>
+      <div className="loading-spinner-wrap"><div className="spinner" /></div>
+      <p className="loading-text">Loading the globe…</p>
+    </div>
   )
   if (error) return (
-    <div className="error-screen"><p>⚠️ {error}</p></div>
+    <div className="error-screen">
+      <div className="error-icon">⚠️</div>
+      <p className="error-msg">{error}</p>
+      <button className="error-retry-btn" onClick={() => window.location.reload()}>↺ Retry</button>
+    </div>
   )
 
   return (
@@ -1377,10 +1425,167 @@ export default function App() {
       {page === 'home' && (
         <HomePage
           onEnter={() => setPage('game')}
-          onSelectMode={(id) => { switchMode(id); setPage('game') }}
+          onSelectMode={(id) => {
+            if (QUIZ_MODES.has(id)) {
+              switchMode(id)
+              setPage('quiz')
+            } else {
+              switchMode(id)
+              setPage('game')
+            }
+          }}
+          onEnterQuiz={() => { setMode('quiz-hub'); setPage('quiz') }}
           dailyProgress={dailyProgress}
           dailyStreak={dailyStreak}
         />
+      )}
+
+      {/* ── Quiz page (no globe) ── */}
+      {page === 'quiz' && (
+        <div className="quiz-shell">
+          <div className="quiz-nav-bar">
+            <button className="quiz-nav-back" onClick={() => setPage('home')}>
+              ← Home
+            </button>
+            {QUIZ_MODES.has(mode) && (
+              <button className="quiz-nav-hub" onClick={() => setMode('quiz-hub')}>
+                ← All Quizzes
+              </button>
+            )}
+            <span className="quiz-nav-title">
+              {QUIZ_MODES.has(mode) ? QUIZ_LABELS[mode] : '🎯 Quiz Hub'}
+            </span>
+          </div>
+
+          <div className="quiz-content">
+            {!QUIZ_MODES.has(mode) ? (
+              <QuizHub onSelect={(id) => switchMode(id)} />
+            ) : (
+              <div className="quiz-panel-wrap">
+                <div className="panel quiz-panel-inner">
+                  {mode === 'scramble' && (
+                    <ScramblePanel
+                      gameCountries={gameCountries}
+                      countryInfo={COUNTRY_INFO}
+                      onHighlight={() => {}}
+                    />
+                  )}
+                  {mode === 'flag' && (
+                    <FlagPanel
+                      current={flagCurrent}
+                      answered={flagAnswered}
+                      correct={flagCorrect}
+                      countryNames={gameCountries.map(f => f.properties.NAME)}
+                      onGuess={handleFlagGuess}
+                      onSkip={handleFlagSkip}
+                      onNext={handleFlagNext}
+                      score={flagScore}
+                      history={flagHistory}
+                      streak={flagStreak}
+                    />
+                  )}
+                  {mode === 'capital' && (
+                    <CapitalPanel
+                      countries={gameCountries}
+                      current={capCurrent}
+                      answered={capAnswered}
+                      onCorrect={handleCapCorrect}
+                      onSkip={handleCapSkip}
+                      onNewGame={handleCapNewGame}
+                      score={capScore}
+                      history={capHistory}
+                      onGameStart={() => setCapGameStarted(true)}
+                    />
+                  )}
+                  {mode === 'cap-to-country' && (
+                    <CapToCountryPanel
+                      current={c2cCurrent}
+                      answered={c2cAnswered}
+                      correct={c2cCorrect}
+                      countryNames={gameCountries.map(f => f.properties.NAME)}
+                      onGuess={handleC2cGuess}
+                      onSkip={handleC2cSkip}
+                      onNext={handleC2cNext}
+                      score={c2cScore}
+                      history={c2cHistory}
+                    />
+                  )}
+                  {mode === 'currency' && <CurrencyPanel />}
+                  {mode === 'language' && <LanguagePanel />}
+                  {mode === 'area' && (
+                    <AreaPanel
+                      gameCountries={gameCountries}
+                      onPairChange={() => {}}
+                    />
+                  )}
+                  {mode === 'pop-order' && (
+                    <PopOrderPanel
+                      countries={popCountries}
+                      onScore={handlePopScore}
+                      totalScore={popScore}
+                      history={popHistory}
+                      onNext={handlePopNext}
+                    />
+                  )}
+                  {mode === 'border-chain' && bcStart && bcEnd && (
+                    <BorderChainPanel
+                      startCountry={bcStart}
+                      endCountry={bcEnd}
+                      adjacency={Object.fromEntries(
+                        Object.entries(adjacency).map(([k, v]) => [k, [...v]])
+                      )}
+                      countries={gameCountries}
+                      onWin={handleBcWin}
+                      totalScore={bcScore}
+                      history={bcHistory}
+                      onNext={handleBcNext}
+                      onGiveUp={handleBcGiveUp}
+                    />
+                  )}
+                  {mode === 'ooo' && (
+                    <OddOneOutPanel
+                      question={oooQuestion}
+                      answered={oooAnswered}
+                      chosen={oooChosen}
+                      score={oooScore}
+                      streak={oooStreak}
+                      history={oooHistory}
+                      onGuess={handleOooGuess}
+                      onNext={handleOooNext}
+                    />
+                  )}
+                  {mode === 'missing-vowels' && (
+                    <MissingVowelsPanel
+                      gameCountries={gameCountries}
+                      countryInfo={COUNTRY_INFO}
+                    />
+                  )}
+                  {mode === 'flag-colors' && (
+                    <FlagColorsPanel
+                      gameCountries={gameCountries}
+                      countryInfo={COUNTRY_INFO}
+                    />
+                  )}
+                  {mode === 'connections' && (
+                    <ConnectionsPanel />
+                  )}
+                  {mode === 'emoji-quiz' && (
+                    <EmojiQuizPanel
+                      gameCountries={gameCountries}
+                      countryInfo={COUNTRY_INFO}
+                    />
+                  )}
+                  {mode === 'country-fact' && (
+                    <CountryFactPanel
+                      gameCountries={gameCountries}
+                      countryInfo={COUNTRY_INFO}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ── Mobile drawer ── */}
@@ -1395,11 +1600,20 @@ export default function App() {
               {NAV_ITEMS.map((item, i) =>
                 item.section ? (
                   <div key={`sec-${i}`} className="sidebar-section">{item.section}</div>
+                ) : QUIZ_MODES.has(item.id) ? (
+                  <button
+                    key={item.id}
+                    className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
+                    onClick={() => { switchMode(item.id); setDrawerOpen(false); setPage('quiz') }}
+                  >
+                    <span className="sidebar-icon">{item.icon}</span>
+                    <span className="sidebar-label">{item.label}</span>
+                  </button>
                 ) : (
                   <button
                     key={item.id}
                     className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
-                    onClick={() => { switchMode(item.id); setDrawerOpen(false); if (page !== 'game') setPage('game') }}
+                    onClick={() => { switchMode(item.id); setDrawerOpen(false); setPage('game') }}
                   >
                     <span className="sidebar-icon">{item.icon}</span>
                     <span className="sidebar-label">{item.label}</span>
@@ -1411,13 +1625,34 @@ export default function App() {
         </div>
       )}
 
-      <div className="layout" style={{ display: page === 'profile' ? 'none' : 'flex' }}>
+      <div className="layout" style={{ display: (page === 'profile' || page === 'quiz') ? 'none' : 'flex' }}>
 
         {/* ── Left sidebar nav ── */}
-        <nav className="sidebar" style={{ display: page === 'home' ? 'none' : undefined }}>
+        <nav className="sidebar" style={{ display: (page === 'home' || page === 'quiz') ? 'none' : undefined }}>
           {NAV_ITEMS.map((item, i) =>
             item.section ? (
-              <div key={`sec-${i}`} className="sidebar-section">{item.section}</div>
+              item.section === 'Quiz' ? (
+                <div key={`sec-${i}`} className="sidebar-section sidebar-quiz-section">
+                  {item.section}
+                  <button
+                    className="sidebar-quiz-hub-link"
+                    onClick={() => { setMode('quiz-hub'); setPage('quiz') }}
+                  >
+                    Open Hub →
+                  </button>
+                </div>
+              ) : (
+                <div key={`sec-${i}`} className="sidebar-section">{item.section}</div>
+              )
+            ) : QUIZ_MODES.has(item.id) ? (
+              <button
+                key={item.id}
+                className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
+                onClick={() => { switchMode(item.id); setPage('quiz') }}
+              >
+                <span className="sidebar-icon">{item.icon}</span>
+                <span className="sidebar-label">{item.label}</span>
+              </button>
             ) : (
               <button
                 key={item.id}
@@ -1473,9 +1708,8 @@ export default function App() {
               spinEnabled={false}
             />
           ) : (
-            <>
-              <Globe
-                countries={countries}
+            <Globe
+                countries={(mode === 'spotlight' || (mode === 'name-all' && nameAllBlind)) ? gameCountries : countries}
                 guesses={globeGuesses}
                 mystery={mode === 'mystery' ? mystery : null}
                 gameWon={mode === 'mystery' ? gameWon : false}
@@ -1494,8 +1728,6 @@ export default function App() {
                 lightMode={lightMode}
                 flyToFeature={flyToFeature}
               />
-              <Confetti active={(mode === 'mystery' && gameWon) || missingComplete} />
-            </>
           )}
         </div>
 
@@ -1526,6 +1758,7 @@ export default function App() {
             countryInfo={COUNTRY_INFO}
             blindMode={nameAllBlind}
             onBlindChange={setNameAllBlind}
+            onComplete={setCompletionStats}
           />
         )}
         {mode === 'capital' && (
@@ -1548,6 +1781,7 @@ export default function App() {
             onFoundChange={setCapsFound}
             onMissedChange={setCapsAllMissed}
             onNewGame={() => { setCapsFound([]); setCapsAllMissed([]) }}
+            onComplete={setCompletionStats}
           />
         )}
         {mode === 'name-all-currencies' && (
@@ -1556,6 +1790,7 @@ export default function App() {
             onFoundChange={setCurrenciesFound}
             onMissedChange={setCurrenciesMissed}
             onNewGame={() => { setCurrenciesFound([]); setCurrenciesMissed([]) }}
+            onComplete={setCompletionStats}
           />
         )}
         {mode === 'name-all-languages' && (
@@ -1564,6 +1799,7 @@ export default function App() {
             onFoundChange={setLanguagesFound}
             onMissedChange={setLanguagesMissed}
             onNewGame={() => { setLanguagesFound([]); setLanguagesMissed([]) }}
+            onComplete={setCompletionStats}
           />
         )}
         {mode === 'mountains' && (
@@ -1580,6 +1816,7 @@ export default function App() {
             onFoundChange={setSeasAllFound}
             onMissedChange={setSeasAllMissed}
             onNewGame={() => { setSeasAllFound([]); setSeasAllMissed([]) }}
+            onComplete={setCompletionStats}
           />
         )}
         {mode === 'name-all-rivers' && (
@@ -1588,6 +1825,7 @@ export default function App() {
             onFoundChange={setRiversFound}
             onMissedChange={setRiversMissed}
             onNewGame={() => { setRiversFound([]); setRiversMissed([]) }}
+            onComplete={setCompletionStats}
           />
         )}
         {mode === 'history-maps' && (
@@ -1646,6 +1884,13 @@ export default function App() {
         )}
         {mode === 'language' && (
           <LanguagePanel />
+        )}
+        {mode === 'scramble' && (
+          <ScramblePanel
+            gameCountries={gameCountries}
+            countryInfo={COUNTRY_INFO}
+            onHighlight={setScrambleHighlighted}
+          />
         )}
         {mode === 'flag' && (
           <FlagPanel
@@ -1744,7 +1989,15 @@ export default function App() {
       </div>
     </div>
     </div>
+    <Confetti active={(mode === 'mystery' && gameWon) || missingComplete || !!completionStats} />
     <Analytics />
+    {completionStats && (
+      <CompletionModal
+        stats={completionStats}
+        onClose={() => setCompletionStats(null)}
+        onPlayAgain={() => setCompletionStats(null)}
+      />
+    )}
     </>
   )
 }

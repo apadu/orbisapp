@@ -14,7 +14,7 @@ function normLang(str) {
   return str.trim().toLowerCase().replace(/[^a-z]/g, '')
 }
 
-export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, onMissedChange, onNewGame }) {
+export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, onMissedChange, onNewGame, onComplete }) {
   const [input,       setInput]       = useState('')
   const [flash,       setFlash]       = useState(null)
   const [found,       setFound]       = useState([]) // [{language, countries:[{name,feature}]}]
@@ -98,7 +98,23 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
     if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
   }, [allFound, running])
 
+  const firedComplete = useRef(false)
+  useEffect(() => {
+    if (!allFound || !timerMode || firedComplete.current) return
+    firedComplete.current = true
+    const timeLabel = timerMode === 'countup'
+      ? `in ${formatTime(elapsed)}`
+      : `with ${formatTime(remaining)} to spare`
+    onComplete?.({
+      game: 'Languages', icon: '🗣️', total,
+      foundNames: found.map(f => f.language),
+      foundKeys: found.flatMap(f => f.countries.map(c => c.name)),
+      timeLabel, type: 'languages',
+    })
+  }, [allFound, timerMode])
+
   const startTimer = (mode) => {
+    firedComplete.current = false
     onNewGame()
     onMissedChange([])
     onFoundChange([])

@@ -11,7 +11,7 @@ function formatTime(secs) {
   return `${m}:${s}`
 }
 
-export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFoundChange, onMissedChange, onNewGame }) {
+export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFoundChange, onMissedChange, onNewGame, onComplete }) {
   const [input,       setInput]       = useState('')
   const [flash,       setFlash]       = useState(null)
   const [found,       setFound]       = useState([])   // [{name, capital, feature}]
@@ -81,6 +81,21 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   useEffect(() => { if (expired) revealMissed() }, [expired, revealMissed])
 
   // Stop timer when all found
+  const firedComplete = useRef(false)
+  useEffect(() => {
+    if (!allFound || !timerMode || firedComplete.current) return
+    firedComplete.current = true
+    const timeLabel = timerMode === 'countup'
+      ? `in ${formatTime(elapsed)}`
+      : `with ${formatTime(remaining)} to spare`
+    onComplete?.({
+      game: 'Capitals', icon: '🏙️', total,
+      foundNames: found.map(f => f.capital ?? f.name),
+      foundKeys: found.map(f => f.name),
+      timeLabel, type: 'capitals',
+    })
+  }, [allFound, timerMode])
+
   useEffect(() => {
     if (allFound && running) {
       clearInterval(tickRef.current)
@@ -89,6 +104,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   }, [allFound, running])
 
   const startTimer = (mode) => {
+    firedComplete.current = false
     onNewGame()
     onMissedChange([])
     onFoundChange([])

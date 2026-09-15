@@ -14,7 +14,7 @@ function normCurrency(str) {
   return str.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, onMissedChange, onNewGame }) {
+export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, onMissedChange, onNewGame, onComplete }) {
   const [input,       setInput]       = useState('')
   const [flash,       setFlash]       = useState(null)
   const [found,       setFound]       = useState([]) // [{currencyName, code, countries:[{name,feature}]}]
@@ -98,7 +98,23 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
     if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
   }, [allFound, running])
 
+  const firedComplete = useRef(false)
+  useEffect(() => {
+    if (!allFound || !timerMode || firedComplete.current) return
+    firedComplete.current = true
+    const timeLabel = timerMode === 'countup'
+      ? `in ${formatTime(elapsed)}`
+      : `with ${formatTime(remaining)} to spare`
+    onComplete?.({
+      game: 'Currencies', icon: '💰', total,
+      foundNames: found.map(f => f.currencyName),
+      foundKeys: found.flatMap(f => f.countries.map(c => c.name)),
+      timeLabel, type: 'currencies',
+    })
+  }, [allFound, timerMode])
+
   const startTimer = (mode) => {
+    firedComplete.current = false
     onNewGame()
     onMissedChange([])
     onFoundChange([])

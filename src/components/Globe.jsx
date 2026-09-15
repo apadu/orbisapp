@@ -141,14 +141,16 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
 
   // ── Arctic ice cap (gradient band at top of equirectangular canvas) ────────
-  // lat 72°N → y = (90-72)/180 * CANVAS_H from top
-  const arcticY = (90 - 72) / 180 * CANVAS_H
-  const arcticGrad = ctx.createLinearGradient(0, 0, 0, arcticY)
-  arcticGrad.addColorStop(0,   'rgba(220,240,255,0.96)')
-  arcticGrad.addColorStop(0.65,'rgba(200,230,255,0.55)')
-  arcticGrad.addColorStop(1,   'rgba(200,230,255,0)')
-  ctx.fillStyle = arcticGrad
-  ctx.fillRect(0, 0, CANVAS_W, arcticY)
+  // Skipped in soloMode so the blank-map games don't show a white polar glow
+  if (!soloMode) {
+    const arcticY = (90 - 72) / 180 * CANVAS_H
+    const arcticGrad = ctx.createLinearGradient(0, 0, 0, arcticY)
+    arcticGrad.addColorStop(0,   'rgba(220,240,255,0.96)')
+    arcticGrad.addColorStop(0.65,'rgba(200,230,255,0.55)')
+    arcticGrad.addColorStop(1,   'rgba(200,230,255,0)')
+    ctx.fillStyle = arcticGrad
+    ctx.fillRect(0, 0, CANVAS_W, arcticY)
+  }
 
 
   // Build a lookup of merged-territory features keyed by host name

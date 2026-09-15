@@ -17,7 +17,7 @@ function normSea(str) {
     .replace(/[^a-z]/g, '')
 }
 
-export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, onNewGame }) {
+export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, onNewGame, onComplete }) {
   const [input,       setInput]       = useState('')
   const [flash,       setFlash]       = useState(null)
   const [found,       setFound]       = useState([])
@@ -83,7 +83,22 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
     if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
   }, [allFound, running])
 
+  const firedComplete = useRef(false)
+  useEffect(() => {
+    if (!allFound || !timerMode || firedComplete.current) return
+    firedComplete.current = true
+    const timeLabel = timerMode === 'countup'
+      ? `in ${formatTime(elapsed)}`
+      : `with ${formatTime(remaining)} to spare`
+    onComplete?.({
+      game: 'Seas', icon: '🌊', total,
+      foundNames: found.map(f => f.properties.NAME),
+      timeLabel, type: 'seas',
+    })
+  }, [allFound, timerMode])
+
   const startTimer = (mode) => {
+    firedComplete.current = false
     onNewGame()
     onMissedChange([])
     onFoundChange([])
