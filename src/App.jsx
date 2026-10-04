@@ -36,6 +36,7 @@ import FlagColorsPanel from './components/FlagColorsPanel'
 import ConnectionsPanel from './components/ConnectionsPanel'
 import EmojiQuizPanel from './components/EmojiQuizPanel'
 import CountryFactPanel from './components/CountryFactPanel'
+import EndonymPanel from './components/EndonymPanel'
 import QuizHub from './components/QuizHub'
 import { loadDailyProgress, markDailyComplete, incrementDailyCount, getDailyStreak } from './utils/dailyChallenges'
 import MountainGlobe from './components/MountainGlobe'
@@ -122,7 +123,7 @@ const NAME_OVERRIDES = {
 const QUIZ_MODES = new Set([
   'scramble', 'flag', 'capital', 'cap-to-country',
   'currency', 'language', 'area', 'pop-order', 'border-chain', 'ooo',
-  'missing-vowels', 'flag-colors', 'connections', 'emoji-quiz', 'country-fact',
+  'missing-vowels', 'flag-colors', 'connections', 'emoji-quiz', 'country-fact', 'endonyms',
 ])
 
 const QUIZ_LABELS = {
@@ -141,6 +142,7 @@ const QUIZ_LABELS = {
   connections:      '🔗 Connections',
   'emoji-quiz':     '🌍 Country Emoji',
   'country-fact':   '📖 Country by Fact',
+  endonyms:         '🗺️ Endonyms',
 }
 
 const NAV_ITEMS = [
@@ -176,6 +178,7 @@ const NAV_ITEMS = [
   { id: 'connections',         icon: '🔗', label: 'Connections' },
   { id: 'emoji-quiz',          icon: '🌍', label: 'Country Emoji' },
   { id: 'country-fact',        icon: '📖', label: 'Country by Fact' },
+  { id: 'endonyms',            icon: '🗺️', label: 'Endonyms' },
   { section: 'Explore' },
   { id: 'learn',               icon: '🎓', label: 'Learn' },
 ]
@@ -1577,6 +1580,12 @@ export default function App() {
                   )}
                   {mode === 'country-fact' && (
                     <CountryFactPanel
+                      gameCountries={gameCountries}
+                      countryInfo={COUNTRY_INFO}
+                    />
+                  )}
+                  {mode === 'endonyms' && (
+                    <EndonymPanel
                       gameCountries={gameCountries}
                       countryInfo={COUNTRY_INFO}
                     />

@@ -119,6 +119,14 @@ const QUIZ_ITEMS = [
     difficulty: 'Hard',
     players: '2.7k plays',
   },
+  {
+    id: 'endonyms',
+    icon: '🗺️',
+    label: 'Endonyms',
+    desc: "Recognize countries by their own names in their own scripts",
+    difficulty: 'Hard',
+    players: '1.9k plays',
+  },
 ]
 
 const DIFF_COLOR = {
