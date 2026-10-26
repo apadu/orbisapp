@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { normalizeInput, resolveAlias } from '../utils/aliases'
 import GameIntro from './GameIntro'
+import SetupCard, { TIMER_OPTION } from './SetupCard'
+import GiveUpButton from './GiveUpButton'
+import GameSummary from './GameSummary'
 import { playCorrect, playWin } from '../utils/sounds'
 
 const normalize = normalizeInput
@@ -86,6 +89,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
   const startTimer = (mode) => {
     firedComplete.current = false
     onNewGame()
+    onMissed([])
     setTimerMode(mode)
     setElapsed(0)
     setRemaining(COUNTDOWN_SECONDS)
@@ -93,6 +97,8 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     setConfirmStop(false)
     setGameOver(false)
     setRunning(true)
+    setInput('')
+    setTimeout(() => inputRef.current?.focus(), 50)
   }
 
   const handlePickMapStyle = (style) => {
@@ -158,6 +164,33 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     />
   )
 
+  if (!timerMode) return (
+    <SetupCard
+      mode="name-all"
+      icon="🌍"
+      title="Name All Countries"
+      desc="Type every country in the world. Countries light up on the globe as you name them."
+      rules={[
+        '💡 Alternate spellings and aliases accepted',
+        '🙈 Empty globe: countries only appear once you name them',
+        '🏳️ Give up any time to reveal what you missed',
+        '🌐 All 196 countries included',
+      ]}
+      options={[
+        {
+          id: 'map', label: 'Globe', default: 'normal',
+          choices: [
+            { value: 'normal', label: '🗺️ Normal', hint: 'Every country is drawn — they light up as you name them' },
+            { value: 'blind',  label: '🙈 Empty',  hint: 'Blank globe — countries appear only once you name them' },
+          ],
+        },
+        TIMER_OPTION,
+      ]}
+      typeToStart
+      onStart={(v, typed) => { handlePickMapStyle(v.map); startTimer(v.timer); if (typed) setInput(typed) }}
+    />
+  )
+
   return (
     <>
       {/* Header */}
@@ -170,38 +203,6 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
         </p>
       </div>
 
-      {/* Step 1: Map style picker */}
-      {!mapStyle && !allFound && (
-        <div className="na-map-picker">
-          <p className="na-map-picker-label">How do you want to play?</p>
-          <button className="na-map-opt" onClick={() => handlePickMapStyle('normal')}>
-            <span className="na-map-opt-icon">🗺️</span>
-            <div className="na-map-opt-text">
-              <strong>Normal globe</strong>
-              <span>Countries are visible on the globe</span>
-            </div>
-            <span className="na-map-opt-arrow">›</span>
-          </button>
-          <button className="na-map-opt" onClick={() => handlePickMapStyle('blind')}>
-            <span className="na-map-opt-icon">🙈</span>
-            <div className="na-map-opt-text">
-              <strong>Empty globe</strong>
-              <span>Globe starts empty — countries appear as you name them</span>
-            </div>
-            <span className="na-map-opt-arrow">›</span>
-          </button>
-        </div>
-      )}
-
-      {/* Step 2: Timer picker */}
-      {mapStyle && !timerMode && !allFound && (
-        <div className="na-timer-picker">
-          <span className="na-timer-label">Choose mode</span>
-          <button className="na-timer-opt" onClick={() => startTimer('countdown')}>⏳ 15 min countdown</button>
-          <button className="na-timer-opt" onClick={() => startTimer('countup')}>⏱ Free play</button>
-        </div>
-      )}
-
       {/* Active timer bar */}
       {timerMode && (
         <div className={`na-timer-bar${countdownDanger ? ' na-timer-danger' : ''}`}>
@@ -212,30 +213,13 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
             {timerMode === 'countdown' ? '⏳ countdown' : '⏱ free play'}
           </span>
           <div className="na-timer-controls">
-            {!expired && !allFound && !gameOver && (
-              <button className="na-timer-btn" onClick={() => setRunning(r => !r)}>
-                {running ? '⏸' : '▶'}
-              </button>
-            )}
-            {!gameOver && (
-              <button className="na-timer-btn na-timer-stop" onClick={() => setConfirmStop(true)} title="Stop">✕</button>
+            {!gameOver && !expired && !allFound && (
+              <GiveUpButton compact onConfirm={() => { clearInterval(tickRef.current); setRunning(false); revealMissed() }} />
             )}
           </div>
         </div>
       )}
 
-      {/* Confirm stop */}
-      {confirmStop && (
-        <div className="na-confirm-stop">
-          <span>Stop? This will reveal missed countries.</span>
-          <div className="na-confirm-btns">
-            <button className="na-confirm-yes" onClick={() => {
-              clearInterval(tickRef.current); setRunning(false); setConfirmStop(false); revealMissed()
-            }}>Stop</button>
-            <button className="na-confirm-no" onClick={() => setConfirmStop(false)}>Keep going</button>
-          </div>
-        </div>
-      )}
 
       {/* Expired */}
       {expired && (
@@ -281,7 +265,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder={!running ? 'Paused…' : 'Type a country name…'}
+              placeholder="Type a country name…"
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
@@ -294,25 +278,19 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
         </div>
       )}
 
-      {/* Missed list */}
-      {gameOver && missedCountries.length > 0 && (
-        <div className="guesses-section">
-          <h3 className="guesses-title">
-            Missed <span className="guess-count guess-count-missed">{missedCountries.length}</span>
-          </h3>
-          <ul className="guess-list">
-            {missedCountries.map(name => (
-              <li key={name} className="guess-item guess-item-missed">
-                <span className="guess-swatch" style={{ background: '#ef4444' }} />
-                <span className="guess-name">{name}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* End-of-game summary */}
+      {(gameOver || allFound) && (
+        <GameSummary
+          noun="countries"
+          total={total}
+          timeLabel={timerMode === 'countdown' ? `${formatTime(COUNTDOWN_SECONDS - remaining)} used` : formatTime(elapsed)}
+          found={activeFound.map(f => ({ label: f.name, icon: countryInfo?.[f.name]?.flag }))}
+          missed={missedCountries.map(n => ({ label: n, icon: countryInfo?.[n]?.flag }))}
+        />
       )}
 
-      {/* Found list */}
-      {activeFound.length > 0 && (
+      {/* Found list (live, during play) */}
+      {!(gameOver || allFound) && activeFound.length > 0 && (
         <div className="guesses-section">
           <h3 className="guesses-title">
             Found <span className="guess-count">{activeFound.length}</span>
@@ -330,12 +308,14 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
 
       {/* Footer */}
       <div className="panel-footer">
-        {!timerMode && mapStyle
-          ? <button className="new-game-btn na-start-default" onClick={() => startTimer('countup')}>▶ Start</button>
-          : timerMode
-          ? <button className="new-game-btn" onClick={handleReset}>↩ Reset</button>
-          : null
-        }
+        {(gameOver || expired || allFound) ? (
+          <>
+            <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>▶ Play again</button>
+            <button className="new-game-btn" onClick={handleReset}>⚙ Settings</button>
+          </>
+        ) : (
+          <button className="new-game-btn" onClick={handleReset}>↩ Reset</button>
+        )}
       </div>
     </>
   )

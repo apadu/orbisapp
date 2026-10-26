@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { resolveAlias } from '../utils/aliases'
+import SetupCard from './SetupCard'
+import GiveUpButton from './GiveUpButton'
+import GameSummary from './GameSummary'
 
 const TIMERS = { standard: 20 * 60, hard: 30 * 60 }
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -134,34 +137,29 @@ export default function SpotlightPanel({
 
   const urgent = timeLeft <= 60 && phase === 'playing'
 
-  // ── Mode select screen ────────────────────────────────────────────────────
+  // ── Setup screen ──────────────────────────────────────────────────────────
   if (phase === 'select') {
     return (
-      <div className="spotlight-panel">
-        <div className="spotlight-select">
-          <div className="spotlight-select-icon">🌍</div>
-          <h2 className="spotlight-select-title">Solo Map</h2>
-          <p className="spotlight-select-desc">
-            One country lights up on an otherwise empty globe — identify it to move on!
-          </p>
-          <div className="spotlight-mode-cards">
-            <button className="spotlight-mode-card" onClick={() => startGame('standard')}>
-              <span className="smc-icon">🟢</span>
-              <div className="smc-body">
-                <span className="smc-title">Standard</span>
-                <span className="smc-detail">Guessed countries stay green · 20 min</span>
-              </div>
-            </button>
-            <button className="spotlight-mode-card hard" onClick={() => startGame('hard')}>
-              <span className="smc-icon">🔴</span>
-              <div className="smc-body">
-                <span className="smc-title">Hard</span>
-                <span className="smc-detail">Only the current country is visible · 30 min</span>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
+      <SetupCard
+        mode="spotlight"
+        icon="🔦"
+        title="Solo Map"
+        desc="One country lights up on an otherwise empty globe — identify it to move on!"
+        rules={[
+          '🔦 One country at a time lights up',
+          '⌨️ Type its name to move to the next',
+          '🙈 Hard mode: only the current country is ever visible',
+        ]}
+        options={[{
+          id: 'difficulty', label: 'Mode', default: 'standard',
+          choices: [
+            { value: 'standard', label: '🟢 Standard', hint: 'Guessed countries stay green · 20 min' },
+            { value: 'hard',     label: '🔴 Hard',     hint: 'Only the current country is visible · 30 min' },
+          ],
+        }]}
+        typeToStart
+        onStart={(v, typed) => { startGame(v.difficulty); if (typed) setInput(typed) }}
+      />
     )
   }
 
@@ -200,15 +198,7 @@ export default function SpotlightPanel({
             autoCorrect="off"
             spellCheck={false}
           />
-          {confirmGU ? (
-            <div className="missing-giveup-confirm">
-              <span>Give up the game?</span>
-              <button className="missing-giveup-yes" onClick={() => { setConfirmGU(false); endGame() }}>Yes, reveal</button>
-              <button className="missing-giveup-no"  onClick={() => { setConfirmGU(false); inputRef.current?.focus() }}>Cancel</button>
-            </div>
-          ) : (
-            <button className="missing-giveup-btn" onClick={() => setConfirmGU(true)}>Give Up</button>
-          )}
+          <GiveUpButton compact onConfirm={() => endGame()} />
         </div>
       )}
 
@@ -219,34 +209,39 @@ export default function SpotlightPanel({
             ? <span className="missing-perfect">🎉 All {total} countries identified!</span>
             : <span className="missing-score">Identified {found.length} / {total}</span>
           }
-          <button
-            className="missing-start-btn"
-            onClick={() => { onMissedChange([]); onFoundChange([]); setPhase('select') }}
-          >
-            Play Again
-          </button>
+          <div className="locate-again-row">
+            <button
+              className="missing-start-btn"
+              onClick={() => { onMissedChange([]); onFoundChange([]); startGame(gameMode) }}
+            >
+              ▶ Play again
+            </button>
+            <button
+              className="new-game-btn"
+              onClick={() => { onMissedChange([]); onFoundChange([]); setPhase('select') }}
+            >
+              ⚙ Settings
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Found list */}
-      {found.length > 0 && (
+      {/* End-of-game summary */}
+      {phase === 'done' && (
+        <GameSummary
+          noun="countries"
+          total={total}
+          found={found.map(n => ({ label: n, icon: countryInfo[n]?.flag }))}
+          missed={missedList.map(n => ({ label: n, icon: countryInfo[n]?.flag }))}
+        />
+      )}
+
+      {/* Found list (live, during play) */}
+      {phase !== 'done' && found.length > 0 && (
         <div className="missing-list-block">
           <div className="missing-list-header found-header">✓ Identified ({found.length})</div>
           {[...found].reverse().map(name => (
             <div key={name} className="missing-list-item found-item">
-              <span className="missing-item-flag">{countryInfo[name]?.flag ?? '🏳️'}</span>
-              <span className="missing-item-name">{name}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Missed list (end only) */}
-      {missedList.length > 0 && (
-        <div className="missing-list-block">
-          <div className="missing-list-header missed-header">✗ Missed ({missedList.length})</div>
-          {missedList.map(name => (
-            <div key={name} className="missing-list-item missed-item">
               <span className="missing-item-flag">{countryInfo[name]?.flag ?? '🏳️'}</span>
               <span className="missing-item-name">{name}</span>
             </div>

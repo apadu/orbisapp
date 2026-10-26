@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import * as THREE from 'three'
+import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
 import { geoEquirectangular, geoPath } from 'd3-geo'
 
 const CANVAS_W = 4096
@@ -19,64 +20,110 @@ function pr(x) {
   return ((Math.sin(x * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
 }
 
-// Draw a mountain range as rows of cartographic ▲ triangle symbols
+// ── Old-map style ─────────────────────────────────────────────────────────
+// Parchment land, muted sea, and each range drawn as a sinuous ridge spine with
+// hachures (short strokes running downslope), darker on the "shadow" side —
+// the way 18th/19th-century maps showed relief.
+const PALETTE = {
+  sea:        '#86a9b8',
+  land:       '#e9dcb9',
+  border:     'rgba(110, 80, 45, 0.45)',
+  ink:        'rgba(92, 62, 34, 0.9)',     // unfound ranges: sepia ink
+  found:      'rgba(24, 110, 40, 0.95)',
+  foundWash:  'rgba(57, 160, 60, 0.28)',
+  missed:     'rgba(170, 30, 30, 0.95)',
+  missedWash: 'rgba(220, 60, 60, 0.25)',
+}
+
 function drawMountainRange(ctx, feature, state) {
-  const { cLon, cLat, rx, ry, rotDeg } = feature.properties
+  const { NAME, cLon, cLat, rx, ry, rotDeg } = feature.properties
   const [cx, cy] = lonLatToXY(cLon, cLat)
   const rxPx = rx * DEG_TO_PX
-  const ryPx = ry * DEG_TO_PX
-
-  const triH = Math.max(ryPx * 2.0, 28)
-  const triW = triH * 0.68
-
-  const nCols = Math.max(2, Math.round(rxPx * 2 / (triW * 1.5)))
-  const nRows = ry >= 3.5 ? 3 : ry >= 1.8 ? 2 : 1
-  const rowGap = ryPx * 1.1
-
+  const halfW = Math.max(ry * DEG_TO_PX, 12)
   const seed = Math.round(Math.abs(cLon * 13 + cLat * 7)) % 100
 
-  let fill, stroke, lw
-  if (state === 'found') {
-    fill = 'rgba(57, 255, 20, 0.92)';  stroke = '#39ff14';  lw = 2
-  } else if (state === 'missed') {
-    fill = 'rgba(239, 68, 68, 0.92)';  stroke = '#ef4444';  lw = 2
-  } else {
-    fill = 'rgba(192, 132, 48, 0.92)'; stroke = 'rgba(220, 160, 60, 1.0)'; lw = 1.5
-  }
+  const ink  = state === 'found' ? PALETTE.found : state === 'missed' ? PALETTE.missed : PALETTE.ink
+  const wash = state === 'found' ? PALETTE.foundWash : state === 'missed' ? PALETTE.missedWash : null
+
+  // Ridge spine: gentle S-curve along the range axis
+  const spineY = (x) => halfW * 0.28 * Math.sin((x / rxPx) * Math.PI * 1.25 + seed)
 
   ctx.save()
   ctx.translate(cx, cy)
   ctx.rotate(-rotDeg * Math.PI / 180)
-  ctx.fillStyle   = fill
-  ctx.strokeStyle = stroke
-  ctx.lineWidth   = lw
+  ctx.lineCap = 'round'
 
-  const colSpacing = rxPx * 2 / nCols
+  // Soft colour wash under found / missed ranges
+  if (wash) {
+    ctx.beginPath()
+    ctx.ellipse(0, 0, rxPx + halfW * 0.6, halfW * 1.5, 0, 0, Math.PI * 2)
+    ctx.fillStyle = wash
+    ctx.fill()
+  }
 
-  for (let row = 0; row < nRows; row++) {
-    const rowY    = (row - (nRows - 1) / 2) * rowGap
-    const stagger = row % 2 === 1 ? colSpacing * 0.5 : 0
-
-    for (let col = 0; col < nCols + 1; col++) {
-      const x = -rxPx + col * colSpacing + stagger - colSpacing * 0.5
-      const t = (x + rxPx) / (rxPx * 2)
-      if (t < 0.02 || t > 0.98) continue
-      const fade = Math.sin(Math.min(1, Math.max(0, t)) * Math.PI) ** 0.5
-      const rowScale = nRows > 1 && row === Math.floor(nRows / 2) ? 1.0 : 0.70
-      const sz = fade * rowScale * (0.72 + pr(col * 7 + row * 13 + seed) * 0.28)
-      if (sz < 0.08) continue
-
-      const w = triW * sz
-      const h = triH * sz
-
+  // Hachures: tapered wedges radiating downslope from the crest.
+  // Shadow flank = longer, denser, darker; lit flank = short and sparse.
+  ctx.fillStyle = ink
+  ctx.strokeStyle = ink
+  const step = Math.max(4, Math.min(7, rxPx / 45))
+  let i = 0
+  for (let x = -rxPx; x <= rxPx; x += step, i++) {
+    const t = (x + rxPx) / (2 * rxPx)
+    const env = Math.sin(Math.PI * t) ** 0.55
+    if (env < 0.1) continue
+    const y0 = spineY(x)
+    const alt = i % 2 === 0 ? 1 : 0.62                      // long/short rhythm
+    for (const side of [-1, 1]) {
+      const shadow = side === 1
+      if (!shadow && i % 2 === 1) continue                  // lit side: every other stroke
+      const r = pr(i * 3 + (shadow ? 7 : 1) + seed)
+      const len = halfW * env * alt * (0.6 + 0.5 * r) * (shadow ? 1.15 : 0.7)
+      const ang = (t - 0.5) * 0.9 * side + (r - 0.5) * 0.25 // fan outwards toward the ends
+      const tipX = x + Math.sin(ang) * len
+      const tipY = y0 + side * Math.cos(ang) * len
+      const base = shadow ? 2.1 : 1.2
       ctx.beginPath()
-      ctx.moveTo(x,     rowY - h)
-      ctx.lineTo(x - w, rowY + h * 0.18)
-      ctx.lineTo(x + w, rowY + h * 0.18)
+      ctx.moveTo(x - base, y0)
+      ctx.lineTo(x + base, y0)
+      ctx.lineTo(tipX, tipY)
       ctx.closePath()
       ctx.fill()
+    }
+    // Occasional spur: a longer branching ridge on the shadow side
+    if (env > 0.5 && pr(i * 17 + seed) > 0.86) {
+      const len = halfW * 1.35 * env
+      const dir = (t - 0.5) * 1.2
+      ctx.lineWidth = 1.6
+      ctx.beginPath()
+      ctx.moveTo(x, y0)
+      ctx.quadraticCurveTo(x + dir * len * 0.3, y0 + len * 0.5, x + dir * len * 0.6, y0 + len)
       ctx.stroke()
     }
+  }
+
+  // Ridge crest line
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  for (let x = -rxPx * 0.96; x <= rxPx * 0.96; x += 6) {
+    const y = spineY(x)
+    if (x === -rxPx * 0.96) ctx.moveTo(x, y); else ctx.lineTo(x, y)
+  }
+  ctx.stroke()
+
+  // Copperplate-style label once revealed
+  if (state !== 'unfound') {
+    const size = Math.max(22, Math.min(34, rxPx / 6))
+    ctx.font = `italic 600 ${size}px Georgia, "Times New Roman", serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    // keep text upright
+    const upsideDown = Math.cos(rotDeg * Math.PI / 180) < 0
+    if (upsideDown) ctx.rotate(Math.PI)
+    ctx.lineWidth = 5
+    ctx.strokeStyle = 'rgba(233, 220, 185, 0.9)'
+    ctx.strokeText(NAME, 0, halfW * 1.05)
+    ctx.fillStyle = ink
+    ctx.fillText(NAME, 0, halfW * 1.05)
   }
 
   ctx.restore()
@@ -89,18 +136,18 @@ function redrawMountains(canvas, countries, ranges, foundNames, missedNames) {
     .translate([CANVAS_W / 2, CANVAS_H / 2])
   const path = geoPath().projection(proj).context(ctx)
 
-  // Ocean
-  ctx.fillStyle = '#1254c0'
+  // Sea
+  ctx.fillStyle = PALETTE.sea
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
 
-  // Land
+  // Land (parchment) + faint borders
   for (const f of countries) {
     ctx.beginPath()
     path(f)
-    ctx.fillStyle = '#22c45c'
+    ctx.fillStyle = PALETTE.land
     ctx.fill()
-    ctx.strokeStyle = '#071a42'
-    ctx.lineWidth = 0.7
+    ctx.strokeStyle = PALETTE.border
+    ctx.lineWidth = 0.8
     ctx.stroke()
   }
 
@@ -141,19 +188,19 @@ export default function MountainGlobe({ countries, ranges, foundNames, missedNam
     canvasRef.current = offscreen
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color('#040c1c')
+    scene.background = null  // transparent — the starfield behind the canvas is CSS
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 500)
     camera.position.z = 3.0
     camRef.current = camera
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true })
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setSize(W, H)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     el.appendChild(renderer.domElement)
     rendRef.current = renderer
 
-    const texture = new THREE.CanvasTexture(offscreen)
+    const texture = prepareTexture(new THREE.CanvasTexture(offscreen))
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
     texture.minFilter  = THREE.LinearMipmapLinearFilter
     texture.generateMipmaps = true
@@ -163,25 +210,14 @@ export default function MountainGlobe({ countries, ranges, foundNames, missedNam
 
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(1, 72, 72),
-      new THREE.MeshPhongMaterial({ map: texture, specular: new THREE.Color(0x222233), shininess: 20 })
+      globeMaterial(texture)
     )
     scene.add(sphere)
     sphereRef.current = sphere
 
-    // Atmosphere
-    scene.add(new THREE.Mesh(
-      new THREE.SphereGeometry(1.025, 72, 72),
-      new THREE.MeshPhongMaterial({ color: '#5ab4ff', transparent: true, opacity: 0.18, side: THREE.FrontSide })
-    ))
+    addAtmosphere(scene)
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.65))
-    const sun = new THREE.DirectionalLight(0xfff0d0, 1.1)
-    sun.position.set(5, 3, 5)
-    scene.add(sun)
-    const fill = new THREE.DirectionalLight(0x4488ff, 0.3)
-    fill.position.set(-5, -2, -3)
-    scene.add(fill)
+    addLights(scene)
 
     // Starfield
     const starPos = new Float32Array(3000 * 3)

@@ -3,6 +3,7 @@ import { resolveAlias, findClosestMatch } from '../utils/aliases'
 import { EMOJI_CLUES } from '../utils/emojiClues'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
+import { startSession, trackAnswer, finishGame } from '../utils/results'
 
 const ROUND_SIZE = 20
 
@@ -56,6 +57,7 @@ export default function EmojiQuizPanel({ gameCountries, countryInfo }) {
   const isAnswered = status !== 'idle'
 
   const startGame = useCallback(() => {
+    startSession('emoji-quiz')
     const picked = shuffle(eligibleClues).slice(0, ROUND_SIZE)
     setDeck(picked)
     setIdx(0)
@@ -73,6 +75,7 @@ export default function EmojiQuizPanel({ gameCountries, countryInfo }) {
   const advance = useCallback(() => {
     const next = idx + 1
     if (next >= deck.length) {
+      finishGame('emoji-quiz')
       setDone(true)
     } else {
       setIdx(next)
@@ -90,6 +93,7 @@ export default function EmojiQuizPanel({ gameCountries, countryInfo }) {
     setLastPts(0)
     const info = countryInfo?.[current.country]
     setHistory(h => [{ name: current.country, flag: info?.flag ?? '🏳️', pts: 0, won: false }, ...h.slice(0, 9)])
+    trackAnswer('emoji-quiz', current.country, false)
     playWrong()
   }, [isAnswered, current, countryInfo])
 
@@ -106,11 +110,12 @@ export default function EmojiQuizPanel({ gameCountries, countryInfo }) {
       const pts = calcPoints(newStreak)
       setStatus('correct')
       setStreak(newStreak)
-      setScore(s => s + pts)
+      setScore(s => s + 1)
       setLastPts(pts)
       setDidYouMean(null)
       const info = countryInfo?.[current.country]
       setHistory(h => [{ name: current.country, flag: info?.flag ?? '🏳️', pts, won: true }, ...h.slice(0, 9)])
+      trackAnswer('emoji-quiz', current.country, true, 10)
       if (newStreak >= 3) playStreak(); else playCorrect()
     } else {
       const closest = findClosestMatch(raw, countryNames)
@@ -138,7 +143,7 @@ export default function EmojiQuizPanel({ gameCountries, countryInfo }) {
         '🌍 Each set of emojis hints at a country',
         '⌨️ Type the country name and press Enter',
         '⇥ Tab to skip',
-        '🔥 Streak bonus for consecutive correct answers',
+        '✨ XP only for answers you haven\'t got before',
       ]}
       onStart={() => { setStarted(true); startGame() }}
     />
@@ -152,7 +157,7 @@ export default function EmojiQuizPanel({ gameCountries, countryInfo }) {
         <div className="quiz-done-wrap">
           <div className="quiz-done-icon">🎉</div>
           <div className="quiz-done-title">{ROUND_SIZE} countries done!</div>
-          <div className="quiz-done-score">Score: <strong>{score}</strong> · {correct}/{ROUND_SIZE} correct</div>
+          <div className="quiz-done-score"><strong>{correct}</strong>/{ROUND_SIZE} correct</div>
           <button className="quiz-reset-btn" onClick={startGame}>↺ Play again</button>
         </div>
       </>
@@ -176,10 +181,10 @@ export default function EmojiQuizPanel({ gameCountries, countryInfo }) {
 
       {/* Score bar */}
       <div className="currency-score-bar">
-        <span className="currency-score">Score: <strong>{score}</strong></span>
+        <span className="currency-score">✓ <strong>{score}</strong> correct</span>
         <span className="quiz-progress">{idx + 1} / {deck.length}</span>
         {streak >= 2 && (
-          <span className="currency-streak-badge">🔥 ×{streak} · {calcPoints(streak + 1)} pts next</span>
+          <span className="currency-streak-badge">🔥 ×{streak} streak</span>
         )}
       </div>
 
@@ -232,7 +237,7 @@ export default function EmojiQuizPanel({ gameCountries, countryInfo }) {
       {isAnswered && (
         <div className={`currency-feedback ${status === 'correct' ? 'fb-correct' : 'fb-wrong'}`}>
           <span className="scramble-result-flag">{flag}</span>
-          <span>{status === 'correct' ? `✅ +${lastPts} pts` : `❌ ${current.country}`}</span>
+          <span>{status === 'correct' ? '✅ Correct!' : `❌ ${current.country}`}</span>
           <button className="currency-next-btn" onClick={advance}>
             Next →<span className="opt-key-hint"> Enter</span>
           </button>
@@ -247,7 +252,7 @@ export default function EmojiQuizPanel({ gameCountries, countryInfo }) {
             <div key={i} className={`currency-history-row ${h.won ? 'hr-correct' : 'hr-wrong'}`}>
               <span>{h.flag}</span>
               <span className="chr-country">{h.name}</span>
-              <span className="chr-pts">{h.won ? `+${h.pts}` : '—'}</span>
+              <span className="chr-pts">{h.won ? '✓' : '✗'}</span>
             </div>
           ))}
         </div>

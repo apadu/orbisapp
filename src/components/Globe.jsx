@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import * as THREE from 'three'
+import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
 import { geoEquirectangular, geoPath, geoCentroid, geoBounds } from 'd3-geo'
 
 const CANVAS_W = 4096
@@ -136,8 +137,10 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     .translate([CANVAS_W / 2, CANVAS_H / 2])
   const path = geoPath().projection(proj).context(ctx)
 
-  // Ocean
-  ctx.fillStyle = '#1254c0'
+  // Ocean — vertical gradient (deep at the poles). Hidden countries are filled
+  // with this same gradient object, so they stay pixel-identical to the sea.
+  const OCEAN = oceanGradient(ctx, CANVAS_H)
+  ctx.fillStyle = OCEAN
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
 
   // ── Arctic ice cap (gradient band at top of equirectangular canvas) ────────
@@ -164,6 +167,26 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
   }
   const isMergedTerritory = name => DISPLAY_MERGE[name] != null
 
+  // ── Pass 0: light "shallow water" halo around every visible coastline ─────
+  const isHiddenName = (name) => {
+    const linked = LINKED_COUNTRIES[name]
+    const guessed = guessMap[name] ?? (linked ? guessMap[linked] : null)
+    return hiddenSet?.has(name) ||
+      (soloMode && !guessed && name !== highlightedName && !missedSet?.has(name) && !(gameWon && name === mysteryName))
+  }
+  for (const [width, color] of [[14, SHALLOW_OUTER], [6, SHALLOW_INNER]]) {
+    ctx.lineWidth = width
+    ctx.strokeStyle = color
+    ctx.lineJoin = 'round'
+    for (const feature of countries) {
+      const name = feature.properties.NAME
+      if (isHiddenName(name) || ELLIPSE_COUNTRIES.has(name)) continue
+      ctx.beginPath()
+      path(feature)
+      ctx.stroke()
+    }
+  }
+
   // ── Pass 1: fill + stroke all country polygons ───────────────────────────
   // For hosts with merged territories: fill combined path (no internal border
   // in the fill), then stroke the HOST outline only (not merged territory outlines).
@@ -178,8 +201,9 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     const linkedName = LINKED_COUNTRIES[name]
     const effectiveColor = guessMap[name] ?? (linkedName ? guessMap[linkedName] : null)
 
-    // Antarctica: solid white landmass, no game logic
+    // Antarctica: solid white landmass, no game logic — not drawn at all on the empty globe
     if (name === 'Antarctica') {
+      if (soloMode) continue
       ctx.beginPath()
       path(feature)
       ctx.fillStyle = '#ffffff'
@@ -201,7 +225,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
 
     let fillStyle
     if (isOcean) {
-      fillStyle = '#1254c0'
+      fillStyle = OCEAN
     } else if (gameWon && name === mysteryName) {
       fillStyle = '#39ff14'
     } else if (name === highlightedName) {
@@ -211,7 +235,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     } else if (missedSet?.has(name) || (linkedName && missedSet?.has(linkedName))) {
       fillStyle = '#ef4444'
     } else {
-      fillStyle = '#22c45c'
+      fillStyle = landColor(name)
     }
 
     // Fill: combined path includes merged territories (no internal border visible)
@@ -228,7 +252,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     // Ocean-colored countries get an ocean stroke so borders are invisible too
     ctx.beginPath()
     path(feature)
-    ctx.strokeStyle = fillStyle === '#1254c0' ? '#1254c0' : '#071a42'
+    ctx.strokeStyle = fillStyle === OCEAN ? OCEAN : '#071a42'
     ctx.lineWidth = 0.7
     ctx.stroke()
   }
@@ -281,7 +305,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     for (const mf of mfs) {
       ctx.beginPath()
       path(mf)
-      ctx.strokeStyle = hostFillColors[hostName] === '#1254c0' ? '#1254c0' : '#071a42'
+      ctx.strokeStyle = hostFillColors[hostName] === OCEAN ? OCEAN : '#071a42'
       ctx.lineWidth = 1.4       // doubled so only external half → 0.7px apparent width
       ctx.stroke()
     }
@@ -304,11 +328,9 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     const isHidden   = hiddenSet?.has(name) ||
       (soloMode && !guessColor && name !== highlightedName && !missedSet?.has(name) && !isWinner)
 
+    if (isHidden) continue   // nothing to draw — the sea is already there
     let blobFill, blobStroke
-    if (isHidden) {
-      blobFill   = '#1254c0'
-      blobStroke = '#1254c0'
-    } else if (isWinner) {
+    if (isWinner) {
       blobFill   = '#39ff14'; blobStroke = '#39ff14'
     } else if (name === highlightedName) {
       blobFill   = '#f97316'; blobStroke = '#f97316'
@@ -322,9 +344,12 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
 
     drawSmoothHull(ctx, hull)
     ctx.fillStyle = blobFill
+    const tintedBlob = isWinner || name === highlightedName || guessColor || missedSet?.has(name)
+    ctx.globalAlpha = tintedBlob ? 0.38 : 1
     ctx.fill()
+    ctx.globalAlpha = 1
     ctx.strokeStyle = blobStroke
-    ctx.lineWidth = 1.2
+    ctx.lineWidth = tintedBlob ? 2.5 : 1.2
     ctx.stroke()
   }
 
@@ -371,14 +396,15 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     const isWinner = gameWon && name === mysteryName
     const isEllipseHidden = hiddenSet?.has(name) ||
       (soloMode && !guessColor && name !== highlightedName && !missedSet?.has(name) && !isWinner)
+    // Hidden → don't draw anything (the sea is already underneath). Painting it with the
+    // ocean gradient here would be offset by the translate() below and show a ghost ellipse.
+    if (isEllipseHidden) continue
 
     ctx.save()
     ctx.translate(cx, cy)
     ctx.beginPath()
     ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
-    if (isEllipseHidden) {
-      ctx.fillStyle = '#1254c0'  // exact ocean color → invisible
-    } else if (isWinner) {
+    if (isWinner) {
       ctx.fillStyle = '#39ff14'
     } else if (name === highlightedName) {
       ctx.fillStyle = '#f97316'
@@ -389,7 +415,18 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     } else {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
     }
-    ctx.fill()
+    const tinted = isWinner || name === highlightedName || guessColor || missedSet?.has(name)
+    if (tinted) {
+      // Coloured states: translucent fill + crisp outline, so the islands stay visible underneath
+      ctx.globalAlpha = 0.38
+      ctx.fill()
+      ctx.globalAlpha = 1
+      ctx.strokeStyle = ctx.fillStyle
+      ctx.lineWidth = 2.5
+      ctx.stroke()
+    } else {
+      ctx.fill()
+    }
     ctx.restore()
   }
 
@@ -470,20 +507,20 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     canvasRef.current = offscreen
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color('#040c1c')
+    scene.background = null  // transparent — the starfield behind the canvas is CSS
     sceneRef.current = scene
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 500)
     camera.position.z = 3.0
     camRef.current = camera
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true })
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setSize(W, H)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     el.appendChild(renderer.domElement)
     rendRef.current = renderer
 
-    const texture = new THREE.CanvasTexture(offscreen)
+    const texture = prepareTexture(new THREE.CanvasTexture(offscreen))
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
     texture.minFilter = THREE.LinearMipmapLinearFilter
     texture.generateMipmaps = true
@@ -493,25 +530,14 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
 
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(1, 72, 72),
-      new THREE.MeshPhongMaterial({ map: texture, specular: new THREE.Color(0x222233), shininess: 20 })
+      globeMaterial(texture)
     )
     scene.add(sphere)
     sphereRef.current = sphere
 
-    // Atmosphere halo
-    scene.add(new THREE.Mesh(
-      new THREE.SphereGeometry(1.025, 72, 72),
-      new THREE.MeshPhongMaterial({ color: '#5ab4ff', transparent: true, opacity: 0.18, side: THREE.FrontSide })
-    ))
+    addAtmosphere(scene)
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.65))
-    const sun = new THREE.DirectionalLight(0xfff0d0, 1.1)
-    sun.position.set(5, 3, 5)
-    scene.add(sun)
-    const fill = new THREE.DirectionalLight(0x4488ff, 0.3)
-    fill.position.set(-5, -2, -3)
-    scene.add(fill)
+    addLights(scene)
 
     // Starfield
     const starPos = new Float32Array(3000 * 3)
@@ -617,12 +643,7 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
   // ── Sync spinEnabled prop → ref ─────────────────────────────────────────
   useEffect(() => { spinRef.current = spinEnabled }, [spinEnabled])
 
-  // ── Sync light/dark theme → scene background ─────────────────────────────
-  useEffect(() => {
-    if (sceneRef.current) {
-      sceneRef.current.background = new THREE.Color(lightMode ? '#c8ddf5' : '#040c1c')
-    }
-  }, [lightMode])
+  // Scene background is transparent; the light/dark backdrop is drawn in CSS (.layout)
 
   // ── Pause auto-rotate on interaction ────────────────────────────────────
   const pauseAutoRotate = useCallback(() => {

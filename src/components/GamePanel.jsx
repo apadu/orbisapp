@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from 'react'
+import GiveUpButton from './GiveUpButton'
 import { distanceLabel } from '../utils/geoUtils'
 import { CAPITALS } from '../utils/capitals'
 import { COUNTRY_INFO } from '../utils/countryInfo'
@@ -238,7 +239,7 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
               {gameWon ? '🔄 Play Again' : '🔄 New Game'}
             </button>
             {!gameWon && (
-              <button className="give-up-btn" onClick={onGiveUp}>Give up</button>
+              <GiveUpButton compact onConfirm={onGiveUp} />
             )}
           </>
         )}

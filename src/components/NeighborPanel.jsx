@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import GiveUpButton from './GiveUpButton'
+import GameSummary from './GameSummary'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong } from '../utils/sounds'
 
@@ -130,30 +132,24 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
       {/* Buttons */}
       <div className="neighbor-actions">
         {!done
-          ? <button className="neighbor-giveup-btn" onClick={() => { playWrong(); onGiveUp() }}>Give Up</button>
+          ? <GiveUpButton onConfirm={() => { playWrong(); onGiveUp() }} />
           : <button className="new-game-btn" onClick={onNext}>Next country →</button>
         }
       </div>
 
-      {/* Missed */}
-      {missed.length > 0 && (
-        <div className="guesses-section">
-          <h3 className="guesses-title">
-            Missed <span className="guess-count" style={{ background: '#ef4444' }}>{missed.length}</span>
-          </h3>
-          <ul className="guess-list">
-            {missed.map(n => (
-              <li key={n} className="guess-item">
-                <span className="guess-swatch" style={{ background: '#ef4444' }} />
-                <span className="guess-name">{n}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* Round summary */}
+      {done && (
+        <GameSummary
+          noun="neighbors"
+          title={`Neighbors of ${targetName}`}
+          total={total}
+          found={found.map(n => ({ label: n }))}
+          missed={missed.map(n => ({ label: n }))}
+        />
       )}
 
-      {/* Found */}
-      {found.length > 0 && (
+      {/* Found (live) */}
+      {!done && found.length > 0 && (
         <div className="guesses-section">
           <h3 className="guesses-title">
             Found <span className="guess-count">{found.length}</span>

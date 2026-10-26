@@ -3,6 +3,7 @@ import { COUNTRY_LANGUAGES } from '../utils/countryLanguages'
 import { COUNTRY_INFO } from '../utils/countryInfo'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
+import { startSession, trackAnswer, finishGame } from '../utils/results'
 
 const ELIGIBLE = Object.keys(COUNTRY_LANGUAGES).filter(name => COUNTRY_INFO[name])
 
@@ -59,6 +60,7 @@ export default function LanguagePanel() {
                                 : matchLevel(input, round.official)
 
   const reset = useCallback(() => {
+    startSession('language')
     setDeck(freshDeck())
     setIdx(0)
     setInput('')
@@ -79,13 +81,14 @@ export default function LanguagePanel() {
       const pts = streakPts
       const newStreak = streak + 1
       setStatus('correct')
-      setScore(s => s + pts)
+      setScore(s => s + 1)
       setStreak(newStreak)
       setLastPts(pts)
       setHistory(h => [
         { country: round.country, official: round.official, all: round.all, pts, won: true },
         ...h.slice(0, 9),
       ])
+      trackAnswer('language', round.country, true, 10)
       if (newStreak >= 3) playStreak(); else playCorrect()
     }
   }, [isAnswered, round, streakPts, streak])
@@ -99,6 +102,7 @@ export default function LanguagePanel() {
       { country: round.country, official: round.official, all: round.all, pts: 0, won: false },
       ...h.slice(0, 9),
     ])
+    trackAnswer('language', round.country, false)
     playWrong()
   }, [isAnswered, round])
 
@@ -106,6 +110,7 @@ export default function LanguagePanel() {
     if (!isAnswered) return
     const nextIdx = idx + 1
     if (nextIdx >= deck.length) {
+      finishGame('language')
       setDone(true)
     } else {
       setIdx(nextIdx)
@@ -137,7 +142,7 @@ export default function LanguagePanel() {
         '⌨️ Type any official language of that country',
         '↩ Skip to pass on any country',
         '🌐 Countries with multiple languages have several valid answers',
-        '📈 Build a streak for a score multiplier',
+        '✨ XP only for answers you haven\'t got before',
       ]}
       onStart={() => setStarted(true)}
     />
@@ -152,7 +157,7 @@ export default function LanguagePanel() {
         <div className="quiz-done-wrap">
           <div className="quiz-done-icon">🎉</div>
           <div className="quiz-done-title">All {ELIGIBLE.length} countries done!</div>
-          <div className="quiz-done-score">Final score: <strong>{score}</strong></div>
+          <div className="quiz-done-score"><strong>{score}</strong> correct</div>
           <button className="quiz-reset-btn" onClick={reset}>↺ Play again</button>
         </div>
       </>
@@ -179,10 +184,10 @@ export default function LanguagePanel() {
       </div>
 
       <div className="currency-score-bar">
-        <span className="currency-score">Score: <strong>{score}</strong></span>
+        <span className="currency-score">✓ <strong>{score}</strong> correct</span>
         <span className="quiz-progress">{progress}</span>
         {streak >= 2 && (
-          <span className="currency-streak-badge">🔥 ×{streak} · {streakPts} pts</span>
+          <span className="currency-streak-badge">🔥 ×{streak} streak</span>
         )}
       </div>
 
@@ -215,7 +220,7 @@ export default function LanguagePanel() {
         <div className={`currency-feedback ${status === 'correct' ? 'fb-correct' : 'fb-wrong'}`}>
           <span>
             {status === 'correct'
-              ? `✅ +${lastPts} pts`
+              ? '✅ Correct!'
               : `❌ ${round.official}`}
           </span>
           <button className="currency-next-btn" onClick={next}>
@@ -234,7 +239,7 @@ export default function LanguagePanel() {
                 <span>{hinfo?.flag ?? '🏳️'}</span>
                 <span className="chr-country">{h.country}</span>
                 <span className="chr-currency">{h.official}</span>
-                <span className="chr-pts">{h.won ? `+${h.pts}` : '—'}</span>
+                <span className="chr-pts">{h.won ? '✓' : '✗'}</span>
               </div>
             )
           })}

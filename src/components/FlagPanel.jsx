@@ -113,17 +113,13 @@ export default function FlagPanel({
           <span className="stat-num" style={{ color: streak >= 3 ? '#f97316' : 'inherit' }}>{streak}</span>
           <span className="stat-label">Streak</span>
         </div>
-        <div className="stat-item">
-          <span className="stat-num" style={{ color: '#a78bfa' }}>{score.points}</span>
-          <span className="stat-label">Points</span>
-        </div>
       </div>
 
       {/* Flag display */}
       <div className="flag-display">
         <span className="flag-emoji">{current.flag}</span>
         {streak >= 2 && !answered && (
-          <div className="flag-streak-label">{streakLabel(streak)} +{nextPts} pts next</div>
+          <div className="flag-streak-label">{streakLabel(streak)}</div>
         )}
       </div>
 
@@ -131,7 +127,7 @@ export default function FlagPanel({
       {answered ? (
         <div className={`cap-result ${correct ? 'cap-result-correct' : 'cap-result-wrong'}`}>
           {correct
-            ? `✅ ${current.name}! +${lastResult?.pts ?? 0} pts`
+            ? `✅ ${current.name}!`
             : `❌ It was ${current.name}`}
         </div>
       ) : (
@@ -180,7 +176,7 @@ export default function FlagPanel({
                 <span style={{ fontSize: '1.2rem', marginRight: '6px' }}>{h.flag}</span>
                 <span className="guess-name">{h.name}</span>
                 <span className="guess-dist" style={{ color: h.correct ? '#39ff14' : '#ef4444', marginLeft: 'auto' }}>
-                  {h.correct ? `+${h.pts}` : '✗'}
+                  {h.correct ? '✓' : '✗'}
                 </span>
               </li>
             ))}

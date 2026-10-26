@@ -1,0 +1,103 @@
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { supabase, isBackendEnabled } from '../lib/supabase'
+import { setResultsUser } from '../utils/results'
+
+const AuthContext = createContext(null)
+
+export function AuthProvider({ children }) {
+  const [user,    setUser]    = useState(null)   // supabase auth user
+  const [profile, setProfile] = useState(null)   // row from public.profiles
+  const [ready,   setReady]   = useState(!isBackendEnabled)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [recovery, setRecovery] = useState(false) // arrived via password-reset link
+
+  const loadProfile = useCallback(async (u) => {
+    if (!u || !supabase) { setProfile(null); return }
+    // The profile row is created by a DB trigger — retry briefly right after sign-up
+    for (let i = 0; i < 4; i++) {
+      const { data } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle()
+      if (data) { setProfile(data); return }
+      await new Promise(r => setTimeout(r, 600))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!supabase) return
+    let active = true
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return
+      const u = data.session?.user ?? null
+      setUser(u)
+      setResultsUser(u?.id ?? null)
+      loadProfile(u)
+      setReady(true)
+    })
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const u = session?.user ?? null
+      setUser(u)
+      setResultsUser(u?.id ?? null)
+      loadProfile(u)
+      if (event === 'PASSWORD_RECOVERY') { setRecovery(true); setAuthModalOpen(true) }
+      else if (u) setAuthModalOpen(false)
+    })
+
+    return () => { active = false; sub.subscription.unsubscribe() }
+  }, [loadProfile])
+
+  // ── actions ──────────────────────────────────────────────────────────────
+  const signInWithGoogle = () =>
+    supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
+
+  const signInWithEmail = (email, password) =>
+    supabase.auth.signInWithPassword({ email, password })
+
+  const signUpWithEmail = (email, password, username) =>
+    supabase.auth.signUp({
+      email, password,
+      options: { data: { username }, emailRedirectTo: window.location.origin },
+    })
+
+  const resetPassword = (email) =>
+    supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+
+  const setNewPassword = async (password) => {
+    const res = await supabase.auth.updateUser({ password })
+    if (!res.error) { setRecovery(false); setAuthModalOpen(false) }
+    return res
+  }
+
+  const signOut = async () => {
+    await supabase?.auth.signOut()
+    setUser(null)
+    setProfile(null)
+    setResultsUser(null)
+  }
+
+  const updateUsername = async (username) => {
+    if (!user) return { error: { message: 'Not signed in' } }
+    const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
+    if (clean.length < 3) return { error: { message: 'Use at least 3 letters, numbers or _' } }
+    const { data, error } = await supabase.from('profiles').update({ username: clean }).eq('id', user.id).select().single()
+    if (error) return { error: error.code === '23505' ? { message: 'That username is taken' } : error }
+    setProfile(data)
+    return { data }
+  }
+
+  const value = {
+    backendEnabled: isBackendEnabled,
+    ready, user, profile,
+    authModalOpen, openAuth: () => setAuthModalOpen(true), closeAuth: () => setAuthModalOpen(false),
+    recovery, setNewPassword,
+    signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, signOut, updateUsername,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')
+  return ctx
+}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { distanceLabel } from '../utils/geoUtils'
+import SetupCard from './SetupCard'
 
 function scoreLabel(pts) {
   if (pts >= 1000) return { text: 'Perfect!', color: '#39ff14' }
@@ -76,6 +77,13 @@ export default function LocatePanel({
 
   const correctCount = history.filter(h => h.isHit).length
 
+  // Restart with the same mode (pass through null so the sprint/sudden timers reset)
+  const playAgain = () => {
+    const m = gameMode
+    onNewGame()
+    setTimeout(() => onModeSelect(m), 0)
+  }
+
   const HistoryList = () => (
     history.length > 0 ? (
       <div className="guesses-section" style={{ marginTop: '1rem' }}>
@@ -97,38 +105,30 @@ export default function LocatePanel({
     ) : null
   )
 
-  // ── Mode selection ────────────────────────────────────────────────────────
+  // ── Setup (one screen, remembers your last mode) ─────────────────────────
   if (!current) {
     return (
-      <>
-        <div className="panel-header">
-          <h2>📍 Pinpoint Country</h2>
-          <p className="panel-subtitle">Choose a challenge, then click the globe to find countries.</p>
-        </div>
-        <div className="locate-mode-cards">
-          <button className="locate-mode-card" onClick={() => onModeSelect('classic')}>
-            <span className="locate-mode-icon">🗺️</span>
-            <div>
-              <strong>Classic</strong>
-              <p>Take your time. Score by accuracy.</p>
-            </div>
-          </button>
-          <button className="locate-mode-card" onClick={() => onModeSelect('sprint')}>
-            <span className="locate-mode-icon">⏱</span>
-            <div>
-              <strong>2-min Sprint</strong>
-              <p>How many can you pin in 2 minutes?</p>
-            </div>
-          </button>
-          <button className="locate-mode-card" onClick={() => onModeSelect('sudden')}>
-            <span className="locate-mode-icon">💀</span>
-            <div>
-              <strong>Sudden Death</strong>
-              <p>10 seconds per country. Score under 950 and it's over.</p>
-            </div>
-          </button>
-        </div>
-      </>
+      <SetupCard
+        mode="locate"
+        icon="📍"
+        title="Pinpoint Country"
+        desc="A country name appears — click where it is on the globe."
+        rules={[
+          '🎯 Click inside the country for 1000 pts',
+          '📏 Close misses still score (within 500 km)',
+          '⏱ Sprint: as many as you can in 2 minutes',
+          '💀 Sudden death: 10 s per country, under 950 pts ends the run',
+        ]}
+        options={[{
+          id: 'variant', label: 'Mode', default: 'classic',
+          choices: [
+            { value: 'classic', label: '🗺️ Classic',      hint: 'Take your time. Score by accuracy.' },
+            { value: 'sprint',  label: '⏱ 2-min sprint',  hint: 'How many can you pin in 2 minutes?' },
+            { value: 'sudden',  label: '💀 Sudden death', hint: '10 seconds per country. Score under 950 and it\'s over.' },
+          ],
+        }]}
+        onStart={(v) => onModeSelect(v.variant)}
+      />
     )
   }
 
@@ -156,7 +156,10 @@ export default function LocatePanel({
               <span className="locate-stat-label">points</span>
             </div>
           </div>
-          <button className="new-game-btn" onClick={onNewGame}>Play Again</button>
+          <div className="locate-again-row">
+            <button className="new-game-btn na-start-default" onClick={playAgain}>▶ Play again</button>
+            <button className="new-game-btn" onClick={onNewGame}>⚙ Settings</button>
+          </div>
         </div>
         <HistoryList />
       </>
@@ -185,7 +188,10 @@ export default function LocatePanel({
               <span className="locate-stat-label">points</span>
             </div>
           </div>
-          <button className="new-game-btn" onClick={onNewGame}>Play Again</button>
+          <div className="locate-again-row">
+            <button className="new-game-btn na-start-default" onClick={playAgain}>▶ Play again</button>
+            <button className="new-game-btn" onClick={onNewGame}>⚙ Settings</button>
+          </div>
         </div>
         <HistoryList />
       </>

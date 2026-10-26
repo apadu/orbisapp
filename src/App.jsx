@@ -26,7 +26,6 @@ import RiverGlobe from './components/RiverGlobe'
 import HistoryMapPanel from './components/HistoryMapPanel'
 import HistoryGlobe from './components/HistoryGlobe'
 import NeighborPanel from './components/NeighborPanel'
-import OddOneOutPanel from './components/OddOneOutPanel'
 import { generateQuestion } from './utils/oddOneOut'
 import { setSoundEnabled, playCorrect, playWrong, playStreak, playWin } from './utils/sounds'
 import StreakBadge from './components/StreakBadge'
@@ -58,16 +57,24 @@ import {
   recordBorderChainRound, recordPopOrderRound, recordFlagRound,
 } from './utils/profileStats'
 import ProfilePage from './components/ProfilePage'
+import { useAuth } from './auth/AuthContext'
+import { startSession, trackAnswer, finishGame, flushSessions } from './utils/results'
+import { useListTracking } from './utils/useListTracking'
+import GlobeFeedback from './components/GlobeFeedback'
+import UserMenu from './components/UserMenu'
+import RulesHint from './components/RulesHint'
+import TableQuiz from './components/TableQuiz'
+import DailyQuiz from './components/DailyQuiz'
+import { TABLE_QUIZ_IDS, TABLE_QUIZZES } from './quizzes/tableQuizzes'
+import { clearRules } from './utils/rulesStore'
 import HomePage from './components/HomePage'
 import Confetti from './components/Confetti'
 import CompletionModal from './components/CompletionModal'
 import './App.css'
 import { Analytics } from "@vercel/analytics/react"
+import { fetchData } from './utils/fetchData'
 
-const GEO_URL =
-  'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson'
-const MARINE_URL =
-  'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_geography_marine_polys.geojson'
+// Map data: served from /data (see `npm run fetch-maps`), remote fallback in src/data/sources.js
 
 const DROP_TYPES = new Set(['Dependency', 'Lease', 'Occupied Territory', 'Indeterminate', 'Disputed', 'Commonwealth'])
 // Always keep these even if their TYPE would normally drop them
@@ -122,8 +129,10 @@ const NAME_OVERRIDES = {
 // Quiz modes that render on the dedicated quiz page (no globe)
 const QUIZ_MODES = new Set([
   'scramble', 'flag', 'capital', 'cap-to-country',
-  'currency', 'language', 'area', 'pop-order', 'border-chain', 'ooo',
+  'currency', 'language', 'area', 'pop-order', 'border-chain',
   'missing-vowels', 'flag-colors', 'connections', 'emoji-quiz', 'country-fact', 'endonyms',
+  ...TABLE_QUIZ_IDS,
+  'daily-quiz',
 ])
 
 const QUIZ_LABELS = {
@@ -136,7 +145,6 @@ const QUIZ_LABELS = {
   area:             '📏 Bigger or Smaller',
   'pop-order':      '📊 Population Rank',
   'border-chain':   '🔗 Border Chain',
-  ooo:              '🤔 Odd One Out',
   'missing-vowels': '🔡 Missing Vowels',
   'flag-colors':    '🎨 Flag Colors',
   connections:      '🔗 Connections',
@@ -150,7 +158,6 @@ const NAV_ITEMS = [
   { id: 'mystery',             icon: '🔍', label: 'Mystery Country' },
   { id: 'locate',              icon: '📍', label: 'Pinpoint Country' },
   { id: 'neighbor',            icon: '📌', label: 'Neighbors' },
-  { id: 'ooo',                 icon: '🤔', label: 'Odd One Out' },
   { id: 'missing',             icon: '🗺️', label: 'Blind Map' },
   { id: 'spotlight',           icon: '🔦', label: 'Solo Map' },
   { section: 'Name All' },
@@ -161,7 +168,8 @@ const NAV_ITEMS = [
   { id: 'mountains',           icon: '⛰️', label: 'Mountain Ranges' },
   { id: 'name-all-seas',       icon: '🌊', label: 'Seas' },
   { id: 'name-all-rivers',     icon: '🏞️', label: 'Rivers' },
-  { id: 'history-maps',        icon: '🏛️', label: 'History' },
+  // HIDDEN until ready — uncomment to bring History Maps back:
+  // { id: 'history-maps',        icon: '🏛️', label: 'History' },
   { section: 'Quiz' },
   { id: 'scramble',            icon: '🔤', label: 'Scramble' },
   { id: 'capital',             icon: '🏛️', label: 'Capitals Quiz' },
@@ -244,9 +252,16 @@ export default function App() {
   const [completionStats,     setCompletionStats]     = useState(null)
   const [scrambleHighlighted, setScrambleHighlighted] = useState(null)
   const [profile, setProfile] = useState(() => loadProfile())
+  const auth = useAuth()
+  const displayName = auth.profile?.username ?? (auth.user ? '…' : 'Guest')
+  const [prevPage, setPrevPage] = useState('home')
+  const openProfile = () => { if (page !== 'profile') setPrevPage(page); setPage('profile') }
 
   // ── Shared game mode ─────────────────────────────────────────────────────
   const [mode, setMode] = useState('mystery')
+
+  // Close any open (endless) game session whenever the player switches game or page
+  useEffect(() => () => flushSessions(), [mode, page])
 
   // ── Mystery Country state ────────────────────────────────────────────────
   const [mystery,        setMystery]       = useState(null)
@@ -393,7 +408,7 @@ export default function App() {
 
   // ── Fetch GeoJSON ────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch(GEO_URL)
+    fetchData('countries')
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then(data => {
         const features = data.features
@@ -441,7 +456,7 @@ export default function App() {
 
   // ── Fetch marine polygons ────────────────────────────────────────────────
   useEffect(() => {
-    fetch(MARINE_URL)
+    fetchData('marine')
       .then(r => r.json())
       .then(data => {
         // Marine polys use lowercase property names (name, scalerank)
@@ -498,6 +513,7 @@ export default function App() {
       setSeaScore(s => ({ correct: s.correct + 1, total: s.total + 1 }))
       setSeaHistory(h => [...h, { name, correct: true }])
       setSeaStatus('correct')
+      trackAnswer('seas', null, true, 10, name)
       playCorrect()
       setTimeout(() => {
         setSeaStatus(null)
@@ -522,10 +538,12 @@ export default function App() {
     setSeaHistory(h => [...h, { name, correct: false }])
     setSeaAnswered(true)
     setSeaStatus('skipped')
+    trackAnswer('seas', null, false, 0, name)
     playWrong()
   }, [seaCurrent, seaAnswered])
 
   const handleSeaNewGame = useCallback(() => {
+    startSession('seas')
     const fresh = new Set()
     setSeaUsed(fresh)
     setSeaScore({ correct: 0, total: 0 })
@@ -553,6 +571,7 @@ export default function App() {
     setC2cScore(s => ({ correct: s.correct + (isCorrect ? 1 : 0), total: s.total + 1, streak: newStreak }))
     setC2cHistory(h => [...h, { capital: c2cCurrent.capital, country: c2cCurrent.country, correct: isCorrect }])
     setProfile(recordC2cResult(isCorrect, newStreak))
+    trackAnswer('cap-to-country', c2cCurrent.country, isCorrect, isCorrect ? 10 : 0)
     if (isCorrect) {
       const f = gameCountries.find(c => c.properties.NAME === c2cCurrent.country)
       if (f) setFlyToFeature({ ...f, _ts: Date.now() })
@@ -568,6 +587,7 @@ export default function App() {
     setC2cAnswered(true)
     setC2cScore(s => ({ ...s, total: s.total + 1 }))
     setC2cHistory(h => [...h, { capital: c2cCurrent.capital, country: c2cCurrent.country, correct: false }])
+    trackAnswer('cap-to-country', c2cCurrent.country, false)
     playWrong()
   }, [c2cCurrent, c2cAnswered])
 
@@ -630,6 +650,7 @@ export default function App() {
     }))
     setFlagHistory(h => [...h, { name: flagCurrent.name, flag: flagCurrent.flag, correct: isCorrect, pts }])
     setProfile(recordFlagRound(isCorrect, newStreak, pts))
+    trackAnswer('flag', flagCurrent.name, isCorrect, isCorrect ? 10 : 0)
     if (isCorrect) {
       if (newStreak >= 3) playStreak(); else playCorrect()
       incrementDailyCount('flags')
@@ -644,6 +665,7 @@ export default function App() {
     setFlagStreak(0)
     setFlagScore(s => ({ ...s, total: s.total + 1 }))
     setFlagHistory(h => [...h, { name: flagCurrent.name, flag: flagCurrent.flag, correct: false, pts: 0 }])
+    trackAnswer('flag', flagCurrent.name, false)
     playWrong()
   }, [flagCurrent, flagAnswered])
 
@@ -717,12 +739,14 @@ export default function App() {
     setBcScore(s => s + pts)
     setBcHistory(h => [...h, { pts, chain, optimal }])
     setProfile(recordBorderChainRound(pts))
+    trackAnswer('border-chain', null, true, pts, chain?.join('>'))
   }, [])
 
   const handleBcNext = useCallback(() => pickBcPair(), [pickBcPair])
   const handleBcGiveUp = useCallback(() => {
     setBcHistory(h => [...h, { pts: 0, chain: [bcStart?.properties?.NAME], optimal: null }])
-  }, [bcStart])
+    trackAnswer('border-chain', null, false, 0, `${bcStart?.properties?.NAME}>${bcEnd?.properties?.NAME}`)
+  }, [bcStart, bcEnd])
 
   useEffect(() => {
     if (mode === 'border-chain' && gameCountries.length > 0 && Object.keys(adjacency).length > 0 && !bcStart) {
@@ -765,6 +789,7 @@ export default function App() {
     setPopScore(s => s + pts)
     setPopHistory(h => [...h, { pts, names, correctOrder }])
     setProfile(recordPopOrderRound(pts))
+    trackAnswer('pop-order', null, pts >= 1000, pts, names?.join('|'))
     if (pts >= 1000) playWin()
     else if (pts > 0) playCorrect()
     else playWrong()
@@ -781,6 +806,7 @@ export default function App() {
   }, [mode, gameCountries, popCountries, pickPopCountries])
 
   const switchMode = useCallback((m) => {
+    clearRules()
     setMode(m)
     setMysteryGuesses([])
     setGameWon(false)
@@ -915,12 +941,16 @@ export default function App() {
         refreshDaily()
       }
       setProfile(recordMysteryResult(true))
+      const guesses = mysteryGuesses.length + 1
+      startSession('mystery')
+      trackAnswer('mystery', name, true, Math.max(100, 1100 - guesses * 100))
+      finishGame('mystery', { meta: { guesses, practice: practiceMode } })
     } else {
       const { km, color, angle } = getDistanceInfo(feature, mystery)
       const isAdjacent = !!(adjacency[mystery.properties.NAME]?.has(name))
       setMysteryGuesses(prev => [...prev, { name, km, color, angle, isAdjacent, feature }])
     }
-  }, [mystery, mysteryGuesses, gameWon, adjacency])
+  }, [mystery, mysteryGuesses, gameWon, adjacency, practiceMode])
 
   const handleMysteryNewGame = useCallback(() => {
     if (!gameCountries.length) return
@@ -970,6 +1000,7 @@ export default function App() {
       setCapScore(s => ({ correct: s.correct + 1, total: s.total + 1, streak: newStreak }))
       setCapHistory(h => [...h, { country: name, capital: cap, correct: true }])
       setProfile(recordCapitalResult(true, newStreak))
+      trackAnswer('capital', name, true, 10)
       if (newStreak >= 3) playStreak(); else playCorrect()
     }
 
@@ -986,10 +1017,12 @@ export default function App() {
     setCapScore(s => ({ ...s, total: s.total + 1 }))
     setCapHistory(h => [...h, { country: name, capital: cap, correct: false }])
     setCapAnswered(true)
+    trackAnswer('capital', name, false)
     playWrong()
   }, [capCurrent, capAnswered])
 
   const handleCapNewGame = useCallback(() => {
+    startSession('capital')
     const fresh = new Set()
     setCapUsed(fresh)
     setCapScore({ correct: 0, total: 0 })
@@ -1119,6 +1152,7 @@ export default function App() {
     setLocateScore(s => s + pts)
     setLocateHistory(h => [...h, { name: locateCurrent.properties.NAME, km, pts, isHit }])
     setProfile(recordLocateRound(pts))
+    trackAnswer('locate', locateCurrent.properties.NAME, isHit, pts)
 
     // Sudden death: score < 950 → game over after a brief pause to show the result
     if (locateMode === 'sudden' && pts < 950) {
@@ -1138,6 +1172,7 @@ export default function App() {
   }, [locateCurrent, locateUsedSet, pickLocateCountry])
 
   const handleLocateNewGame = useCallback((mode = null) => {
+    startSession('locate')
     setLocateMode(mode)
     setLocateGameOver(false)
     setLocateExpired(false)
@@ -1200,6 +1235,7 @@ export default function App() {
     const newFound = [...neighborFound, canonical]
     setNeighborFound(newFound)
     setNeighborScore(s => s + 100)
+    trackAnswer('neighbor', canonical, true, 100)
 
     if (newFound.length === neighbors.size) {
       setNeighborDone(true)
@@ -1212,6 +1248,7 @@ export default function App() {
     if (!neighborTarget || neighborDone) return
     const neighbors = adjacency[neighborTarget.properties.NAME] ?? new Set()
     const missed = [...neighbors].filter(n => !neighborFound.includes(n))
+    for (const n of missed) trackAnswer('neighbor', n, false, 0, null, { silent: true })
     setNeighborMissed(missed)
     setNeighborDone(true)
     setNeighborHistory(h => [...h, { target: neighborTarget.properties.NAME, found: neighborFound.length, total: neighbors.size }])
@@ -1259,6 +1296,7 @@ export default function App() {
     setOooAnswered(true)
     setOooStreak(newStreak)
     if (pts) setOooScore(s => s + pts)
+    trackAnswer('ooo', null, correct, correct ? 10 : 0, oooQuestion.options[oooQuestion.oddIndex].name)
     setOooHistory(h => [...h, {
       odd: oooQuestion.options[oooQuestion.oddIndex].name,
       correct,
@@ -1276,6 +1314,46 @@ export default function App() {
       pickOooQuestion(null)
     }
   }, [mode, gameCountries, oooQuestion, pickOooQuestion])
+
+  const gameCountryNames = useMemo(() => gameCountries.map(f => f.properties.NAME), [gameCountries])
+  const playQuizFromDaily = useCallback((id) => switchMode(id), [switchMode])
+
+  // ── Result tracking for "name them all" games ───────────────────────────
+  const names   = (arr) => arr.map(f => f.properties?.NAME ?? f.name)
+  const nameAllKeys   = useMemo(() => found.map(f => f.name), [found])
+  const nameAllMissK  = useMemo(() => names(nameAllMissed), [nameAllMissed])
+  const capsKeys      = useMemo(() => capsFound.map(f => f.name), [capsFound])
+  const capsMissK     = useMemo(() => names(capsAllMissed), [capsAllMissed])
+  const currKeys      = useMemo(() => currenciesFound.map(c => c.code ?? c.currencyName), [currenciesFound])
+  const currMissK     = useMemo(() => names(currenciesMissed), [currenciesMissed])
+  const langKeys      = useMemo(() => languagesFound.map(l => l.language), [languagesFound])
+  const langMissK     = useMemo(() => names(languagesMissed), [languagesMissed])
+  const mtnKeys       = useMemo(() => names(mountainsFound), [mountainsFound])
+  const mtnMissK      = useMemo(() => names(mountainsMissed), [mountainsMissed])
+  const seaAllKeys    = useMemo(() => names(seasAllFound), [seasAllFound])
+  const seaAllMissK   = useMemo(() => names(seasAllMissed), [seasAllMissed])
+  const riverKeys     = useMemo(() => names(riversFound), [riversFound])
+  const riverMissK    = useMemo(() => names(riversMissed), [riversMissed])
+  const histKeys      = useMemo(() => names(histFound), [histFound])
+  const histMissK     = useMemo(() => names(histMissed), [histMissed])
+  const allDone       = !!completionStats
+  const inGame        = page === 'game'
+
+  useListTracking({ mode: 'name-all',            active: inGame && mode === 'name-all',            found: nameAllKeys, missed: nameAllMissK, complete: allDone })
+  useListTracking({ mode: 'name-all-caps',       active: inGame && mode === 'name-all-caps',       found: capsKeys,    missed: capsMissK,    complete: allDone })
+  useListTracking({ mode: 'name-all-currencies', active: inGame && mode === 'name-all-currencies', found: currKeys,    missed: currMissK,    complete: allDone, countryKeyed: false })
+  useListTracking({ mode: 'name-all-languages',  active: inGame && mode === 'name-all-languages',  found: langKeys,    missed: langMissK,    complete: allDone, countryKeyed: false })
+  useListTracking({ mode: 'mountains',           active: inGame && mode === 'mountains',           found: mtnKeys,     missed: mtnMissK,     complete: allDone, countryKeyed: false })
+  useListTracking({ mode: 'name-all-seas',       active: inGame && mode === 'name-all-seas',       found: seaAllKeys,  missed: seaAllMissK,  complete: allDone, countryKeyed: false })
+  useListTracking({ mode: 'name-all-rivers',     active: inGame && mode === 'name-all-rivers',     found: riverKeys,   missed: riverMissK,   complete: allDone, countryKeyed: false })
+  useListTracking({ mode: 'history-maps',        active: inGame && mode === 'history-maps',        found: histKeys,    missed: histMissK,    complete: allDone, countryKeyed: false })
+  useListTracking({ mode: 'spotlight',           active: inGame && mode === 'spotlight',           found: spotlightFoundNames, missed: spotlightMissedNames })
+  useListTracking({ mode: 'missing',             active: inGame && mode === 'missing',             found: missingFound,        missed: missingMissedNames,  complete: missingComplete })
+
+  // Locate: sudden-death / sprint end
+  useEffect(() => {
+    if (mode === 'locate' && (locateGameOver || locateExpired)) finishGame('locate', { meta: { variant: locateMode } })
+  }, [locateGameOver, locateExpired]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Missed features for end-states (show red on globe) ──────────────────
   const missingMissedFeatures  = missingMissedNames.map(n => countries.find(f => f.properties.NAME === n)).filter(Boolean)
@@ -1362,7 +1440,7 @@ export default function App() {
 
   return (
     <>
-    <div className="app-shell">
+    <div className={`app-shell page-${page}`}>
       {/* ── Top bar ── */}
       <header className="topbar">
         <div className="topbar-left">
@@ -1381,45 +1459,22 @@ export default function App() {
             dailyProgress={dailyProgress}
             onSelectMode={(id) => { switchMode(id); setPage('game') }}
           />
-          <a
-            className="bug-report-btn"
-            href="https://forms.gle/hDpMyhns9PD7ghdBA"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Report a bug"
-          >
-            🐛 Report bug
-          </a>
-          <button
-            className="theme-toggle"
-            onClick={() => setSoundEnabledState(s => !s)}
-            title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
-          >
-            {soundEnabled ? '🔊' : '🔇'}
-          </button>
-          <button
-            className="theme-toggle"
-            onClick={() => setLightMode(m => !m)}
-            title={lightMode ? 'Switch to dark mode' : 'Switch to light mode'}
-          >
-            {lightMode ? '🌙' : '☀️'}
-          </button>
-          <button
-            className="topbar-avatar"
-            onClick={() => setPage(p => p === 'profile' ? 'game' : 'profile')}
-            title="View profile"
-          >
-            <span className="topbar-avatar-letter">{profile.username.charAt(0).toUpperCase()}</span>
-            <span className="topbar-avatar-name">{profile.username}</span>
-          </button>
+          <UserMenu
+            displayName={displayName}
+            onProfile={() => page === 'profile' ? setPage(prevPage) : openProfile()}
+            soundEnabled={soundEnabled}
+            onToggleSound={() => setSoundEnabledState(x => !x)}
+            lightMode={lightMode}
+            onToggleTheme={() => setLightMode(m => !m)}
+          />
         </div>
       </header>
 
       {page === 'profile' && (
         <ProfilePage
-          profile={profile}
-          onBack={() => setPage('game')}
-          onProfileUpdate={setProfile}
+          countries={countries}
+          onBack={() => setPage(prevPage)}
+          onPlay={(id) => { switchMode(id); setPage(QUIZ_MODES.has(id) ? 'quiz' : 'game') }}
           dailyProgress={dailyProgress}
           dailyStreak={dailyStreak}
         />
@@ -1438,6 +1493,9 @@ export default function App() {
             }
           }}
           onEnterQuiz={() => { setMode('quiz-hub'); setPage('quiz') }}
+          onProfile={openProfile}
+          countryNames={gameCountryNames}
+          onDailyQuiz={() => { switchMode('daily-quiz'); setPage('quiz') }}
           dailyProgress={dailyProgress}
           dailyStreak={dailyStreak}
         />
@@ -1456,13 +1514,18 @@ export default function App() {
               </button>
             )}
             <span className="quiz-nav-title">
-              {QUIZ_MODES.has(mode) ? QUIZ_LABELS[mode] : '🎯 Quiz Hub'}
+              {mode === 'daily-quiz' ? '📅 Daily Quiz' : TABLE_QUIZ_IDS.has(mode) ? `${TABLE_QUIZZES[mode].icon} ${TABLE_QUIZZES[mode].title}` : QUIZ_MODES.has(mode) ? QUIZ_LABELS[mode] : '🎯 Quiz Hub'}
             </span>
+            {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && <RulesHint className="rules-hint-quiz" />}
           </div>
 
           <div className="quiz-content">
             {!QUIZ_MODES.has(mode) ? (
-              <QuizHub onSelect={(id) => switchMode(id)} />
+              <QuizHub onSelect={(id) => switchMode(id)} countryNames={gameCountryNames} />
+            ) : mode === 'daily-quiz' ? (
+              <DailyQuiz countryNames={gameCountryNames} onPlayQuiz={playQuizFromDaily} />
+            ) : TABLE_QUIZ_IDS.has(mode) ? (
+              <TableQuiz key={mode} quizId={mode} countryNames={gameCountryNames} onDaily={refreshDaily} />
             ) : (
               <div className="quiz-panel-wrap">
                 <div className="panel quiz-panel-inner">
@@ -1545,18 +1608,6 @@ export default function App() {
                       onGiveUp={handleBcGiveUp}
                     />
                   )}
-                  {mode === 'ooo' && (
-                    <OddOneOutPanel
-                      question={oooQuestion}
-                      answered={oooAnswered}
-                      chosen={oooChosen}
-                      score={oooScore}
-                      streak={oooStreak}
-                      history={oooHistory}
-                      onGuess={handleOooGuess}
-                      onNext={handleOooNext}
-                    />
-                  )}
                   {mode === 'missing-vowels' && (
                     <MissingVowelsPanel
                       gameCountries={gameCountries}
@@ -1637,7 +1688,7 @@ export default function App() {
       <div className="layout" style={{ display: (page === 'profile' || page === 'quiz') ? 'none' : 'flex' }}>
 
         {/* ── Left sidebar nav ── */}
-        <nav className="sidebar" style={{ display: (page === 'home' || page === 'quiz') ? 'none' : undefined }}>
+        <nav className="sidebar rail" style={{ display: (page === 'home' || page === 'quiz') ? 'none' : undefined }}>
           {NAV_ITEMS.map((item, i) =>
             item.section ? (
               item.section === 'Quiz' ? (
@@ -1658,6 +1709,7 @@ export default function App() {
                 key={item.id}
                 className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
                 onClick={() => { switchMode(item.id); setPage('quiz') }}
+                data-tip={item.label}
               >
                 <span className="sidebar-icon">{item.icon}</span>
                 <span className="sidebar-label">{item.label}</span>
@@ -1667,6 +1719,7 @@ export default function App() {
                 key={item.id}
                 className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
                 onClick={() => switchMode(item.id)}
+                data-tip={item.label}
               >
                 <span className="sidebar-icon">{item.icon}</span>
                 <span className="sidebar-label">{item.label}</span>
@@ -1718,7 +1771,7 @@ export default function App() {
             />
           ) : (
             <Globe
-                countries={(mode === 'spotlight' || (mode === 'name-all' && nameAllBlind)) ? gameCountries : countries}
+                countries={(mode === 'spotlight') ? gameCountries : countries}
                 guesses={globeGuesses}
                 mystery={mode === 'mystery' ? mystery : null}
                 gameWon={mode === 'mystery' ? gameWon : false}
@@ -1738,9 +1791,11 @@ export default function App() {
                 flyToFeature={flyToFeature}
               />
           )}
+          {page === 'game' && <GlobeFeedback />}
         </div>
 
-      <div className="panel" style={{ display: page === 'home' ? 'none' : undefined }}>
+      {page !== 'home' && <RulesHint className="rules-hint-floating" />}
+      <div key={mode} className="panel panel-float" style={{ display: page === 'home' ? 'none' : undefined }}>
         {mode === 'mystery' && (
           <GamePanel
             countries={gameCountries}
@@ -1754,7 +1809,15 @@ export default function App() {
             practiceMode={practiceMode}
             onTogglePractice={handleTogglePractice}
             gaveUp={gaveUp}
-            onGiveUp={() => { setGaveUp(true); if (!practiceMode) setStats(recordGiveUp()) }}
+            onGiveUp={() => {
+              setGaveUp(true)
+              if (!practiceMode) setStats(recordGiveUp())
+              if (mystery) {
+                startSession('mystery')
+                trackAnswer('mystery', mystery.properties.NAME, false)
+                finishGame('mystery', { meta: { guesses: mysteryGuesses.length, practice: practiceMode, gaveUp: true } })
+              }
+            }}
           />
         )}
         {mode === 'name-all' && (
@@ -1944,18 +2007,6 @@ export default function App() {
             onGameStart={() => setNeighborGameStarted(true)}
             onGiveUp={handleNeighborGiveUp}
             onNext={handleNeighborNext}
-          />
-        )}
-        {mode === 'ooo' && (
-          <OddOneOutPanel
-            question={oooQuestion}
-            answered={oooAnswered}
-            chosen={oooChosen}
-            score={oooScore}
-            streak={oooStreak}
-            history={oooHistory}
-            onGuess={handleOooGuess}
-            onNext={handleOooNext}
           />
         )}
         {mode === 'seas' && (

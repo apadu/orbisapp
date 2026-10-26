@@ -1,111 +1,185 @@
-import { useState } from 'react'
-import DailyChallengeHub from './DailyChallengeHub'
+import { useEffect, useMemo, useState } from 'react'
+import { QUIZ_ITEMS, QuizTile, summarize, timeAgo } from './QuizHub'
+import { useAuth } from '../auth/AuthContext'
+import { loadResults, subscribeResults } from '../utils/results'
+import { levelForXp, levelTitle, computeXp } from '../utils/profileData'
+import { gameMeta } from '../utils/gameCatalog'
+import { DAILY_CHALLENGES, getChallengeProgress } from '../utils/dailyChallenges'
+import DailyBanner from './DailyBanner'
 
-const CAT_COLORS = {
-  guess:      { bg: 'rgba(199, 125, 255, 0.14)', border: 'rgba(199, 125, 255, 0.4)' },
-  'name-all': { bg: 'rgba(57, 255, 20, 0.10)',   border: 'rgba(57, 255, 20, 0.35)'  },
-  explore:    { bg: 'rgba(251, 191, 36, 0.12)',  border: 'rgba(251, 191, 36, 0.38)' },
-}
-
-const CAT_LABELS = {
-  all:        '✦ All',
-  guess:      '🔍 Guess',
-  'name-all': '📝 Name All',
-  explore:    '🌐 Explore',
-}
-
-// Globe-based games only — quiz games live on their own page
-const MODES = [
-  { id: 'mystery',             icon: '🔍', label: 'Mystery Country',  desc: 'Guess the hidden country from clues',                          category: 'guess'    },
-  { id: 'locate',              icon: '📍', label: 'Pinpoint',          desc: 'Drop the pin for the given country',                           category: 'guess'    },
-  { id: 'neighbor',            icon: '📌', label: 'Neighbors',         desc: 'Name all countries sharing a border',                          category: 'guess'    },
-  { id: 'missing',             icon: '🗺️', label: 'Blind Map',         desc: '20 random countries are missing — guess them before time runs out', category: 'guess' },
-  { id: 'spotlight',           icon: '🔦', label: 'Solo Map',          desc: 'Fill in a blank map at your own pace',                         category: 'guess'    },
-  { id: 'name-all',            icon: '🌍', label: 'Countries',         desc: 'Name every country in the world',                              category: 'name-all' },
-  { id: 'name-all-caps',       icon: '🏙️', label: 'Capitals',          desc: 'Name every capital city',                                      category: 'name-all' },
-  { id: 'name-all-currencies', icon: '💰', label: 'Currencies',        desc: 'Name every currency',                                          category: 'name-all' },
-  { id: 'name-all-languages',  icon: '🗣️', label: 'Languages',         desc: 'Name the official languages',                                  category: 'name-all' },
-  { id: 'mountains',           icon: '⛰️', label: 'Mountains',         desc: 'Name every major mountain range',                              category: 'name-all' },
-  { id: 'name-all-seas',       icon: '🌊', label: 'Seas',              desc: 'Name every sea',                                               category: 'name-all' },
-  { id: 'name-all-rivers',     icon: '🏞️', label: 'Rivers',            desc: 'Name every major river worldwide',                             category: 'name-all' },
-  { id: 'history-maps',        icon: '🏛️', label: 'History Maps',      desc: 'Name countries across historical eras',                        category: 'name-all' },
-  { id: 'learn',               icon: '🎓', label: 'Learn',             desc: 'Click any country to explore its facts',                       category: 'explore'  },
+// Globe-based games, grouped into rows
+const ROWS = [
+  {
+    id: 'guess', label: 'Guess on the globe', icon: '🔍', color: '#c77dff',
+    items: [
+      { id: 'mystery',   icon: '🔍', label: 'Mystery Country', tag: 'Daily',     desc: 'Guess the hidden country — distance and direction are your clues' },
+      { id: 'locate',    icon: '📍', label: 'Pinpoint',        tag: 'Click',     desc: 'Drop the pin on the given country' },
+      { id: 'neighbor',  icon: '📌', label: 'Neighbors',       tag: 'Type',      desc: 'Name every country sharing a border' },
+      { id: 'missing',   icon: '🗺️', label: 'Blind Map',       tag: 'Timed',     desc: '20 countries vanish — name them before time runs out' },
+      { id: 'spotlight', icon: '🔦', label: 'Solo Map',        tag: 'Relaxed',   desc: 'Fill in a blank map at your own pace' },
+    ],
+  },
+  {
+    id: 'nameall', label: 'Name them all', icon: '📝', color: '#39ff14',
+    items: [
+      { id: 'name-all',            icon: '🌍', label: 'Countries',    tag: '197',  desc: 'Name every country in the world' },
+      { id: 'name-all-caps',       icon: '🏙️', label: 'Capitals',     tag: '197',  desc: 'Name every capital city' },
+      { id: 'name-all-currencies', icon: '💰', label: 'Currencies',   tag: 'All',  desc: 'Name every currency' },
+      { id: 'name-all-languages',  icon: '🗣️', label: 'Languages',    tag: 'All',  desc: 'Name the official languages' },
+      { id: 'mountains',           icon: '⛰️', label: 'Mountains',    tag: 'Ranges', desc: 'Name every major mountain range' },
+      { id: 'name-all-seas',       icon: '🌊', label: 'Seas',         tag: 'Water', desc: 'Name every sea' },
+      { id: 'name-all-rivers',     icon: '🏞️', label: 'Rivers',       tag: 'Water', desc: 'Name every major river worldwide' },
+  // HIDDEN until ready — uncomment to bring History Maps back:
+  // { id: 'history-maps',        icon: '🏛️', label: 'History Maps', tag: 'Eras', desc: 'Name countries across historical eras' },
+    ],
+  },
 ]
 
-export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, dailyProgress = {}, dailyStreak = 0 }) {
-  const [activeCat, setActiveCat] = useState('all')
+const ALL_PLAYABLE = [...ROWS.flatMap(r => r.items.map(i => i.id)), ...QUIZ_ITEMS.map(q => q.id)]
 
-  const filtered = activeCat === 'all' ? MODES : MODES.filter(m => m.category === activeCat)
+function useResults() {
+  const [results, setResults] = useState(loadResults)
+  useEffect(() => subscribeResults(() => setResults(loadResults())), [])
+  return results
+}
+
+export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile, onDailyQuiz, countryNames = [], dailyProgress = {}, dailyStreak = 0 }) {
+  const auth = useAuth()
+  const results = useResults()
+  const stats = useMemo(() => summarize(results), [results])
+  const [dailyOpen, setDailyOpen] = useState(false)
+
+  const xp = useMemo(() => computeXp(results), [results])
+  const level = levelForXp(xp)
+  const name = auth.profile?.username
+  const isNew = results.length === 0
+
+  const last = results[0] ? { result: results[0], meta: gameMeta(results[0].mode) } : null
+
+  const daily = DAILY_CHALLENGES.map(ch => ({ ...ch, ...getChallengeProgress(ch.id, dailyProgress) }))
+  const dailyDone = daily.filter(d => d.done).length
+  const mysteryDone = daily.find(d => d.id === 'mystery')?.done
+
+  const quizPlayed = QUIZ_ITEMS.filter(q => stats[q.id]).length
+
+  const quickPlay = () => onSelectMode(ALL_PLAYABLE[Math.floor(Math.random() * ALL_PLAYABLE.length)])
 
   return (
-    <div className="home-overlay">
-      <div className="home-content">
-
-        <div className="home-brand">
-          <div className="home-logo">🌐</div>
-          <h1 className="home-title">Orbis</h1>
-          <p className="home-tagline">Test your world geography</p>
-        </div>
-
-        <DailyChallengeHub
-          progress={dailyProgress}
-          streak={dailyStreak}
-          onSelectMode={onSelectMode}
-        />
-
-        {/* Quiz Hub banner */}
-        <button className="home-quiz-hub-banner" onClick={onEnterQuiz}>
-          <div className="hqhb-left">
-            <span className="hqhb-icon">🎯</span>
-            <div className="hqhb-text">
-              <span className="hqhb-title">Quiz Hub</span>
-              <span className="hqhb-desc">10 quizzes · No globe needed · Flags, Capitals, Scramble &amp; more</span>
-            </div>
-          </div>
-          <span className="hqhb-arrow">›</span>
-        </button>
-
-        <div className="home-section-label">🌍 Globe Games</div>
-
-        <div className="home-cat-tabs">
-          {Object.keys(CAT_LABELS).map(cat => (
-            <button
-              key={cat}
-              className={`home-cat-tab${activeCat === cat ? ' active' : ''}`}
-              onClick={() => setActiveCat(cat)}
-            >
-              {CAT_LABELS[cat]}
+    <div className="home-overlay hp">
+      {/* ── Hero ── */}
+      <section className="hp-hero">
+        <div className="hp-hero-text">
+          <p className="hp-greet">
+            {name ? `Welcome back, ${name}` : isNew ? 'Welcome to Orbis' : 'Welcome back, explorer'}
+            {dailyStreak > 0 && <span className="hp-greet-streak">🔥 {dailyStreak} day{dailyStreak === 1 ? '' : 's'}</span>}
+          </p>
+          <h1 className="hp-title">How well do you<br /><span>know the world?</span></h1>
+          <p className="hp-tagline">
+            {ALL_PLAYABLE.length} geography games on a living globe — flags, capitals, borders, rivers and more.
+          </p>
+          <div className="hp-ctas">
+            <button className="hp-cta-primary" onClick={() => onSelectMode('mystery')}>
+              {mysteryDone ? '✓ Daily mystery solved — play again' : '🔍 Today\'s mystery country'}
             </button>
-          ))}
+            <button className="hp-cta-secondary" onClick={quickPlay}>🎲 Quick play</button>
+            <button className="hp-cta-ghost" onClick={onEnter}>Explore globe →</button>
+          </div>
         </div>
+      </section>
 
-        <div className="home-modes-grid">
-          {filtered.map(item => {
-            const col = CAT_COLORS[item.category]
-            return (
-              <button
-                key={item.id}
-                className="home-mode-card"
-                onClick={() => onSelectMode(item.id)}
-                style={{ '--card-bg': col.bg, '--card-border': col.border }}
-              >
-                <div className="home-mode-icon-wrap">
-                  <span className="home-mode-icon">{item.icon}</span>
-                </div>
-                <span className="home-mode-name">{item.label}</span>
-                <span className="home-mode-desc">{item.desc}</span>
-              </button>
-            )
-          })}
-        </div>
+      {/* ── Quiz of the day ── */}
+      <section className="hp-daily-quiz">
+        <DailyBanner countryNames={countryNames} onOpen={onDailyQuiz} />
+      </section>
 
-        <div className="home-footer">
-          <button className="home-enter-btn" onClick={onEnter}>
-            Explore Globe →
+      {/* ── Personal strip ── */}
+      <section className="hp-strip">
+        {isNew ? (
+          <button className="hp-card hp-card-wide" onClick={() => onSelectMode('mystery')}>
+            <span className="hp-card-kicker">New here?</span>
+            <span className="hp-card-title">Start with Mystery Country</span>
+            <span className="hp-card-sub">Guess a country, get a distance hint, narrow it down. Takes a minute.</span>
           </button>
+        ) : (
+          <button className="hp-card" onClick={() => onSelectMode(last.result.mode)}>
+            <span className="hp-card-kicker">Jump back in</span>
+            <span className="hp-card-title">{last.meta.icon} {last.meta.label}</span>
+            <span className="hp-card-sub">
+              {last.result.correct}/{last.result.total} correct · {timeAgo(last.result.played_at)}
+            </span>
+          </button>
+        )}
+
+        <div className={`hp-card hp-daily${dailyOpen ? ' open' : ''}${dailyDone === daily.length ? ' all-done' : ''}`}>
+          <button className="hp-daily-head" onClick={() => setDailyOpen(o => !o)} aria-expanded={dailyOpen}>
+            <span className="hp-card-kicker">Today's challenges</span>
+            <span className="hp-card-title">{dailyDone === daily.length ? 'All done ✓' : `${dailyDone}/${daily.length} complete`}</span>
+            <span className="hp-daily-bars">
+              {daily.map(d => (
+                <span key={d.id} className="hp-daily-bar">
+                  <span style={{ width: `${Math.min(100, (d.value / d.target) * 100)}%` }} className={d.done ? 'done' : ''} />
+                </span>
+              ))}
+            </span>
+          </button>
+          {dailyOpen && (
+            <div className="hp-daily-list">
+              {daily.map(d => (
+                <button key={d.id} className={`hp-daily-item${d.done ? ' done' : ''}`} onClick={() => onSelectMode(d.mode)}>
+                  <span>{d.icon}</span>
+                  <span className="hp-daily-task">{d.task}</span>
+                  <span className="hp-daily-count">{d.done ? '✓' : `${d.value}/${d.target}`}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-      </div>
+        <button className="hp-card" onClick={onProfile}>
+          <span className="hp-card-kicker">Level {level.level} · {levelTitle(level.level)}</span>
+          <span className="hp-card-title">{xp.toLocaleString()} XP</span>
+          <span className="hp-xp"><span style={{ width: `${level.pct}%` }} /></span>
+          <span className="hp-card-sub">{(level.next - xp).toLocaleString()} XP to level {level.level + 1}</span>
+        </button>
+      </section>
+
+      {/* ── Globe game rows ── */}
+      {ROWS.map((row, ri) => {
+        const played = row.items.filter(i => stats[i.id]).length
+        return (
+          <section key={row.id} className="hp-row qh-section" style={{ '--cat': row.color, animationDelay: `${0.1 + ri * 0.08}s` }}>
+            <div className="qh-section-head">
+              <span className="qh-section-icon">{row.icon}</span>
+              <h2>{row.label}</h2>
+              <span className="qh-section-count">{played}/{row.items.length}</span>
+            </div>
+            <div className="qh-grid">
+              {row.items.map(it => <QuizTile key={it.id} item={it} st={stats[it.id]} onSelect={onSelectMode} />)}
+            </div>
+          </section>
+        )
+      })}
+
+      {/* ── Quiz Hub + Learn ── */}
+      <section className="hp-bottom">
+        <button className="hp-banner hp-banner-quiz" onClick={onEnterQuiz}>
+          <span className="hp-banner-icon">🎯</span>
+          <span className="hp-banner-body">
+            <span className="hp-banner-title">Quiz Hub</span>
+            <span className="hp-banner-sub">{QUIZ_ITEMS.length} quizzes, no globe needed · {quizPlayed}/{QUIZ_ITEMS.length} played</span>
+            <span className="hp-banner-bar"><span style={{ width: `${(quizPlayed / QUIZ_ITEMS.length) * 100}%` }} /></span>
+          </span>
+          <span className="hp-banner-cta">Open ▸</span>
+        </button>
+        <button className="hp-banner hp-banner-learn" onClick={() => onSelectMode('learn')}>
+          <span className="hp-banner-icon">🎓</span>
+          <span className="hp-banner-body">
+            <span className="hp-banner-title">Learn mode</span>
+            <span className="hp-banner-sub">Click any country on the globe to see its facts</span>
+          </span>
+          <span className="hp-banner-cta">Explore ▸</span>
+        </button>
+      </section>
     </div>
   )
 }

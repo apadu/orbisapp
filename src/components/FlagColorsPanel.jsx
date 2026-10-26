@@ -3,6 +3,7 @@ import { resolveAlias, findClosestMatch } from '../utils/aliases'
 import { FLAG_COLORS } from '../utils/flagColors'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
+import { startSession, trackAnswer, finishGame } from '../utils/results'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -55,6 +56,7 @@ export default function FlagColorsPanel({ gameCountries, countryInfo }) {
   const isAnswered = status !== 'idle'
 
   const startGame = useCallback(() => {
+    startSession('flag-colors')
     const picked = shuffle(eligibleEntries).slice(0, 30).map(([name, colors]) => ({ name, colors }))
     setDeck(picked)
     setIdx(0)
@@ -71,6 +73,7 @@ export default function FlagColorsPanel({ gameCountries, countryInfo }) {
   const advance = useCallback(() => {
     const next = idx + 1
     if (next >= deck.length) {
+      finishGame('flag-colors')
       setDone(true)
     } else {
       setIdx(next)
@@ -88,6 +91,7 @@ export default function FlagColorsPanel({ gameCountries, countryInfo }) {
     setLastPts(0)
     const info = countryInfo?.[current.name]
     setHistory(h => [{ name: current.name, flag: info?.flag ?? '🏳️', pts: 0, won: false }, ...h.slice(0, 9)])
+    trackAnswer('flag-colors', current.name, false)
     playWrong()
   }, [isAnswered, current, countryInfo])
 
@@ -104,11 +108,12 @@ export default function FlagColorsPanel({ gameCountries, countryInfo }) {
       const pts = calcPoints(newStreak)
       setStatus('correct')
       setStreak(newStreak)
-      setScore(s => s + pts)
+      setScore(s => s + 1)
       setLastPts(pts)
       setDidYouMean(null)
       const info = countryInfo?.[current.name]
       setHistory(h => [{ name: current.name, flag: info?.flag ?? '🏳️', pts, won: true }, ...h.slice(0, 9)])
+      trackAnswer('flag-colors', current.name, true, 10)
       if (newStreak >= 3) playStreak(); else playCorrect()
     } else {
       const closest = findClosestMatch(raw, countryNames)
@@ -136,7 +141,7 @@ export default function FlagColorsPanel({ gameCountries, countryInfo }) {
         '🎨 Color bars show approximate proportions',
         '⌨️ Type the country name and press Enter',
         '⇥ Tab to skip',
-        '🔥 Streak bonus for consecutive correct answers',
+        '✨ XP only for answers you haven\'t got before',
       ]}
       onStart={() => { setStarted(true); startGame() }}
     />
@@ -150,7 +155,7 @@ export default function FlagColorsPanel({ gameCountries, countryInfo }) {
         <div className="quiz-done-wrap">
           <div className="quiz-done-icon">🎉</div>
           <div className="quiz-done-title">30 flags done!</div>
-          <div className="quiz-done-score">Score: <strong>{score}</strong> · {correct}/30 correct</div>
+          <div className="quiz-done-score"><strong>{correct}</strong>/30 correct</div>
           <button className="quiz-reset-btn" onClick={startGame}>↺ Play again</button>
         </div>
       </>
@@ -174,10 +179,10 @@ export default function FlagColorsPanel({ gameCountries, countryInfo }) {
 
       {/* Score bar */}
       <div className="currency-score-bar">
-        <span className="currency-score">Score: <strong>{score}</strong></span>
+        <span className="currency-score">✓ <strong>{score}</strong> correct</span>
         <span className="quiz-progress">{idx + 1} / {deck.length}</span>
         {streak >= 2 && (
-          <span className="currency-streak-badge">🔥 ×{streak} · {calcPoints(streak + 1)} pts next</span>
+          <span className="currency-streak-badge">🔥 ×{streak} streak</span>
         )}
       </div>
 
@@ -243,7 +248,7 @@ export default function FlagColorsPanel({ gameCountries, countryInfo }) {
       {isAnswered && (
         <div className={`currency-feedback ${status === 'correct' ? 'fb-correct' : 'fb-wrong'}`}>
           <span className="scramble-result-flag">{flag}</span>
-          <span>{status === 'correct' ? `✅ +${lastPts} pts` : `❌ ${current.name}`}</span>
+          <span>{status === 'correct' ? '✅ Correct!' : `❌ ${current.name}`}</span>
           <button className="currency-next-btn" onClick={advance}>
             Next →<span className="opt-key-hint"> Enter</span>
           </button>
@@ -258,7 +263,7 @@ export default function FlagColorsPanel({ gameCountries, countryInfo }) {
             <div key={i} className={`currency-history-row ${h.won ? 'hr-correct' : 'hr-wrong'}`}>
               <span>{h.flag}</span>
               <span className="chr-country">{h.name}</span>
-              <span className="chr-pts">{h.won ? `+${h.pts}` : '—'}</span>
+              <span className="chr-pts">{h.won ? '✓' : '✗'}</span>
             </div>
           ))}
         </div>

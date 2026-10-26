@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react'
 import GameIntro from './GameIntro'
 import { CONNECTIONS_ROUNDS, DIFF_COLORS } from '../utils/connectionsData'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
+import { startSession, trackAnswer, finishGame } from '../utils/results'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -34,6 +35,7 @@ export default function ConnectionsPanel() {
 
   const startGame = useCallback((rIdx = 0) => {
     const r = CONNECTIONS_ROUNDS[rIdx % CONNECTIONS_ROUNDS.length]
+    startSession('connections')
     setRoundIdx(rIdx)
     setTiles(buildTiles(r))
     setSelected([])
@@ -71,9 +73,15 @@ export default function ConnectionsPanel() {
       ))
       setSelected([])
       playCorrect()
+      trackAnswer('connections', null, true, 250, match.label)
 
       // Check if all 4 categories are solved
       if (solvedCats.length + 1 === 4) {
+        finishGame('connections', {
+          score: Math.max(200, 1000 - mistakes * 150),
+          correct: 4, total: 4,
+          meta: { mistakes, round: roundIdx % CONNECTIONS_ROUNDS.length },
+        })
         setDone(true)
         playWin()
       }
@@ -86,11 +94,12 @@ export default function ConnectionsPanel() {
       })
       setOneAway(isOneAway)
       setMistakes(m => m + 1)
+      trackAnswer('connections', null, false)
       setShake(true)
       setTimeout(() => setShake(false), 600)
       playWrong()
     }
-  }, [selected, roundIdx, solvedCats])
+  }, [selected, roundIdx, solvedCats, mistakes])
 
   const nextRound = useCallback(() => {
     startGame(roundIdx + 1)

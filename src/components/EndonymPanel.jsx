@@ -3,6 +3,7 @@ import { resolveAlias, findClosestMatch } from '../utils/aliases'
 import { ENDONYMS } from '../utils/endonyms'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
+import { startSession, trackAnswer, finishGame } from '../utils/results'
 
 const ROUND_SIZE = 20
 
@@ -61,6 +62,7 @@ export default function EndonymPanel({ gameCountries, countryInfo }) {
   const isAnswered = status !== 'idle'
 
   const startGame = useCallback(() => {
+    startSession('endonyms')
     const picked = shuffle(eligibleEndonyms).slice(0, ROUND_SIZE)
     setDeck(picked)
     setIdx(0)
@@ -78,6 +80,7 @@ export default function EndonymPanel({ gameCountries, countryInfo }) {
   const advance = useCallback(() => {
     const next = idx + 1
     if (next >= deck.length) {
+      finishGame('endonyms')
       setDone(true)
     } else {
       setIdx(next)
@@ -95,6 +98,7 @@ export default function EndonymPanel({ gameCountries, countryInfo }) {
     setLastPts(0)
     const info = countryInfo?.[current.country]
     setHistory(h => [{ name: current.country, flag: info?.flag ?? '🏳️', pts: 0, won: false }, ...h.slice(0, 9)])
+    trackAnswer('endonyms', current.country, false)
     playWrong()
   }, [isAnswered, current, countryInfo])
 
@@ -111,11 +115,12 @@ export default function EndonymPanel({ gameCountries, countryInfo }) {
       const pts = calcPoints(newStreak)
       setStatus('correct')
       setStreak(newStreak)
-      setScore(s => s + pts)
+      setScore(s => s + 1)
       setLastPts(pts)
       setDidYouMean(null)
       const info = countryInfo?.[current.country]
       setHistory(h => [{ name: current.country, flag: info?.flag ?? '🏳️', pts, won: true }, ...h.slice(0, 9)])
+      trackAnswer('endonyms', current.country, true, 10)
       if (newStreak >= 3) playStreak(); else playCorrect()
     } else {
       const closest = findClosestMatch(raw, countryNames)
@@ -143,7 +148,7 @@ export default function EndonymPanel({ gameCountries, countryInfo }) {
         '🌐 The country\'s name is shown in its own language & script',
         '📖 A romanization hint appears below non-Latin scripts',
         '⌨️ Type the English country name and press Enter',
-        '⇥ Tab to skip · 🔥 Streak bonus for consecutive correct answers',
+        '⇥ Tab to skip · ✨ XP only for answers you haven\'t got before',
       ]}
       onStart={() => { setStarted(true); startGame() }}
     />
@@ -157,7 +162,7 @@ export default function EndonymPanel({ gameCountries, countryInfo }) {
         <div className="quiz-done-wrap">
           <div className="quiz-done-icon">🎉</div>
           <div className="quiz-done-title">{ROUND_SIZE} countries done!</div>
-          <div className="quiz-done-score">Score: <strong>{score}</strong> · {correct}/{ROUND_SIZE} correct</div>
+          <div className="quiz-done-score"><strong>{correct}</strong>/{ROUND_SIZE} correct</div>
           <button className="quiz-reset-btn" onClick={startGame}>↺ Play again</button>
         </div>
       </>
@@ -182,10 +187,10 @@ export default function EndonymPanel({ gameCountries, countryInfo }) {
 
       {/* Score bar */}
       <div className="currency-score-bar">
-        <span className="currency-score">Score: <strong>{score}</strong></span>
+        <span className="currency-score">✓ <strong>{score}</strong> correct</span>
         <span className="quiz-progress">{idx + 1} / {deck.length}</span>
         {streak >= 2 && (
-          <span className="currency-streak-badge">🔥 ×{streak} · {calcPoints(streak + 1)} pts next</span>
+          <span className="currency-streak-badge">🔥 ×{streak} streak</span>
         )}
       </div>
 
@@ -243,7 +248,7 @@ export default function EndonymPanel({ gameCountries, countryInfo }) {
           <span className="scramble-result-flag">{flag}</span>
           <span>
             {status === 'correct'
-              ? `✅ +${lastPts} pts`
+              ? '✅ Correct!'
               : `❌ ${current.country} (${current.endonym})`
             }
           </span>
@@ -261,7 +266,7 @@ export default function EndonymPanel({ gameCountries, countryInfo }) {
             <div key={i} className={`currency-history-row ${h.won ? 'hr-correct' : 'hr-wrong'}`}>
               <span>{h.flag}</span>
               <span className="chr-country">{h.name}</span>
-              <span className="chr-pts">{h.won ? `+${h.pts}` : '—'}</span>
+              <span className="chr-pts">{h.won ? '✓' : '✗'}</span>
             </div>
           ))}
         </div>

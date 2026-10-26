@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "fetch-maps": "node scripts/fetch-maps.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "@turf/union": "^7.1.0",
     "@vercel/analytics": "^2.0.1",
     "d3-geo": "^3.1.1",

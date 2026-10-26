@@ -26,7 +26,8 @@ export const COUNTRY_CURRENCY = {
   'Botswana':                          { name: 'Botswanan Pula',         symbol: 'P',  code: 'BWP' },
   'Brazil':                            { name: 'Brazilian Real',         symbol: 'R$', code: 'BRL' },
   'Brunei':                            { name: 'Brunei Dollar',          symbol: '$',  code: 'BND' },
-  'Bulgaria':                          { name: 'Bulgarian Lev',          symbol: 'лв', code: 'BGN' },
+  'Vatican':                           { name: 'Euro',                   symbol: '€',  code: 'EUR' },
+  'Bulgaria':                          { name: 'Euro',                   symbol: '€',  code: 'EUR' },  // euro since 1 Jan 2026 (was Bulgarian Lev)
   'Burkina Faso':                      { name: 'West African CFA Franc', symbol: 'Fr', code: 'XOF' },
   'Burundi':                           { name: 'Burundian Franc',        symbol: 'Fr', code: 'BIF' },
   'Cabo Verde':                        { name: 'Cape Verdean Escudo',    symbol: '$',  code: 'CVE' },

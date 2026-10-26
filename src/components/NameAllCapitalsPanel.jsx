@@ -2,6 +2,9 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { normalizeInput } from '../utils/aliases'
 import { CAPITALS } from '../utils/capitals'
 import GameIntro from './GameIntro'
+import SetupCard, { TIMER_OPTION } from './SetupCard'
+import GiveUpButton from './GiveUpButton'
+import GameSummary from './GameSummary'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -183,6 +186,23 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
     />
   )
 
+  if (!timerMode) return (
+    <SetupCard
+      mode="name-all-caps"
+      icon="🏙️"
+      title="Name All Capitals"
+      desc={"Type every capital city in the world. Countries light up on the globe as you find them."}
+      rules={[
+        '⏱ Choose countdown or free play',
+        '💡 Countries light up when you name their capital',
+        '✅ Common spelling variants accepted',
+      ]}
+      options={[TIMER_OPTION]}
+      typeToStart
+      onStart={(v, typed) => { startTimer(v.timer); if (typed) setInput(typed) }}
+    />
+  )
+
   return (
     <>
       <div className="panel-header">
@@ -191,14 +211,6 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
           Type every capital city. Countries light up as you find them.
         </p>
       </div>
-
-      {/* Timer mode picker */}
-      {!timerMode && !allFound && (
-        <div className="na-timer-picker">
-          <span className="na-timer-label">🌍 World</span>
-          <button className="na-timer-opt" onClick={() => startTimer('countdown')}>⏳ 15 min countdown</button>
-        </div>
-      )}
 
       {/* Active timer bar */}
       {timerMode && (
@@ -210,30 +222,13 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
             {timerMode === 'countdown' ? '⏳ countdown' : '⏱ count up'}
           </span>
           <div className="na-timer-controls">
-            {!expired && !allFound && !gameOver && (
-              <button className="na-timer-btn" onClick={() => setRunning(r => !r)}>
-                {running ? '⏸' : '▶'}
-              </button>
-            )}
-            {!gameOver && (
-              <button className="na-timer-btn na-timer-stop" onClick={() => setConfirmStop(true)} title="Stop">✕</button>
+            {!gameOver && !expired && !allFound && (
+              <GiveUpButton compact onConfirm={() => { clearInterval(tickRef.current); setRunning(false); revealMissed() }} />
             )}
           </div>
         </div>
       )}
 
-      {/* Confirm stop */}
-      {confirmStop && (
-        <div className="na-confirm-stop">
-          <span>Stop? This will reveal missed capitals.</span>
-          <div className="na-confirm-btns">
-            <button className="na-confirm-yes" onClick={() => {
-              clearInterval(tickRef.current); setRunning(false); setConfirmStop(false); revealMissed()
-            }}>Stop</button>
-            <button className="na-confirm-no" onClick={() => setConfirmStop(false)}>Keep going</button>
-          </div>
-        </div>
-      )}
 
       {/* Time's up */}
       {expired && (
@@ -290,28 +285,19 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
         </div>
       )}
 
-      {/* Missed list */}
-      {gameOver && found.length < total && (
-        <div className="guesses-section">
-          <h3 className="guesses-title">
-            Missed <span className="guess-count" style={{ background: '#ef4444' }}>{total - found.length}</span>
-          </h3>
-          <ul className="guess-list">
-            {eligiblePairs
-              .filter(p => !foundSet.has(p.name))
-              .map(p => (
-                <li key={p.name} className="guess-item">
-                  <span className="guess-swatch" style={{ background: '#ef4444' }} />
-                  <span className="guess-name">{p.capitals[0]}</span>
-                  <span className="guess-dist" style={{ color: '#888', fontSize: '0.78em' }}>&nbsp;({p.name})</span>
-                </li>
-              ))}
-          </ul>
-        </div>
+      {/* End-of-game summary */}
+      {(gameOver || allFound) && (
+        <GameSummary
+          noun="capitals"
+          total={total}
+          timeLabel={timerMode === 'countdown' ? `${formatTime(COUNTDOWN_SECONDS - remaining)} used` : formatTime(elapsed)}
+          found={found.map(f => ({ label: f.capital, sub: f.name, icon: countryInfo?.[f.name]?.flag }))}
+          missed={eligiblePairs.filter(p => !foundSet.has(p.name)).map(p => ({ label: p.capitals[0], sub: p.name, icon: countryInfo?.[p.name]?.flag }))}
+        />
       )}
 
-      {/* Found list */}
-      {found.length > 0 && (
+      {/* Found list (live, during play) */}
+      {!(gameOver || allFound) && found.length > 0 && (
         <div className="guesses-section">
           <h3 className="guesses-title">Found <span className="guess-count">{found.length}</span></h3>
           <ul className="guess-list">
@@ -327,10 +313,14 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       )}
 
       <div className="panel-footer">
-        {!timerMode
-          ? <button className="new-game-btn na-start-default" onClick={() => startTimer('countup')}>▶ Start</button>
-          : <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
-        }
+        {(gameOver || expired || allFound) ? (
+          <>
+            <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>▶ Play again</button>
+            <button className="new-game-btn" onClick={handleReset}>⚙ Settings</button>
+          </>
+        ) : (
+          <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
+        )}
       </div>
     </>
   )

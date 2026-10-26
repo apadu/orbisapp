@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import * as THREE from 'three'
+import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
 import { geoEquirectangular, geoPath } from 'd3-geo'
 
 const CANVAS_W = 4096
@@ -13,7 +14,7 @@ function redrawHistory(canvas, features, targetNames, foundNames, missedNames) {
   const path = geoPath().projection(proj).context(ctx)
 
   // Ocean
-  ctx.fillStyle = '#1254c0'
+  ctx.fillStyle = oceanGradient(ctx, CANVAS_H)
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
 
   // Background land (non-target features — rest of world)
@@ -35,7 +36,7 @@ function redrawHistory(canvas, features, targetNames, foundNames, missedNames) {
     if (!targetNames.has(name) || foundNames.has(name) || missedNames.has(name)) continue
     ctx.beginPath()
     path(f)
-    ctx.fillStyle = '#22c45c'
+    ctx.fillStyle = landColor(name)
     ctx.fill()
     ctx.strokeStyle = '#071a42'
     ctx.lineWidth = 0.8
@@ -93,19 +94,19 @@ export default function HistoryGlobe({ features, targetNames, foundNames, missed
     canvasRef.current = offscreen
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color('#040c1c')
+    scene.background = null  // transparent — the starfield behind the canvas is CSS
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 500)
     camera.position.z = 3.0
     camRef.current = camera
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true })
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setSize(W, H)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     el.appendChild(renderer.domElement)
     rendRef.current = renderer
 
-    const texture = new THREE.CanvasTexture(offscreen)
+    const texture = prepareTexture(new THREE.CanvasTexture(offscreen))
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
     texture.minFilter  = THREE.LinearMipmapLinearFilter
     texture.generateMipmaps = true
@@ -116,25 +117,14 @@ export default function HistoryGlobe({ features, targetNames, foundNames, missed
 
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(1, 72, 72),
-      new THREE.MeshPhongMaterial({ map: texture, specular: new THREE.Color(0x222233), shininess: 20 })
+      globeMaterial(texture)
     )
     scene.add(sphere)
     sphereRef.current = sphere
 
-    // Atmosphere
-    scene.add(new THREE.Mesh(
-      new THREE.SphereGeometry(1.025, 72, 72),
-      new THREE.MeshPhongMaterial({ color: '#5ab4ff', transparent: true, opacity: 0.18, side: THREE.FrontSide })
-    ))
+    addAtmosphere(scene)
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.65))
-    const sun = new THREE.DirectionalLight(0xfff0d0, 1.1)
-    sun.position.set(5, 3, 5)
-    scene.add(sun)
-    const fill = new THREE.DirectionalLight(0x4488ff, 0.3)
-    fill.position.set(-5, -2, -3)
-    scene.add(fill)
+    addLights(scene)
 
     // Starfield
     const starPos = new Float32Array(3000 * 3)

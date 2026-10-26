@@ -1,377 +1,369 @@
-import { useState } from 'react'
-import { ACHIEVEMENTS, getUnlockedAchievements, saveProfile } from '../utils/profileStats'
-import { getCalendar, getStats } from '../utils/stats'
+import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../auth/AuthContext'
+import { loadResults, subscribeResults } from '../utils/results'
+import { computeProfile, levelTitle } from '../utils/profileData'
+import { GAME_CATALOG, CAT_LABELS, gameMeta } from '../utils/gameCatalog'
 import { DAILY_CHALLENGES, getChallengeProgress } from '../utils/dailyChallenges'
+import KnowledgeMap from './profile/KnowledgeMap'
+import ActivityHeatmap from './profile/ActivityHeatmap'
+import Leaderboard from './profile/Leaderboard'
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+// ── helpers ────────────────────────────────────────────────────────────────
+function useResults() {
+  const [results, setResults] = useState(loadResults)
+  useEffect(() => subscribeResults(() => setResults(loadResults())), [])
+  return results
+}
 
-function StreakCalendar() {
-  const calData = getCalendar(90) // fetch enough to cover any month
-  const stats   = getStats()
-  const todayStr = new Date().toISOString().slice(0, 10)
+function fmtDuration(ms) {
+  if (ms == null) return '—'
+  const s = Math.round(ms / 1000)
+  if (s >= 3600) return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
 
-  // Build a lookup: date string → result
-  const resultMap = {}
-  for (const d of calData) if (d.result) resultMap[d.date] = d.result
+function fmtHours(ms) {
+  const m = Math.round(ms / 60000)
+  return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`
+}
 
-  // Current month bounds
-  const now         = new Date()
-  const year        = now.getFullYear()
-  const month       = now.getMonth()
-  const monthLabel  = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
+function timeAgo(iso) {
+  const s = (Date.now() - new Date(iso)) / 1000
+  if (s < 60) return 'just now'
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)}d ago`
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
 
-  // Day-of-week of the 1st (0=Sun…6=Sat → convert to Mon-based 0–6)
-  const firstDow = new Date(year, month, 1).getDay()
-  const startPad = (firstDow + 6) % 7 // blanks before the 1st
+const pct = (x) => `${Math.round(x * 100)}%`
 
-  // Build grid cells: nulls for padding, then 1…daysInMonth
-  const cells = [
-    ...Array(startPad).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ]
+function Sparkline({ values }) {
+  if (values.length < 2) return <div className="spark-empty" />
+  const w = 96, h = 28
+  const max = Math.max(...values), min = Math.min(...values)
+  const span = max - min || 1
+  const pts = values.map((v, i) => `${(i / (values.length - 1)) * w},${h - 3 - ((v - min) / span) * (h - 6)}`).join(' ')
+  return (
+    <svg className="spark" viewBox={`0 0 ${w} ${h}`} width={w} height={h}>
+      <polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  )
+}
 
-  const dateStr = day => {
-    const m = String(month + 1).padStart(2, '0')
-    const d = String(day).padStart(2, '0')
-    return `${year}-${m}-${d}`
+const TABS = [
+  { id: 'overview',     label: '📈 Overview' },
+  { id: 'games',        label: '🎮 Games' },
+  { id: 'map',          label: '🗺️ Knowledge Map' },
+  { id: 'achievements', label: '🏅 Achievements' },
+  { id: 'leaderboards', label: '🏆 Leaderboards' },
+]
+
+// ── Page ───────────────────────────────────────────────────────────────────
+export default function ProfilePage({ countries = [], onBack, onPlay, dailyProgress = {}, dailyStreak = 0 }) {
+  const auth = useAuth()
+  const results = useResults()
+  const p = useMemo(() => computeProfile(results), [results])
+  const [tab, setTab] = useState('overview')
+  const [editing, setEditing] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [nameError, setNameError] = useState(null)
+
+  const username = auth.profile?.username ?? 'Guest'
+  const joined = auth.profile?.created_at ?? results[results.length - 1]?.played_at
+  const unlocked = p.achievements.filter(a => a.unlocked)
+
+  const saveName = async () => {
+    const { error } = await auth.updateUsername(nameInput)
+    if (error) { setNameError(error.message); return }
+    setEditing(false); setNameError(null)
   }
 
   return (
-    <div className="streak-cal-wrap">
-      <div className="streak-cal-header">
-        <span className="streak-cal-title">🔥 {monthLabel}</span>
-        <div className="streak-cal-nums">
-          <span className="streak-cal-stat"><strong>{stats.streak}</strong> streak</span>
-          <span className="streak-cal-sep">·</span>
-          <span className="streak-cal-stat"><strong>{stats.bestStreak}</strong> best</span>
+    <div className="profile-page pp">
+      <button className="profile-back" onClick={onBack}>← Back</button>
+
+      {/* ── Guest banner ── */}
+      {!auth.user && auth.backendEnabled && (
+        <div className="pp-guest-banner">
+          <span>👋 You're playing as a guest. Your progress is saved on this device only.</span>
+          <button onClick={auth.openAuth}>Sign in to save it</button>
+        </div>
+      )}
+
+      {/* ── Hero ── */}
+      <section className="pp-hero">
+        <div className="pp-avatar-wrap">
+          {auth.profile?.avatar_url
+            ? <img className="pp-avatar" src={auth.profile.avatar_url} alt="" referrerPolicy="no-referrer" />
+            : <div className="pp-avatar pp-avatar-letter">{username.charAt(0).toUpperCase()}</div>}
+          <span className="pp-level-badge">{p.level.level}</span>
+        </div>
+
+        <div className="pp-hero-main">
+          {editing ? (
+            <div className="pp-name-edit">
+              <input
+                value={nameInput} autoFocus maxLength={24}
+                onChange={e => { setNameInput(e.target.value); setNameError(null) }}
+                onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditing(false) }}
+              />
+              <button onClick={saveName}>Save</button>
+              <button className="pp-ghost" onClick={() => setEditing(false)}>Cancel</button>
+              {nameError && <span className="pp-name-error">{nameError}</span>}
+            </div>
+          ) : (
+            <div className="pp-name-row">
+              <h1>{username}</h1>
+              {auth.user && (
+                <button className="pp-icon-btn" title="Change username" onClick={() => { setNameInput(username); setEditing(true) }}>✏️</button>
+              )}
+            </div>
+          )}
+          <div className="pp-meta">
+            <span className="pp-title-chip">{levelTitle(p.level.level)}</span>
+            {joined && <span>Joined {new Date(joined).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>}
+            {auth.user && <button className="pp-link" onClick={auth.signOut}>Sign out</button>}
+          </div>
+
+          <div className="pp-xp">
+            <div className="pp-xp-bar"><div className="pp-xp-fill" style={{ width: `${p.level.pct}%` }} /></div>
+            <span className="pp-xp-label">
+              Level {p.level.level} · {p.xp.toLocaleString()} XP · {(p.level.next - p.xp).toLocaleString()} to level {p.level.level + 1}
+            </span>
+          </div>
+        </div>
+
+        <div className="pp-hero-stats">
+          <div className="pp-stat pp-stat-fire"><span className="pp-stat-num">🔥 {p.streak.current}</span><span className="pp-stat-label">day streak</span></div>
+          <div className="pp-stat"><span className="pp-stat-num">{p.totals.games.toLocaleString()}</span><span className="pp-stat-label">games</span></div>
+          <div className="pp-stat"><span className="pp-stat-num">{p.totals.answers ? pct(p.totals.accuracy) : '—'}</span><span className="pp-stat-label">accuracy</span></div>
+          <div className="pp-stat"><span className="pp-stat-num">{p.countriesKnown}</span><span className="pp-stat-label">countries known</span></div>
+        </div>
+      </section>
+
+      {/* ── Tabs ── */}
+      <nav className="pp-tabs">
+        {TABS.map(t => (
+          <button key={t.id} className={`pp-tab${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>
+            {t.label}
+            {t.id === 'achievements' && <span className="pp-tab-count">{unlocked.length}/{p.achievements.length}</span>}
+          </button>
+        ))}
+      </nav>
+
+      {tab === 'overview'     && <Overview p={p} results={results} onPlay={onPlay} dailyProgress={dailyProgress} dailyStreak={dailyStreak} goTo={setTab} />}
+      {tab === 'games'        && <GamesTab p={p} onPlay={onPlay} />}
+      {tab === 'map'          && <MapTab p={p} countries={countries} />}
+      {tab === 'achievements' && <AchievementsTab p={p} />}
+      {tab === 'leaderboards' && <Leaderboard initialMode={mostPlayed(p) ?? 'flag'} />}
+    </div>
+  )
+}
+
+function mostPlayed(p) {
+  return Object.entries(p.perMode).sort((a, b) => b[1].plays - a[1].plays)[0]?.[0]
+}
+
+// ── Overview ───────────────────────────────────────────────────────────────
+function Overview({ p, results, onPlay, dailyProgress, dailyStreak, goTo }) {
+  const nextAch = p.achievements
+    .filter(a => !a.unlocked)
+    .sort((a, b) => b.value / b.target - a.value / a.target)
+    .slice(0, 3)
+
+  return (
+    <div className="pp-overview">
+      <div className="pp-card pp-span-2">
+        <ActivityHeatmap heatmap={p.heatmap} />
+        <div className="pp-mini-stats">
+          <span><strong>{p.activeDays}</strong> active days</span>
+          <span><strong>{p.streak.best}</strong> best streak</span>
+          <span><strong>{fmtHours(p.totals.timeMs)}</strong> played</span>
+          <span><strong>{p.totals.correct.toLocaleString()}</strong> correct answers</span>
         </div>
       </div>
 
-      {/* Weekday headers */}
-      <div className="streak-cal-grid">
-        {WEEKDAYS.map(w => (
-          <div key={w} className="streak-cal-wday">{w}</div>
-        ))}
-
-        {/* Day cells */}
-        {cells.map((day, i) => {
-          if (!day) return <div key={`pad-${i}`} className="streak-cal-blank" />
-          const ds  = dateStr(day)
-          const res = resultMap[ds] ?? null
-          const isFuture = ds > todayStr
-          return (
-            <div
-              key={ds}
-              className={[
-                'streak-cal-day',
-                res === 'won'  ? 'cal-won'  : '',
-                res === 'lost' ? 'cal-lost' : '',
-                ds === todayStr ? 'cal-today' : '',
-                isFuture ? 'cal-future' : '',
-              ].filter(Boolean).join(' ')}
-              title={isFuture ? '' : res ? `${ds} — ${res}` : `${ds} — not played`}
-            >
-              {day}
-            </div>
-          )
-        })}
+      <div className="pp-card">
+        <div className="pp-card-head">
+          <h3>📅 Today's challenges</h3>
+          {dailyStreak > 0 && <span className="pp-chip">🔥 {dailyStreak}</span>}
+        </div>
+        <div className="profile-daily-list">
+          {DAILY_CHALLENGES.map(ch => {
+            const { done, value, target } = getChallengeProgress(ch.id, dailyProgress)
+            return (
+              <div key={ch.id} className={`profile-daily-ch${done ? ' pdc-done' : ''}`}>
+                <span className="pdc-icon">{ch.icon}</span>
+                <div className="pdc-body">
+                  <span className="pdc-label">{ch.task}</span>
+                  {!done && target > 1 && (
+                    <div className="pdc-bar"><div className="pdc-bar-fill" style={{ width: `${Math.min((value / target) * 100, 100)}%` }} /></div>
+                  )}
+                </div>
+                <span className={`pdc-status${done ? ' pdc-check' : ''}`}>{done ? '✓' : `${value}/${target}`}</span>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      <div className="streak-cal-legend">
-        <span className="cal-legend-item"><span className="cal-dot cal-won" />Win</span>
-        <span className="cal-legend-item"><span className="cal-dot cal-lost" />Loss</span>
-        <span className="cal-legend-item"><span className="cal-dot" />No play</span>
+      <div className="pp-card">
+        <div className="pp-card-head">
+          <h3>🏅 Almost there</h3>
+          <button className="pp-link" onClick={() => goTo('achievements')}>All achievements →</button>
+        </div>
+        {nextAch.length === 0
+          ? <p className="pp-muted">You've unlocked everything. Legend.</p>
+          : nextAch.map(a => <AchievementRow key={a.id} a={a} />)}
+      </div>
+
+      <div className="pp-card">
+        <div className="pp-card-head">
+          <h3>🎯 Needs practice</h3>
+          <button className="pp-link" onClick={() => goTo('map')}>Knowledge map →</button>
+        </div>
+        {p.weakest.length === 0
+          ? <p className="pp-muted">Play a few more games and your weakest countries will show up here.</p>
+          : (
+            <div className="pp-weak-list">
+              {p.weakest.slice(0, 8).map(c => (
+                <div key={c.name} className="pp-weak">
+                  <span>{c.name}</span>
+                  <span className="pp-weak-pct">{c.ok}/{c.total}</span>
+                </div>
+              ))}
+            </div>
+          )}
+      </div>
+
+      <div className="pp-card">
+        <div className="pp-card-head"><h3>🕑 Recent games</h3></div>
+        {results.length === 0
+          ? <p className="pp-muted">No games yet. Go play something!</p>
+          : (
+            <div className="pp-recent">
+              {results.slice(0, 8).map(r => {
+                const g = gameMeta(r.mode)
+                return (
+                  <button key={r.client_id} className="pp-recent-row" onClick={() => onPlay(r.mode)} title={`Play ${g.label}`}>
+                    <span className="pp-recent-icon">{g.icon}</span>
+                    <span className="pp-recent-name">{g.label}</span>
+                    <span className="pp-recent-score">{g.cat === 'quiz' ? `${r.correct}/${r.total}` : r.score.toLocaleString()}</span>
+                    <span className="pp-recent-acc">{r.correct}/{r.total}</span>
+                    <span className="pp-recent-ago">{timeAgo(r.played_at)}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
       </div>
     </div>
   )
 }
 
-function formatTime(secs) {
-  if (!secs && secs !== 0) return '—'
-  const m = Math.floor(secs / 60).toString().padStart(2, '0')
-  const s = (secs % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-}
-
-function pct(correct, total) {
-  if (!total) return '—'
-  return `${Math.round((correct / total) * 100)}%`
-}
-
-const CONTINENTS = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania']
-
-const MODE_STATS = [
-  {
-    id: 'mystery',
-    icon: '🔍',
-    label: 'Mystery Country',
-    rows: p => [
-      { label: 'Games played',  value: p.mystery.gamesPlayed },
-      { label: 'Wins',          value: p.mystery.wins },
-      { label: 'Win rate',      value: pct(p.mystery.wins, p.mystery.gamesPlayed) },
-      { label: 'Best streak',   value: p.mystery.bestStreak },
-    ],
-  },
-  {
-    id: 'nameAll',
-    icon: '🌍',
-    label: 'All Countries',
-    rows: p => [
-      { label: 'World completions', value: p.nameAll.completions },
-      { label: 'Best world time',   value: formatTime(p.nameAll.bestTimeWorld) },
-      ...CONTINENTS.map(c => ({
-        label: `${c} PB`,
-        value: formatTime(p.nameAll.continentPBs?.[c] ?? null),
-      })),
-    ],
-  },
-  {
-    id: 'flag',
-    icon: '🚩',
-    label: 'Flag Quiz',
-    rows: p => [
-      { label: 'Rounds played', value: p.flag.roundsPlayed },
-      { label: 'Correct',       value: p.flag.correct },
-      { label: 'Accuracy',      value: pct(p.flag.correct, p.flag.roundsPlayed) },
-      { label: 'Best streak',   value: p.flag.bestStreak },
-      { label: 'High score',    value: p.flag.highScore },
-    ],
-  },
-  {
-    id: 'capitals',
-    icon: '🏛️',
-    label: 'Capitals Quiz',
-    rows: p => [
-      { label: 'Games played', value: p.capitals.gamesPlayed },
-      { label: 'Correct',      value: p.capitals.correct },
-      { label: 'Accuracy',     value: pct(p.capitals.correct, p.capitals.gamesPlayed) },
-      { label: 'Best streak',  value: p.capitals.bestStreak },
-    ],
-  },
-  {
-    id: 'capToCountry',
-    icon: '🗺️',
-    label: 'Capital to Country',
-    rows: p => [
-      { label: 'Games played', value: p.capToCountry.gamesPlayed },
-      { label: 'Correct',      value: p.capToCountry.correct },
-      { label: 'Accuracy',     value: pct(p.capToCountry.correct, p.capToCountry.gamesPlayed) },
-      { label: 'Best streak',  value: p.capToCountry.bestStreak },
-    ],
-  },
-  {
-    id: 'locate',
-    icon: '📍',
-    label: 'Pinpoint Country',
-    rows: p => [
-      { label: 'Rounds played',   value: p.locate.roundsPlayed },
-      { label: 'High score',      value: p.locate.highScore },
-      { label: 'Perfect rounds',  value: p.locate.perfectRounds },
-    ],
-  },
-  {
-    id: 'borderChain',
-    icon: '🔗',
-    label: 'Border Chain',
-    rows: p => [
-      { label: 'Rounds played',   value: p.borderChain.roundsPlayed },
-      { label: 'High score',      value: p.borderChain.highScore },
-      { label: 'Optimal solves',  value: p.borderChain.optimalSolves },
-    ],
-  },
-  {
-    id: 'popOrder',
-    icon: '📊',
-    label: 'Population Order',
-    rows: p => [
-      { label: 'Rounds played',  value: p.popOrder.roundsPlayed },
-      { label: 'High score',     value: p.popOrder.highScore },
-      { label: 'Perfect rounds', value: p.popOrder.perfectRounds },
-    ],
-  },
-]
-
-export default function ProfilePage({ profile, onBack, onProfileUpdate, dailyProgress = {}, dailyStreak = 0 }) {
-  const [editingName, setEditingName] = useState(false)
-  const [nameInput, setNameInput]     = useState(profile.username)
-  const [activeTab, setActiveTab]     = useState('stats') // 'stats' | 'achievements' | 'friends'
-
-  const unlocked = getUnlockedAchievements(profile)
-  const unlockedIds = new Set(unlocked.map(a => a.id))
-
-  const saveName = () => {
-    const name = nameInput.trim() || 'Explorer'
-    const updated = { ...profile, username: name }
-    saveProfile(updated)
-    onProfileUpdate(updated)
-    setEditingName(false)
-  }
-
-  const joinDate = profile.joinedAt
-    ? new Date(profile.joinedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : 'Unknown'
-
-  const totalGames =
-    profile.mystery.gamesPlayed +
-    profile.flag.roundsPlayed +
-    profile.capitals.gamesPlayed +
-    profile.capToCountry.gamesPlayed +
-    profile.locate.roundsPlayed +
-    profile.borderChain.roundsPlayed +
-    profile.popOrder.roundsPlayed
-
+// ── Games ──────────────────────────────────────────────────────────────────
+function GamesTab({ p, onPlay }) {
   return (
-    <div className="profile-page">
-      {/* Back button */}
-      <button className="profile-back" onClick={onBack}>← Back to game</button>
-
-      {/* Hero */}
-      <div className="profile-hero">
-        <div className="profile-avatar">
-          {profile.username.charAt(0).toUpperCase()}
-        </div>
-        <div className="profile-info">
-          {editingName ? (
-            <div className="profile-name-edit">
-              <input
-                className="profile-name-input"
-                value={nameInput}
-                onChange={e => setNameInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false) }}
-                autoFocus
-                maxLength={24}
-              />
-              <button className="profile-name-save" onClick={saveName}>Save</button>
-              <button className="profile-name-cancel" onClick={() => setEditingName(false)}>✕</button>
-            </div>
-          ) : (
-            <div className="profile-name-row">
-              <h1 className="profile-username">{profile.username}</h1>
-              <button className="profile-edit-btn" onClick={() => setEditingName(true)} title="Edit name">✏️</button>
-            </div>
-          )}
-          <p className="profile-meta">Explorer · Joined {joinDate}</p>
-          <div className="profile-summary">
-            <div className="profile-summary-item">
-              <span className="profile-summary-num">{totalGames}</span>
-              <span className="profile-summary-label">Games</span>
-            </div>
-            <div className="profile-summary-item">
-              <span className="profile-summary-num">{profile.mystery.wins}</span>
-              <span className="profile-summary-label">Mystery Wins</span>
-            </div>
-            <div className="profile-summary-item">
-              <span className="profile-summary-num">{unlocked.length}</span>
-              <span className="profile-summary-label">Achievements</span>
-            </div>
-            <div className="profile-summary-item">
-              <span className="profile-summary-num">{profile.nameAll.completions}</span>
-              <span className="profile-summary-label">World Clears</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="profile-tabs">
-        {['stats', 'achievements', 'friends'].map(t => (
-          <button
-            key={t}
-            className={`profile-tab ${activeTab === t ? 'active' : ''}`}
-            onClick={() => setActiveTab(t)}
-          >
-            {t === 'stats' ? '📈 Stats' : t === 'achievements' ? '🏅 Achievements' : '👥 Friends'}
-          </button>
-        ))}
-      </div>
-
-      {/* Stats tab */}
-      {activeTab === 'stats' && (
-        <>
-        {/* Daily Challenges card */}
-        <div className="profile-daily-card">
-          <div className="profile-daily-header">
-            <span className="profile-daily-title">📅 Today's Challenges</span>
-            {dailyStreak > 0 && <span className="profile-daily-streak">🔥 {dailyStreak} day streak</span>}
-          </div>
-          <div className="profile-daily-list">
-            {DAILY_CHALLENGES.map(ch => {
-              const { done, value, target } = getChallengeProgress(ch.id, dailyProgress)
-              const pct = Math.min((value / target) * 100, 100)
-              return (
-                <div key={ch.id} className={`profile-daily-ch${done ? ' pdc-done' : ''}`}>
-                  <span className="pdc-icon">{ch.icon}</span>
-                  <div className="pdc-body">
-                    <span className="pdc-label">{ch.task}</span>
-                    {!done && target > 1 && (
-                      <div className="pdc-bar">
-                        <div className="pdc-bar-fill" style={{ width: `${pct}%` }} />
-                      </div>
+    <div className="pp-games">
+      {Object.entries(CAT_LABELS).map(([cat, label]) => {
+        const items = Object.entries(GAME_CATALOG).filter(([, g]) => g.cat === cat)
+        return (
+          <section key={cat}>
+            <h3 className="pp-section-title">{label}</h3>
+            <div className="pp-game-grid">
+              {items.map(([id, g]) => {
+                const m = p.perMode[id]
+                return (
+                  <div key={id} className={`pp-game-card${m ? '' : ' pp-game-unplayed'}`}>
+                    <div className="pp-game-head">
+                      <span className="pp-game-icon">{g.icon}</span>
+                      <span className="pp-game-name">{g.label}</span>
+                      <button className="pp-play" onClick={() => onPlay(id)}>Play</button>
+                    </div>
+                    {m ? (
+                      <>
+                        <div className="pp-game-stats">
+                          <div><span className="pp-gs-num">{g.cat === 'quiz' ? (m.best ? `${m.best.correct}/${m.best.total}` : '—') : (m.best?.score.toLocaleString() ?? '—')}</span><span className="pp-gs-label">best</span></div>
+                          <div><span className="pp-gs-num">{pct(m.accuracy)}</span><span className="pp-gs-label">accuracy</span></div>
+                          <div>
+                            <span className="pp-gs-num">{g.timed ? fmtDuration(m.bestTime) : m.plays}</span>
+                            <span className="pp-gs-label">{g.timed ? 'best clear' : 'played'}</span>
+                          </div>
+                        </div>
+                        <div className="pp-game-foot">
+                          <Sparkline values={m.recent} />
+                          <span className="pp-muted">{timeAgo(m.lastPlayed)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="pp-muted pp-game-empty">Not played yet</p>
                     )}
                   </div>
-                  <span className={`pdc-status${done ? ' pdc-check' : ''}`}>
-                    {done ? '✓' : `${value}/${target}`}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-        <StreakCalendar />
-        <div className="profile-stats-grid">
-          {MODE_STATS.map(({ id, icon, label, rows }) => (
-            <div key={id} className="profile-stat-card">
-              <div className="psc-header">
-                <span className="psc-icon">{icon}</span>
-                <span className="psc-label">{label}</span>
-              </div>
-              <div className="psc-rows">
-                {rows(profile).map(({ label: l, value }) => (
-                  <div key={l} className="psc-row">
-                    <span className="psc-row-label">{l}</span>
-                    <span className="psc-row-value">{value ?? '—'}</span>
-                  </div>
-                ))}
-              </div>
+                )
+              })}
             </div>
+          </section>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Knowledge map ──────────────────────────────────────────────────────────
+function MapTab({ p, countries }) {
+  const list = Object.entries(p.mastery).map(([name, s]) => ({ name, ...s, pct: s.ok / s.total }))
+  const strongest = list.filter(c => c.total >= 2).sort((a, b) => b.pct - a.pct || b.total - a.total).slice(0, 8)
+
+  return (
+    <div className="pp-map-tab">
+      <div className="pp-card">
+        <div className="pp-card-head">
+          <h3>Your world</h3>
+          <span className="pp-muted">{p.countriesKnown} known · {p.countriesMastered} mastered</span>
+        </div>
+        <KnowledgeMap countries={countries} mastery={p.mastery} />
+      </div>
+      <div className="pp-map-lists">
+        <div className="pp-card">
+          <h3>💪 Strongest</h3>
+          {strongest.length === 0 ? <p className="pp-muted">Not enough data yet.</p> : strongest.map(c => (
+            <div key={c.name} className="pp-weak"><span>{c.name}</span><span className="pp-strong-pct">{pct(c.pct)}</span></div>
           ))}
         </div>
-        </>
-      )}
-
-      {/* Achievements tab */}
-      {activeTab === 'achievements' && (
-        <div className="profile-achievements">
-          <p className="achievements-summary">
-            {unlocked.length} / {ACHIEVEMENTS.length} unlocked
-          </p>
-          <div className="achievements-grid">
-            {ACHIEVEMENTS.map(a => {
-              const done = unlockedIds.has(a.id)
-              return (
-                <div key={a.id} className={`achievement-card ${done ? 'unlocked' : 'locked'}`}>
-                  <span className="ach-icon">{done ? a.icon : '🔒'}</span>
-                  <span className="ach-label">{a.label}</span>
-                  <span className="ach-desc">{a.desc}</span>
-                </div>
-              )
-            })}
-          </div>
+        <div className="pp-card">
+          <h3>🎯 Weakest</h3>
+          {p.weakest.length === 0 ? <p className="pp-muted">Nothing below 70% yet.</p> : p.weakest.slice(0, 8).map(c => (
+            <div key={c.name} className="pp-weak"><span>{c.name}</span><span className="pp-weak-pct">{pct(c.pct)}</span></div>
+          ))}
         </div>
-      )}
+      </div>
+    </div>
+  )
+}
 
-      {/* Friends tab */}
-      {activeTab === 'friends' && (
-        <div className="profile-friends">
-          <div className="friends-placeholder">
-            <span className="friends-placeholder-icon">👥</span>
-            <h3>Friends & Challenges</h3>
-            <p>Multiplayer and 1v1 challenges are coming soon.<br />You'll be able to invite friends, compare scores, and race head-to-head.</p>
-            <button className="friends-invite-btn" disabled>Invite a friend (coming soon)</button>
-          </div>
-        </div>
-      )}
+// ── Achievements ───────────────────────────────────────────────────────────
+function AchievementRow({ a }) {
+  return (
+    <div className={`pp-ach-row${a.unlocked ? ' unlocked' : ''}`}>
+      <span className="pp-ach-icon">{a.unlocked ? a.icon : '🔒'}</span>
+      <div className="pp-ach-body">
+        <span className="pp-ach-label">{a.label}</span>
+        <span className="pp-ach-desc">{a.desc}</span>
+        {!a.unlocked && a.target > 1 && (
+          <div className="pp-ach-bar"><div style={{ width: `${(a.value / a.target) * 100}%` }} /></div>
+        )}
+      </div>
+      {!a.unlocked && a.target > 1 && <span className="pp-ach-count">{a.value}/{a.target}</span>}
+    </div>
+  )
+}
+
+function AchievementsTab({ p }) {
+  const sorted = [...p.achievements].sort((a, b) => Number(b.unlocked) - Number(a.unlocked))
+  return (
+    <div className="pp-ach-grid">
+      {sorted.map(a => <AchievementRow key={a.id} a={a} />)}
     </div>
   )
 }

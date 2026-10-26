@@ -38,8 +38,8 @@ export default function OddOneOutPanel({ question, answered, chosen, score, stre
 
       {/* Score + streak */}
       <div className="locate-score-bar">
-        <span className="locate-score-num">{score}</span>
-        <span className="locate-score-label">points</span>
+        <span className="locate-score-num">{history.filter(h => h.correct).length}</span>
+        <span className="locate-score-label">correct</span>
         {streak >= 2 && (
           <span className="ooo-streak">🔥 ×{mult}</span>
         )}
@@ -78,7 +78,7 @@ export default function OddOneOutPanel({ question, answered, chosen, score, stre
       {answered && (
         <div className={`ooo-feedback ${chosen === question.oddIndex ? 'ooo-fb-correct' : 'ooo-fb-wrong'}`}>
           {chosen === question.oddIndex
-            ? <><strong>+{pts} pts{streak >= 2 ? ` (×${mult} streak!)` : ''}</strong></>
+            ? <><strong>Correct!{streak >= 2 ? ` 🔥 ×${streak}` : ''}</strong></>
             : <><strong>Wrong!</strong> The odd one was <strong>{question.options[question.oddIndex].name}</strong></>
           }
           <p className="ooo-explanation">{question.sharedLabel}</p>
@@ -102,7 +102,7 @@ export default function OddOneOutPanel({ question, answered, chosen, score, stre
                 <span className="guess-swatch" style={{ background: h.correct ? '#39ff14' : '#ef4444' }} />
                 <span className="guess-name">{h.odd}</span>
                 <span className="guess-dist" style={{ color: h.correct ? '#39ff14' : '#ef4444' }}>
-                  {h.correct ? `+${h.pts}` : '✗'}
+                  {h.correct ? '✓' : '✗'}
                 </span>
               </li>
             ))}

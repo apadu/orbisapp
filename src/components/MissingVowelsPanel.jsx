@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { resolveAlias } from '../utils/aliases'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
+import { startSession, trackAnswer, finishGame } from '../utils/results'
 
 const ROUND_SIZE = 25
 const VOWELS = new Set(['a','e','i','o','u','A','E','I','O','U'])
@@ -64,6 +65,7 @@ export default function MissingVowelsPanel({ gameCountries, countryInfo }) {
   const isAnswered = status !== 'idle'
 
   const startGame = useCallback(() => {
+    startSession('missing-vowels')
     const picked = shuffle(eligibleCountries).slice(0, ROUND_SIZE)
     setDeck(picked)
     setIdx(0)
@@ -81,6 +83,7 @@ export default function MissingVowelsPanel({ gameCountries, countryInfo }) {
   const advance = useCallback(() => {
     const next = idx + 1
     if (next >= deck.length) {
+      finishGame('missing-vowels')
       setDone(true)
     } else {
       setIdx(next)
@@ -99,6 +102,7 @@ export default function MissingVowelsPanel({ gameCountries, countryInfo }) {
     const name = current.properties.NAME
     const info = countryInfo?.[name]
     setHistory(h => [{ name, flag: info?.flag ?? '🏳️', pts: 0, won: false }, ...h.slice(0, 9)])
+    trackAnswer('missing-vowels', current.properties.NAME, false)
     playWrong()
   }, [isAnswered, current, countryInfo])
 
@@ -113,10 +117,11 @@ export default function MissingVowelsPanel({ gameCountries, countryInfo }) {
       const pts = calcPoints(newStreak)
       setStatus('correct')
       setStreak(newStreak)
-      setScore(s => s + pts)
+      setScore(s => s + 1)
       setLastPts(pts)
       const info = countryInfo?.[name]
       setHistory(h => [{ name, flag: info?.flag ?? '🏳️', pts, won: true }, ...h.slice(0, 9)])
+      trackAnswer('missing-vowels', name, true, 10)
       if (newStreak >= 3) playStreak(); else playCorrect()
     }
   }, [isAnswered, current, countryNames, streak, countryInfo])
@@ -141,7 +146,7 @@ export default function MissingVowelsPanel({ gameCountries, countryInfo }) {
         '⌨️ Type the full country name — it auto-checks',
         '⇥ Tab to skip',
         '↩ Enter to move on after answering',
-        '🔥 Build a streak for bonus points',
+        '🔥 Keep a streak going — XP only for answers you haven\'t got before',
       ]}
       onStart={() => { setStarted(true); startGame() }}
     />
@@ -159,7 +164,7 @@ export default function MissingVowelsPanel({ gameCountries, countryInfo }) {
           <div className="quiz-done-icon">🎉</div>
           <div className="quiz-done-title">{ROUND_SIZE} countries done!</div>
           <div className="quiz-done-score">
-            Score: <strong>{score}</strong> · {correct}/{ROUND_SIZE} correct
+            <strong>{correct}</strong>/{ROUND_SIZE} correct
           </div>
           <button className="quiz-reset-btn" onClick={startGame}>↺ Play again</button>
         </div>
@@ -185,10 +190,10 @@ export default function MissingVowelsPanel({ gameCountries, countryInfo }) {
 
       {/* Score bar */}
       <div className="currency-score-bar">
-        <span className="currency-score">Score: <strong>{score}</strong></span>
+        <span className="currency-score">✓ <strong>{score}</strong> correct</span>
         <span className="quiz-progress">{idx + 1} / {deck.length}</span>
         {streak >= 2 && (
-          <span className="currency-streak-badge">🔥 ×{streak} · {calcPoints(streak + 1)} pts next</span>
+          <span className="currency-streak-badge">🔥 ×{streak} streak</span>
         )}
       </div>
 
@@ -234,7 +239,7 @@ export default function MissingVowelsPanel({ gameCountries, countryInfo }) {
         <div className={`currency-feedback ${status === 'correct' ? 'fb-correct' : 'fb-wrong'}`}>
           <span className="scramble-result-flag">{flag}</span>
           <span>
-            {status === 'correct' ? `✅ +${lastPts} pts` : `❌ ${name}`}
+            {status === 'correct' ? '✅ Correct!' : `❌ ${name}`}
           </span>
           <button className="currency-next-btn" onClick={advance}>
             Next →<span className="opt-key-hint"> Enter</span>
@@ -250,7 +255,7 @@ export default function MissingVowelsPanel({ gameCountries, countryInfo }) {
             <div key={i} className={`currency-history-row ${h.won ? 'hr-correct' : 'hr-wrong'}`}>
               <span>{h.flag}</span>
               <span className="chr-country">{h.name}</span>
-              <span className="chr-pts">{h.won ? `+${h.pts}` : '—'}</span>
+              <span className="chr-pts">{h.won ? '✓' : '✗'}</span>
             </div>
           ))}
         </div>

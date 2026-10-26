@@ -3,6 +3,7 @@ import { resolveAlias, findClosestMatch } from '../utils/aliases'
 import { COUNTRY_FACTS } from '../utils/countryFacts'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
+import { startSession, trackAnswer, finishGame } from '../utils/results'
 
 const ROUND_SIZE = 15
 
@@ -59,6 +60,7 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
   const isAnswered = status !== 'idle'
 
   const startGame = useCallback(() => {
+    startSession('country-fact')
     // Deduplicate by country name
     const seen = new Set()
     const unique = eligibleFacts.filter(e => {
@@ -84,6 +86,7 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
   const advance = useCallback(() => {
     const next = idx + 1
     if (next >= deck.length) {
+      finishGame('country-fact')
       setDone(true)
     } else {
       setIdx(next)
@@ -108,6 +111,7 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
     setLastPts(0)
     const info = countryInfo?.[current.country]
     setHistory(h => [{ name: current.country, flag: info?.flag ?? '🏳️', pts: 0, won: false, hintsUsed }, ...h.slice(0, 9)])
+    trackAnswer('country-fact', current.country, false)
     playWrong()
   }, [isAnswered, current, countryInfo, hintsUsed])
 
@@ -126,11 +130,12 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
       const newStreak = streak + 1
       setStatus('correct')
       setStreak(newStreak)
-      setScore(s => s + pts)
+      setScore(s => s + 1)
       setLastPts(pts)
       setDidYouMean(null)
       const info = countryInfo?.[current.country]
       setHistory(h => [{ name: current.country, flag: info?.flag ?? '🏳️', pts, won: true, hintsUsed }, ...h.slice(0, 9)])
+      trackAnswer('country-fact', current.country, true, 10)
       if (newStreak >= 3) playStreak(); else playCorrect()
     } else {
       const closest = findClosestMatch(raw, countryNames)
@@ -153,11 +158,11 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
     <GameIntro
       icon="📖"
       title="Country by Fact"
-      desc="Read a fact and name the country. Reveal hints for fewer points."
+      desc="Read a fact and name the country. Stuck? Reveal another fact."
       rules={[
         '📖 Each country has up to 3 facts — hardest first',
-        '💡 Click "Hint" to reveal the next fact (fewer points)',
-        '300 pts for 1 fact · 200 for 2 · 100 for 3',
+        '💡 Stuck? Reveal the next fact',
+        '✨ XP only for countries you haven\'t got before',
         '⇥ Tab to skip · ↩ Enter to move on',
       ]}
       onStart={() => { setStarted(true); startGame() }}
@@ -172,7 +177,7 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
         <div className="quiz-done-wrap">
           <div className="quiz-done-icon">🎉</div>
           <div className="quiz-done-title">{ROUND_SIZE} countries done!</div>
-          <div className="quiz-done-score">Score: <strong>{score}</strong> · {correct}/{ROUND_SIZE} correct</div>
+          <div className="quiz-done-score"><strong>{correct}</strong>/{ROUND_SIZE} correct</div>
           <button className="quiz-reset-btn" onClick={startGame}>↺ Play again</button>
         </div>
       </>
@@ -199,7 +204,7 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
 
       {/* Score bar */}
       <div className="currency-score-bar">
-        <span className="currency-score">Score: <strong>{score}</strong></span>
+        <span className="currency-score">✓ <strong>{score}</strong> correct</span>
         <span className="quiz-progress">{idx + 1} / {deck.length}</span>
         {streak >= 2 && (
           <span className="currency-streak-badge">🔥 ×{streak}</span>
@@ -210,8 +215,8 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
       <div className="cf-card">
         <div className="cf-points-badge">
           {isAnswered
-            ? (status === 'correct' ? `✅ +${lastPts} pts` : `❌ ${current.country}`)
-            : `${pointsAvailable} pts if correct`
+            ? (status === 'correct' ? '✅ Correct!' : `❌ ${current.country}`)
+            : `Fact ${hintsUsed + 1} of ${current.facts.length}`
           }
         </div>
         <div className="cf-facts">
@@ -234,7 +239,7 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
       {canHint && (
         <div className="cf-hint-row">
           <button className="cf-hint-btn" onClick={revealHint}>
-            💡 Reveal hint ({HINT_POINTS[Math.min(hintsUsed + 1, 2)]} pts)
+            💡 Reveal another fact
           </button>
         </div>
       )}
@@ -272,7 +277,7 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
       {isAnswered && (
         <div className={`currency-feedback ${status === 'correct' ? 'fb-correct' : 'fb-wrong'}`}>
           <span className="scramble-result-flag">{flag}</span>
-          <span>{status === 'correct' ? `✅ +${lastPts} pts` : `❌ ${current.country}`}</span>
+          <span>{status === 'correct' ? '✅ Correct!' : `❌ ${current.country}`}</span>
           <button className="currency-next-btn" onClick={advance}>
             Next →<span className="opt-key-hint"> Enter</span>
           </button>
@@ -287,7 +292,7 @@ export default function CountryFactPanel({ gameCountries, countryInfo }) {
             <div key={i} className={`currency-history-row ${h.won ? 'hr-correct' : 'hr-wrong'}`}>
               <span>{h.flag}</span>
               <span className="chr-country">{h.name}</span>
-              <span className="chr-pts">{h.won ? `+${h.pts}` : '—'}</span>
+              <span className="chr-pts">{h.won ? '✓' : '✗'}</span>
             </div>
           ))}
         </div>

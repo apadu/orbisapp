@@ -3,6 +3,7 @@ import { COUNTRY_CURRENCY } from '../utils/countryCurrency'
 import { COUNTRY_INFO } from '../utils/countryInfo'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
+import { startSession, trackAnswer, finishGame } from '../utils/results'
 
 const ELIGIBLE = Object.keys(COUNTRY_CURRENCY).filter(name => COUNTRY_INFO[name])
 
@@ -60,6 +61,7 @@ export default function CurrencyPanel() {
                                 : matchLevel(input, round.correct, round.code)
 
   const reset = useCallback(() => {
+    startSession('currency')
     setDeck(freshDeck())
     setIdx(0)
     setInput('')
@@ -81,13 +83,14 @@ export default function CurrencyPanel() {
       const pts = streakPts
       const newStreak = streak + 1
       setStatus('correct')
-      setScore(s => s + pts)
+      setScore(s => s + 1)
       setStreak(newStreak)
       setLastPts(pts)
       setHistory(h => [
         { country: round.country, correct: round.correct, pts, won: true },
         ...h.slice(0, 9),
       ])
+      trackAnswer('currency', round.country, true, 10)
       if (newStreak >= 3) playStreak(); else playCorrect()
     }
   }, [isAnswered, round, streakPts, streak])
@@ -101,6 +104,7 @@ export default function CurrencyPanel() {
       { country: round.country, correct: round.correct, pts: 0, won: false },
       ...h.slice(0, 9),
     ])
+    trackAnswer('currency', round.country, false)
     playWrong()
   }, [isAnswered, round])
 
@@ -109,6 +113,7 @@ export default function CurrencyPanel() {
     if (!isAnswered) return
     const nextIdx = idx + 1
     if (nextIdx >= deck.length) {
+      finishGame('currency')
       setDone(true)
     } else {
       setIdx(nextIdx)
@@ -140,7 +145,7 @@ export default function CurrencyPanel() {
         '⌨️ Type the currency name to answer',
         '↩ Skip to pass on any country',
         '💡 Currency codes accepted (e.g. USD, EUR)',
-        '📈 Build a streak for a score multiplier',
+        '✨ XP only for answers you haven\'t got before',
       ]}
       onStart={() => setStarted(true)}
     />
@@ -155,7 +160,7 @@ export default function CurrencyPanel() {
         <div className="quiz-done-wrap">
           <div className="quiz-done-icon">🎉</div>
           <div className="quiz-done-title">All {ELIGIBLE.length} countries done!</div>
-          <div className="quiz-done-score">Final score: <strong>{score}</strong></div>
+          <div className="quiz-done-score"><strong>{score}</strong> correct</div>
           <button className="quiz-reset-btn" onClick={reset}>↺ Play again</button>
         </div>
       </>
@@ -181,10 +186,10 @@ export default function CurrencyPanel() {
       </div>
 
       <div className="currency-score-bar">
-        <span className="currency-score">Score: <strong>{score}</strong></span>
+        <span className="currency-score">✓ <strong>{score}</strong> correct</span>
         <span className="quiz-progress">{progress}</span>
         {streak >= 2 && (
-          <span className="currency-streak-badge">🔥 ×{streak} · {streakPts} pts</span>
+          <span className="currency-streak-badge">🔥 ×{streak} streak</span>
         )}
       </div>
 
@@ -214,7 +219,7 @@ export default function CurrencyPanel() {
         <div className={`currency-feedback ${status === 'correct' ? 'fb-correct' : 'fb-wrong'}`}>
           <span>
             {status === 'correct'
-              ? `✅ +${lastPts} pts`
+              ? '✅ Correct!'
               : `❌ ${round.correct} (${round.code})`}
           </span>
           <button className="currency-next-btn" onClick={next}>
@@ -237,7 +242,7 @@ export default function CurrencyPanel() {
                 <span>{hinfo?.flag ?? '🏳️'}</span>
                 <span className="chr-country">{h.country}</span>
                 <span className="chr-currency">{h.correct}</span>
-                <span className="chr-pts">{h.won ? `+${h.pts}` : '—'}</span>
+                <span className="chr-pts">{h.won ? '✓' : '✗'}</span>
               </div>
             )
           })}

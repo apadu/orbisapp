@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import GiveUpButton from './GiveUpButton'
 import { resolveAlias } from '../utils/aliases'
 import GameIntro from './GameIntro'
 
@@ -176,7 +177,7 @@ export default function BorderChainPanel({
       desc="Connect two highlighted countries through a chain of shared borders."
       rules={[
         '🗺️ Each step must share a land border with the previous',
-        '⭐ Fewer steps = more points',
+        '⭐ Try to find the shortest chain',
         '💡 The optimal path is calculated — try to match it',
         '🔄 New challenge after each round',
       ]}
@@ -196,8 +197,8 @@ export default function BorderChainPanel({
 
       {/* Score bar */}
       <div className="locate-score-bar">
-        <span className="locate-score-num">{totalScore}</span>
-        <span className="locate-score-label">total points</span>
+        <span className="locate-score-num">{history.filter(h => h.pts > 0).length}</span>
+        <span className="locate-score-label">chains solved</span>
         <span className="locate-round-count">{history.length} rounds</span>
       </div>
 
@@ -281,7 +282,7 @@ export default function BorderChainPanel({
         const label = pts === 1000 ? 'Optimal!' : pts >= 700 ? 'Great!' : pts >= 400 ? 'Good' : 'Could be shorter'
         return (
           <div className="po-result" style={{ color }}>
-            🎉 {label} — {chain.length - 1} hop{chain.length - 1 !== 1 ? 's' : ''}, +{pts} pts
+            🎉 {label} — {chain.length - 1} hop{chain.length - 1 !== 1 ? 's' : ''}
             {optimalPath && optimalPath.length - 1 < chain.length - 1 && (
               <div className="bc-optimal">
                 Shortest: {optimalPath.join(' → ')}
@@ -305,7 +306,7 @@ export default function BorderChainPanel({
         ) : (
           <>
             <button className="new-game-btn" onClick={onNext}>🔄 New Pair</button>
-            <button className="give-up-btn" onClick={handleGiveUp}>Give up</button>
+            <GiveUpButton compact onConfirm={handleGiveUp} />
           </>
         )}
       </div>
@@ -324,7 +325,6 @@ export default function BorderChainPanel({
                     {h.chain[0]} → {h.chain[h.chain.length - 1]}
                   </span>
                   <span className="guess-dist">{h.chain.length - 1} hops</span>
-                  <span className="guess-dist" style={{ color }}>+{h.pts}</span>
                 </li>
               )
             })}

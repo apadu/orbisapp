@@ -3,6 +3,7 @@ import { COUNTRY_INFO } from '../utils/countryInfo'
 import { COUNTRY_AREA } from '../utils/countryArea'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
+import { startSession, trackAnswer, finishGame } from '../utils/results'
 
 function formatArea(km2) {
   return km2.toLocaleString() + ' km²'
@@ -67,6 +68,7 @@ export default function AreaPanel({ gameCountries, onPairChange }) {
     setStreak(newStreak)
     setScore(s => s + pts)
     setHistory(h => [{ left, right, chosenSide: side, correct, pts }, ...h].slice(0, 20))
+    trackAnswer('area', null, correct, correct ? 10 : 0, `${left.name}|${right.name}`)
     if (correct) { if (newStreak >= 3) playStreak(); else playCorrect() }
     else playWrong()
   }, [answered, left, right, streak])
@@ -119,7 +121,7 @@ export default function AreaPanel({ gameCountries, onPairChange }) {
         <div className="mystery-header-row">
           <h2>📏 Bigger or Smaller?</h2>
           <div className="area-score-chip">
-            {score > 0 && <span className="area-score">{score} pts</span>}
+            {history.length > 0 && <span className="area-score">✓ {history.filter(h => h.correct).length}/{history.length}</span>}
             {streak >= 2 && <span className="area-streak">🔥 {streak}</span>}
           </div>
         </div>
@@ -168,8 +170,8 @@ export default function AreaPanel({ gameCountries, onPairChange }) {
         <div className="area-result">
           <p className={`area-result-msg ${isCorrect ? 'area-correct' : 'area-wrong'}`}>
             {isCorrect
-              ? streak >= 3 ? `🔥 ${streak} in a row! +${calcPoints(streak)} pts` : `Correct! +${calcPoints(streak)} pts`
-              : 'Wrong! No points this round.'}
+              ? streak >= 3 ? `🔥 ${streak} in a row!` : 'Correct!'
+              : 'Wrong!'}
           </p>
           <button className="new-game-btn" onClick={handleNext}>Next →</button>
         </div>
@@ -184,7 +186,7 @@ export default function AreaPanel({ gameCountries, onPairChange }) {
               <span className="area-h-text">
                 {h.left.name} vs {h.right.name}
               </span>
-              {h.pts > 0 && <span className="area-h-pts">+{h.pts}</span>}
+              
             </div>
           ))}
         </div>

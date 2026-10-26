@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { fetchData } from '../utils/fetchData'
 import GameIntro from './GameIntro'
+import SetupCard, { TIMER_OPTION } from './SetupCard'
+import GiveUpButton from './GiveUpButton'
+import GameSummary from './GameSummary'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -151,6 +155,7 @@ const ERAS = [
     id:    'interwar',
     label: 'Interwar Europe',
     year:  '1920',
+    dataKey: 'history1920',
     url:   'https://cdn.jsdelivr.net/gh/aourednik/historical-basemaps@master/geojson/world_1920.geojson',
     desc:  'Name every country in Europe between WW1 and WW2.',
   },
@@ -219,13 +224,11 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
     onMissedChange([])
     onFeaturesChange([], [])
 
-    fetch(era.url)
+    (era.dataKey ? fetchData(era.dataKey) : fetch(era.url))
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then(data => {
         const all   = data.features.filter(f => f.geometry && f.properties?.NAME)
         const euro  = all.filter(isEuropeanFeature)
-        console.log(`[HistoryMap ${era.year}] Total features: ${all.length}, European: ${euro.length}`)
-        console.log(`[HistoryMap ${era.year}] European countries:`, euro.map(f => f.properties.NAME).sort().join(', '))
         setFeatures(all)
         setEuroFeatures(euro)
         onFeaturesChange(all, euro)
@@ -359,6 +362,16 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
   const countdownDanger = timerMode === 'countdown' && remaining < 120
   const sortedEuro      = useMemo(() => [...euroFeatures].sort((a, b) => a.properties.NAME.localeCompare(b.properties.NAME)), [euroFeatures])
 
+  // Preload the (default) era as soon as the panel opens; start once data is ready
+  const [pending, setPending] = useState(null) // { timer, typed }
+  useEffect(() => { if (!era) setEra(ERAS[0]) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!pending || loadState !== 'ready') return
+    startTimer(pending.timer)
+    if (pending.typed) setInput(pending.typed)
+    setPending(null)
+  }, [pending, loadState]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const [started, setStarted] = useState(false)
   if (!started) return (
     <GameIntro
@@ -375,6 +388,30 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
     />
   )
 
+  if (!timerMode && !pending && loadState !== 'error') return (
+    <SetupCard
+      mode="history-maps"
+      icon="🏛️"
+      title="History Maps"
+      desc="Name countries in Europe as they were in different historical eras."
+      rules={[
+        '🗺️ Country borders change across different eras',
+        '💡 Historical names and modern names both accepted',
+        '🌍 Countries appear on the globe as you name them',
+      ]}
+      options={[
+        { id: 'era', label: 'Era', choices: ERAS.map(e => ({ value: e.id, label: `${e.label} · ${e.year}`, hint: e.desc })) },
+        TIMER_OPTION,
+      ]}
+      typeToStart
+      onStart={(v, typed) => {
+        const next = ERAS.find(e => e.id === v.era) ?? ERAS[0]
+        if (era?.id !== next.id) { setLoadState('loading'); setEra(next) }
+        setPending({ timer: v.timer, typed })
+      }}
+    />
+  )
+
   return (
     <>
       <div className="panel-header">
@@ -384,21 +421,6 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
         </p>
       </div>
 
-      {/* Era picker */}
-      {!era && (
-        <div className="na-map-picker">
-          <p className="na-map-picker-label">Choose an era</p>
-          {ERAS.map(e => (
-            <button key={e.id} className="na-map-opt" onClick={() => setEra(e)}>
-              <span className="na-map-opt-icon">🗓️</span>
-              <div className="na-map-opt-text">
-                <strong>{e.label}</strong>
-                <span>Europe circa {e.year}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Loading state */}
       {era && loadState === 'loading' && (
@@ -416,18 +438,6 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
         </div>
       )}
 
-      {/* Timer / mode picker */}
-      {era && loadState === 'ready' && !timerMode && !allFound && (
-        <>
-          <div className="na-timer-picker">
-            <span className="na-timer-label">🇪🇺 {era.label}</span>
-            <button className="na-timer-opt" onClick={() => startTimer('countdown')}>⏳ 15 min countdown</button>
-          </div>
-          <div className="history-back-row">
-            <button className="history-back-btn" onClick={handleBackToEra}>← Change era</button>
-          </div>
-        </>
-      )}
 
       {/* Active timer bar */}
       {timerMode && (
@@ -439,30 +449,13 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
             {timerMode === 'countdown' ? '⏳ countdown' : '⏱ count up'}
           </span>
           <div className="na-timer-controls">
-            {!expired && !allFound && !gameOver && (
-              <button className="na-timer-btn" onClick={() => setRunning(r => !r)}>
-                {running ? '⏸' : '▶'}
-              </button>
-            )}
-            {!gameOver && (
-              <button className="na-timer-btn na-timer-stop" onClick={() => setConfirmStop(true)} title="Stop">✕</button>
+            {!gameOver && !expired && !allFound && (
+              <GiveUpButton compact onConfirm={() => { clearInterval(tickRef.current); setRunning(false); revealMissed() }} />
             )}
           </div>
         </div>
       )}
 
-      {/* Confirm stop */}
-      {confirmStop && (
-        <div className="na-confirm-stop">
-          <span>Stop? This will reveal missed countries.</span>
-          <div className="na-confirm-btns">
-            <button className="na-confirm-yes" onClick={() => {
-              clearInterval(tickRef.current); setRunning(false); setConfirmStop(false); revealMissed()
-            }}>Stop</button>
-            <button className="na-confirm-no" onClick={() => setConfirmStop(false)}>Keep going</button>
-          </div>
-        </div>
-      )}
 
       {/* Time's up */}
       {expired && (
@@ -521,27 +514,19 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
         </div>
       )}
 
-      {/* Missed list */}
-      {gameOver && found.length < total && (
-        <div className="guesses-section">
-          <h3 className="guesses-title">
-            Missed <span className="guess-count" style={{ background: '#ef4444' }}>{total - found.length}</span>
-          </h3>
-          <ul className="guess-list">
-            {sortedEuro
-              .filter(f => !foundSet.has(f.properties.NAME))
-              .map(f => (
-                <li key={f.properties.NAME} className="guess-item">
-                  <span className="guess-swatch" style={{ background: '#ef4444' }} />
-                  <span className="guess-name">{f.properties.NAME}</span>
-                </li>
-              ))}
-          </ul>
-        </div>
+      {/* End-of-game summary */}
+      {(gameOver || allFound) && (
+        <GameSummary
+          noun="countries"
+          total={total}
+          timeLabel={timerMode === 'countdown' ? `${formatTime(COUNTDOWN_SECONDS - remaining)} used` : formatTime(elapsed)}
+          found={found.map(f => ({ label: f.properties.NAME }))}
+          missed={sortedEuro.filter(f => !foundSet.has(f.properties.NAME)).map(f => ({ label: f.properties.NAME }))}
+        />
       )}
 
-      {/* Found list */}
-      {found.length > 0 && (
+      {/* Found list (live, during play) */}
+      {!(gameOver || allFound) && found.length > 0 && (
         <div className="guesses-section">
           <h3 className="guesses-title">Found <span className="guess-count">{found.length}</span></h3>
           <ul className="guess-list">
@@ -556,12 +541,14 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
       )}
 
       <div className="panel-footer">
-        {era && loadState === 'ready' && !timerMode
-          ? <button className="new-game-btn na-start-default" onClick={() => startTimer('countup')}>▶ Start</button>
-          : timerMode
-          ? <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
-          : null
-        }
+        {!timerMode ? null : (gameOver || expired || allFound) ? (
+          <>
+            <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>▶ Play again</button>
+            <button className="new-game-btn" onClick={handleReset}>⚙ Settings</button>
+          </>
+        ) : (
+          <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
+        )}
       </div>
     </>
   )

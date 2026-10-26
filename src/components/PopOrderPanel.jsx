@@ -54,7 +54,7 @@ export default function PopOrderPanel({ countries, onScore, totalScore, history,
       desc="Three countries appear — rank them by population, largest first."
       rules={[
         '🖱️ Click the countries in order: most → least populous',
-        '⭐ 1000 points for a perfect ranking',
+        '⭐ Get the exact order for a perfect ranking',
         '📉 Partial credit for partially correct answers',
         '🔄 New trio every round',
       ]}
@@ -72,8 +72,8 @@ export default function PopOrderPanel({ countries, onScore, totalScore, history,
       </div>
 
       <div className="locate-score-bar">
-        <span className="locate-score-num">{totalScore}</span>
-        <span className="locate-score-label">total points</span>
+        <span className="locate-score-num">{history.filter(h => h.pts >= 1000).length}</span>
+        <span className="locate-score-label">perfect rankings</span>
         <span className="locate-round-count">{history.length} rounds</span>
       </div>
 
@@ -115,7 +115,7 @@ export default function PopOrderPanel({ countries, onScore, totalScore, history,
         const { pts } = lastResult
         const color = pts === 1000 ? '#39ff14' : pts >= 400 ? '#eab308' : pts >= 100 ? '#f97316' : '#ef4444'
         const label = pts === 1000 ? 'Perfect!' : pts >= 400 ? 'Almost!' : pts >= 100 ? 'Partial' : 'Wrong order'
-        return <div className="po-result" style={{ color }}>{label} — +{pts} pts</div>
+        return <div className="po-result" style={{ color }}>{label}</div>
       })()}
 
       {revealed && (
@@ -134,7 +134,7 @@ export default function PopOrderPanel({ countries, onScore, totalScore, history,
                 <li key={i} className="guess-item">
                   <span className="guess-swatch" style={{ background: color }} />
                   <span className="guess-name" style={{ fontSize: '0.75rem' }}>{h.names.join(' › ')}</span>
-                  <span className="guess-dist" style={{ color }}>+{h.pts}</span>
+                  <span className="guess-dist" style={{ color }}>{h.pts >= 1000 ? '✓' : h.pts >= 400 ? '≈' : '✗'}</span>
                 </li>
               )
             })}
