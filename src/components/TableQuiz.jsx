@@ -5,6 +5,7 @@ import { incrementDailyCount } from '../utils/dailyChallenges'
 import { playCorrect, playWin, playWrong } from '../utils/sounds'
 import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
+import FlagImg from './FlagImg'
 
 const MIN_ROWS = 5
 const PREFIX_WAIT_MS = 700   // "Niger" waits a moment in case you're typing "Nigeria"
@@ -26,7 +27,7 @@ function seededRandom(seed) {
 
 function Hint({ hint }) {
   switch (hint.type) {
-    case 'flag':   return <span className="tq-flag">{hint.value}</span>
+    case 'flag':   return <FlagImg emoji={hint.value} className="tq-flag" />
     case 'emoji':  return <span className="tq-emoji">{hint.value}</span>
     case 'script': return (
       <span className="tq-script">
@@ -41,7 +42,7 @@ function Hint({ hint }) {
     )
     default: return (
       <span className={`tq-text${hint.mono ? ' tq-mono' : ''}${hint.long ? ' tq-long' : ''}`}>
-        {hint.flag && <span className="tq-mini-flag">{hint.flag}</span>}
+        {hint.flag && <FlagImg emoji={hint.flag} className="tq-mini-flag" />}
         {hint.value}
       </span>
     )
