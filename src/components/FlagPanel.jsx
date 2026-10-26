@@ -33,7 +33,6 @@ export default function FlagPanel({
     setTimeout(() => inputRef.current?.focus(), 50)
   }, [current?.name])
 
-  if (!current) return null
 
   const pct = score.total ? Math.round((score.correct / score.total) * 100) : 0
   const nextPts = calcPoints(streak + 1)
@@ -70,6 +69,9 @@ export default function FlagPanel({
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [answered, onNext])
+
+  // (early return must come after every hook — React error #310 otherwise)
+  if (!current) return null
 
   const lastResult = history.length > 0 ? history[history.length - 1] : null
 

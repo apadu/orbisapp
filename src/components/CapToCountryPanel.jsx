@@ -17,7 +17,6 @@ export default function CapToCountryPanel({
     setTimeout(() => inputRef.current?.focus(), 50)
   }, [current?.country])
 
-  if (!current) return null
 
   const pct = score.total ? Math.round((score.correct / score.total) * 100) : 0
 
@@ -53,6 +52,9 @@ export default function CapToCountryPanel({
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [answered, onNext])
+
+  // (early return must come after every hook — React error #310 otherwise)
+  if (!current) return null
 
   if (!started) return (
     <GameIntro
