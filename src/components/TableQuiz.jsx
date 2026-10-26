@@ -6,6 +6,7 @@ import { playCorrect, playWin, playWrong } from '../utils/sounds'
 import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import FlagImg from './FlagImg'
+import { t, continentName } from '../i18n'
 
 const MIN_ROWS = 5
 const PREFIX_WAIT_MS = 700   // "Niger" waits a moment in case you're typing "Nigeria"
@@ -69,18 +70,18 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
   const regionChoices = REGIONS.filter(r => regionCounts[r] >= MIN_ROWS)
   const setupOptions = useMemo(() => {
     const opts = quiz.regions === false ? [] : [{
-      id: 'region', label: 'Region', default: 'World',
+      id: 'region', label: t('Region'), default: 'World',
       choices: regionChoices.map(r => ({
         value: r,
-        label: `${r} · ${regionCounts[r]}`,
-        hint: quiz.sample ? `${regionCounts[r]} countries in the pool — each game picks a fresh random set` : undefined,
+        label: `${continentName(r)} · ${regionCounts[r]}`,
+        hint: quiz.sample ? t('{v} countries in the pool — each game picks a fresh random set', { v: regionCounts[r] }) : undefined,
       })),
     }]
     if (quiz.sample) opts.push({
-      id: 'size', label: 'Countries per game', default: '20',
-      choices: [
-        { value: '20', label: '20', hint: 'Quick round' },
-        { value: '30', label: '30', hint: 'Longer round' },
+      id: 'size', label: quiz.focus ? t('Flags per game') : t('Countries per game'), default: '20',
+      choices: quiz.sizes ?? [
+        { value: '20', label: '20', hint: t('Quick round') },
+        { value: '30', label: '30', hint: t('Longer round') },
       ],
     })
     return opts
@@ -92,6 +93,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
   const [filled,   setFilled]   = useState(() => new Set())
   const [recent,   setRecent]   = useState(() => new Set())
   const [labels,   setLabels]   = useState({})            // row id → what the player typed (any-of rows)
+  const [activeId, setActiveId] = useState(null)          // focus quizzes: the one row being asked
   const [input,    setInput]    = useState('')
   const [timeLeft, setTimeLeft] = useState(0)
   const [endReason, setEndReason] = useState(null)       // complete | time | giveup
@@ -128,6 +130,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     }
     setRegion(reg)
     setRows(built)
+    setActiveId(quiz.focus ? (built[0]?.id ?? null) : null)
     setFilled(new Set())
     setRecent(new Set())
     setLabels({})
@@ -173,8 +176,20 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     setTimeout(() => inputRef.current?.focus(), 30)
   }
 
+  // Focus quizzes: next unanswered row after `fromId` (wraps around)
+  const nextOpen = useCallback((fromId, filledSet, dir = 1) => {
+    if (!rows.length) return null
+    const start = Math.max(0, rows.findIndex(r => r.id === fromId))
+    for (let k = 1; k <= rows.length; k++) {
+      const r = rows[(start + dir * k + rows.length * 2) % rows.length]
+      if (!filledSet.has(r.id)) return r.id
+    }
+    return null
+  }, [rows])
+
   const accept = useCallback((key) => {
-    const ids = (index.get(key) ?? []).filter(id => !filledRef.current.has(id))
+    let ids = (index.get(key) ?? []).filter(id => !filledRef.current.has(id))
+    if (quiz.focus) ids = ids.filter(id => id === activeId)   // only the highlighted one counts
     if (!ids.length) return false
     const next = new Set(filledRef.current)
     const newLabels = {}
@@ -194,10 +209,11 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     setFilled(next)
     setRecent(new Set(ids))
     setInput('')
+    if (quiz.focus) setActiveId(nextOpen(ids[0], next))
     if (next.size === rows.length) finish('complete')
     else playCorrect()
     return true
-  }, [index, rows, quizId, mode, finish, onDaily])
+  }, [index, rows, quizId, mode, finish, onDaily, quiz.focus, activeId, nextOpen])
 
   const onChange = (e) => {
     const v = e.target.value
@@ -205,6 +221,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     clearTimeout(pendingRef.current)
     const k = norm(v)
     if (!k || !index.has(k)) return
+    if (quiz.focus) { if ((index.get(k) ?? []).includes(activeId)) accept(k); return }
     if (!(index.get(k) ?? []).some(id => !filledRef.current.has(id))) return
     // Another unanswered answer starts with this one? ("Niger" → "Nigeria") — wait a beat
     let longer = false
@@ -216,6 +233,12 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
   }
 
   const onKeyDown = (e) => {
+    if (quiz.focus && e.key === 'Tab') {
+      e.preventDefault()
+      setActiveId(id => nextOpen(id, filledRef.current, e.shiftKey ? -1 : 1) ?? id)
+      setInput('')
+      return
+    }
     if (e.key === 'Enter') {
       clearTimeout(pendingRef.current)
       if (!accept(norm(input)) && input.trim()) {
@@ -226,6 +249,12 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
 
   useEffect(() => () => clearTimeout(pendingRef.current), [])
 
+  // Keep the highlighted flag on screen
+  useEffect(() => {
+    if (!quiz.focus || !activeId || phase !== 'playing') return
+    document.querySelector(`[data-row-id="${CSS.escape(activeId)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [activeId, phase, quiz.focus])
+
   // Daily quiz: no setup screen — start right away with the day's fixed selection
   useEffect(() => {
     if (daily && phase === 'setup' && countryNames.length) start(daily.region, undefined, daily.size ?? 20)
@@ -233,7 +262,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
 
   // ── Setup ────────────────────────────────────────────────────────────────
   if (phase === 'setup') {
-    if (daily) return <div className="game-intro-wait">Loading today's quiz…</div>
+    if (daily) return <div className="game-intro-wait">{t('Loading today\'s quiz…')}</div>
     return (
       <div className="tq-setup">
         <SetupCard
@@ -243,14 +272,14 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
           desc={quiz.prompt}
           rules={[
             `⌨️ ${quiz.prompt} — any order, no Enter needed`,
-            '⏱ The clock depends on how many answers there are',
-            '🏳️ Give up any time to see what you missed',
-            '✨ XP only for answers you haven\'t got before',
+            t('⏱ The clock depends on how many answers there are'),
+            t('🏳️ Give up any time to see what you missed'),
+            t('✨ XP only for answers you haven\'t got before'),
           ]}
           options={setupOptions}
           typeToStart
           onStart={(v, typed) => {
-            const n = Number(v.size) || 20
+            const n = v.size === 'all' ? Infinity : (Number(v.size) || 20)
             setSize(n)
             start(v.region ?? 'World', typed, n)
           }}
@@ -265,6 +294,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
   const playing = phase === 'playing'
   const danger = playing && timeLeft <= 30
   const pct = total ? Math.round((score / total) * 100) : 0
+  const activeRow = quiz.focus ? rows.find(r => r.id === activeId) : null
 
   return (
     <div className={`tq${playing ? '' : ' tq-done'}`}>
@@ -278,12 +308,12 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
         </div>
         <div className="tq-stats">
           {untimed ? (
-            <span className="tq-timer tq-untimed" title="Untimed — this game earns no XP">∞ Untimed · no XP</span>
+            <span className="tq-timer tq-untimed" title={t('Untimed — this game earns no XP')}>{t('∞ Untimed · no XP')}</span>
           ) : (
             <>
               <span className={`tq-timer${danger ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
               {playing && !daily && (
-                <button className="tq-untimed-btn" onClick={() => setConfirmUntimed(true)} title="Stop the clock (no XP)">∞</button>
+                <button className="tq-untimed-btn" onClick={() => setConfirmUntimed(true)} title={t('Stop the clock (no XP)')}>∞</button>
               )}
             </>
           )}
@@ -295,15 +325,15 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
         <div className="tq-modal-backdrop" onClick={() => setConfirmUntimed(false)}>
           <div className="tq-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
             <div className="tq-modal-icon">∞</div>
-            <h3>Play untimed?</h3>
+            <h3>{t('Play untimed?')}</h3>
             <ul>
-              <li>⏸ The clock stops for the rest of this game.</li>
-              <li>🔒 You can't turn it back on until you start a new game.</li>
-              <li>🚫 This game earns <strong>no XP</strong> — including answers you've already given — and won't count for medals or leaderboards.</li>
+              <li>{t('⏸ The clock stops for the rest of this game.')}</li>
+              <li>{t('🔒 You can\'t turn it back on until you start a new game.')}</li>
+              <li>{t('🚫 This game earns')} <strong>{t('no XP')}</strong> {t('— including answers you\'ve already given — and won\'t count for medals or leaderboards.')}</li>
             </ul>
             <div className="tq-modal-btns">
-              <button className="tq-btn" onClick={() => setConfirmUntimed(false)}>Keep the timer</button>
-              <button className="tq-btn tq-btn-warn" onClick={goUntimed} autoFocus>Yes, play untimed</button>
+              <button className="tq-btn" onClick={() => setConfirmUntimed(false)}>{t('Keep the timer')}</button>
+              <button className="tq-btn tq-btn-warn" onClick={goUntimed} autoFocus>{t('Yes, play untimed')}</button>
             </div>
           </div>
         </div>
@@ -312,13 +342,18 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
       <div className="tq-bar">
         {playing ? (
           <>
+            {quiz.focus && activeRow && (
+              <span className="tq-active-preview" title={t('Name this flag')}>
+                <Hint hint={activeRow.hint} />
+              </span>
+            )}
             <input
               ref={inputRef}
               className="tq-input"
               value={input}
               onChange={onChange}
               onKeyDown={onKeyDown}
-              placeholder="Enter answer…"
+              placeholder={quiz.focus ? t('Which country is this?  (Tab = skip)') : t('Enter answer…')}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
@@ -328,12 +363,12 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
         ) : (
           daily && result ? daily.renderResult(result) : <div className="tq-result">
             <span className="tq-result-msg">
-              {endReason === 'complete' ? '🎉 Perfect — you got them all!' : endReason === 'time' ? '⌛ Time\'s up!' : '🏳️ You gave up.'}
+              {endReason === 'complete' ? t('🎉 Perfect — you got them all!') : endReason === 'time' ? t('⌛ Time\'s up!') : t('🏳️ You gave up.')}
               {' '}<strong>{score}/{total}</strong> ({pct}%)
             </span>
             <div className="tq-result-btns">
-              <button className="tq-btn tq-btn-primary" onClick={() => start(region)}>▶ Play again</button>
-              <button className="tq-btn" onClick={() => setPhase('setup')}>⚙ Settings</button>
+              <button className="tq-btn tq-btn-primary" onClick={() => start(region)}>{t('▶ Play again')}</button>
+              <button className="tq-btn" onClick={() => setPhase('setup')}>{t('⚙ Settings')}</button>
             </div>
           </div>
         )}
@@ -347,7 +382,12 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
             const ok = filled.has(r.id)
             const cls = ok ? (recent.has(r.id) ? ' hit' : ' ok') : !playing ? ' missed' : ''
             return (
-              <div key={r.id} className={`tq-cell${cls}`}>
+              <div
+                key={r.id}
+                data-row-id={r.id}
+                className={`tq-cell${cls}${quiz.focus && playing && r.id === activeId ? ' active' : ''}${quiz.focus && playing && !ok ? ' clickable' : ''}`}
+                onClick={quiz.focus && playing && !ok ? () => { setActiveId(r.id); setInput(''); inputRef.current?.focus() } : undefined}
+              >
                 <Hint hint={r.hint} />
                 <span className="tq-cell-answer">{ok ? (labels[r.id] ?? r.display) : !playing ? r.display : ''}</span>
               </div>

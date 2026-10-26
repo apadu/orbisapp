@@ -1,0 +1,86 @@
+// Romanian country names (game NAME → nume în română). Only entries that differ need to be here,
+// but every country is listed so the list is easy to review.
+export const COUNTRY_RO = {
+  // ── Africa ──
+  'Algeria': 'Algeria', 'Angola': 'Angola', 'Benin': 'Benin', 'Botswana': 'Botswana',
+  'Burkina Faso': 'Burkina Faso', 'Burundi': 'Burundi', 'Cabo Verde': 'Capul Verde', 'Cameroon': 'Camerun',
+  'Central African Republic': 'Republica Centrafricană', 'Chad': 'Ciad', 'Comoros': 'Comore',
+  'Congo': 'Congo', 'Democratic Republic of Congo': 'Republica Democrată Congo', 'Djibouti': 'Djibouti',
+  'Egypt': 'Egipt', 'Equatorial Guinea': 'Guineea Ecuatorială', 'Eritrea': 'Eritreea', 'Eswatini': 'Eswatini',
+  'Ethiopia': 'Etiopia', 'Gabon': 'Gabon', 'Gambia': 'Gambia', 'Ghana': 'Ghana', 'Guinea': 'Guineea',
+  'Guinea-Bissau': 'Guineea-Bissau', 'Ivory Coast': 'Coasta de Fildeș', 'Kenya': 'Kenya', 'Lesotho': 'Lesotho',
+  'Liberia': 'Liberia', 'Libya': 'Libia', 'Madagascar': 'Madagascar', 'Malawi': 'Malawi', 'Mali': 'Mali',
+  'Mauritania': 'Mauritania', 'Mauritius': 'Mauritius', 'Morocco': 'Maroc', 'Mozambique': 'Mozambic',
+  'Namibia': 'Namibia', 'Niger': 'Niger', 'Nigeria': 'Nigeria', 'Rwanda': 'Rwanda',
+  'Sao Tome and Principe': 'São Tomé și Príncipe', 'Senegal': 'Senegal', 'Seychelles': 'Seychelles',
+  'Sierra Leone': 'Sierra Leone', 'Somalia': 'Somalia', 'South Africa': 'Africa de Sud', 'South Sudan': 'Sudanul de Sud',
+  'Sudan': 'Sudan', 'Tanzania': 'Tanzania', 'Togo': 'Togo', 'Tunisia': 'Tunisia', 'Uganda': 'Uganda',
+  'Zambia': 'Zambia', 'Zimbabwe': 'Zimbabwe',
+  // ── Americas ──
+  'Antigua and Barbuda': 'Antigua și Barbuda', 'Argentina': 'Argentina', 'Bahamas': 'Bahamas', 'Barbados': 'Barbados',
+  'Belize': 'Belize', 'Bolivia': 'Bolivia', 'Brazil': 'Brazilia', 'Canada': 'Canada', 'Chile': 'Chile',
+  'Colombia': 'Columbia', 'Costa Rica': 'Costa Rica', 'Cuba': 'Cuba', 'Dominica': 'Dominica',
+  'Dominican Republic': 'Republica Dominicană', 'Ecuador': 'Ecuador', 'El Salvador': 'El Salvador', 'Grenada': 'Grenada',
+  'Guatemala': 'Guatemala', 'Guyana': 'Guyana', 'Haiti': 'Haiti', 'Honduras': 'Honduras', 'Jamaica': 'Jamaica',
+  'Mexico': 'Mexic', 'Nicaragua': 'Nicaragua', 'Panama': 'Panama', 'Paraguay': 'Paraguay', 'Peru': 'Peru',
+  'Saint Kitts and Nevis': 'Saint Kitts și Nevis', 'Saint Lucia': 'Saint Lucia',
+  'Saint Vincent and the Grenadines': 'Saint Vincent și Grenadine', 'Suriname': 'Surinam',
+  'Trinidad and Tobago': 'Trinidad și Tobago', 'United States of America': 'Statele Unite ale Americii',
+  'Uruguay': 'Uruguay', 'Venezuela': 'Venezuela',
+  // ── Asia ──
+  'Afghanistan': 'Afganistan', 'Armenia': 'Armenia', 'Azerbaijan': 'Azerbaidjan', 'Bahrain': 'Bahrain',
+  'Bangladesh': 'Bangladesh', 'Bhutan': 'Bhutan', 'Brunei': 'Brunei', 'Cambodia': 'Cambodgia', 'China': 'China',
+  'Cyprus': 'Cipru', 'Georgia': 'Georgia', 'India': 'India', 'Indonesia': 'Indonezia', 'Iran': 'Iran', 'Iraq': 'Irak',
+  'Israel': 'Israel', 'Japan': 'Japonia', 'Jordan': 'Iordania', 'Kazakhstan': 'Kazahstan', 'Kuwait': 'Kuweit',
+  'Kyrgyzstan': 'Kârgâzstan', 'Laos': 'Laos', 'Lebanon': 'Liban', 'Malaysia': 'Malaezia', 'Maldives': 'Maldive',
+  'Mongolia': 'Mongolia', 'Myanmar': 'Myanmar', 'Nepal': 'Nepal', 'North Korea': 'Coreea de Nord', 'Oman': 'Oman',
+  'Pakistan': 'Pakistan', 'Palestine': 'Palestina', 'Philippines': 'Filipine', 'Qatar': 'Qatar',
+  'Saudi Arabia': 'Arabia Saudită', 'Singapore': 'Singapore', 'South Korea': 'Coreea de Sud', 'Sri Lanka': 'Sri Lanka',
+  'Syria': 'Siria', 'Taiwan': 'Taiwan', 'Tajikistan': 'Tadjikistan', 'Thailand': 'Thailanda', 'Timor-Leste': 'Timorul de Est',
+  'Turkey': 'Turcia', 'Turkmenistan': 'Turkmenistan', 'United Arab Emirates': 'Emiratele Arabe Unite',
+  'Uzbekistan': 'Uzbekistan', 'Vietnam': 'Vietnam', 'Yemen': 'Yemen',
+  // ── Europe ──
+  'Albania': 'Albania', 'Andorra': 'Andorra', 'Austria': 'Austria', 'Belarus': 'Belarus', 'Belgium': 'Belgia',
+  'Bosnia and Herzegovina': 'Bosnia și Herțegovina', 'Bulgaria': 'Bulgaria', 'Croatia': 'Croația',
+  'Czech Republic': 'Cehia', 'Denmark': 'Danemarca', 'Estonia': 'Estonia', 'Finland': 'Finlanda', 'France': 'Franța',
+  'Germany': 'Germania', 'Greece': 'Grecia', 'Hungary': 'Ungaria', 'Iceland': 'Islanda', 'Ireland': 'Irlanda',
+  'Italy': 'Italia', 'Kosovo': 'Kosovo', 'Latvia': 'Letonia', 'Liechtenstein': 'Liechtenstein', 'Lithuania': 'Lituania',
+  'Luxembourg': 'Luxemburg', 'Malta': 'Malta', 'Moldova': 'Republica Moldova', 'Monaco': 'Monaco',
+  'Montenegro': 'Muntenegru', 'Netherlands': 'Țările de Jos', 'North Macedonia': 'Macedonia de Nord',
+  'Norway': 'Norvegia', 'Poland': 'Polonia', 'Portugal': 'Portugalia', 'Romania': 'România', 'Russia': 'Rusia',
+  'San Marino': 'San Marino', 'Serbia': 'Serbia', 'Slovakia': 'Slovacia', 'Slovenia': 'Slovenia', 'Spain': 'Spania',
+  'Sweden': 'Suedia', 'Switzerland': 'Elveția', 'Ukraine': 'Ucraina', 'United Kingdom': 'Regatul Unit',
+  'Vatican': 'Vatican',
+  // ── Oceania ──
+  'Australia': 'Australia', 'Fiji': 'Fiji', 'Kiribati': 'Kiribati', 'Marshall Islands': 'Insulele Marshall',
+  'Federated States of Micronesia': 'Micronezia', 'Nauru': 'Nauru', 'New Zealand': 'Noua Zeelandă', 'Palau': 'Palau',
+  'Papua New Guinea': 'Papua Noua Guinee', 'Samoa': 'Samoa', 'Solomon Islands': 'Insulele Solomon', 'Tonga': 'Tonga',
+  'Tuvalu': 'Tuvalu', 'Vanuatu': 'Vanuatu',
+  // ── Display-only ──
+  'Greenland': 'Groenlanda', 'W. Sahara': 'Sahara Occidentală', 'Antarctica': 'Antarctica',
+}
+
+/**
+ * Extra Romanian spellings accepted when typing (normalised: lower-case, no diacritics).
+ * The official names above are always accepted too.
+ */
+export const RO_ALIASES = {
+  'sua': 'United States of America', 'statele unite': 'United States of America', 'america': 'United States of America',
+  'marea britanie': 'United Kingdom', 'anglia': 'United Kingdom', 'regatul unit al marii britanii': 'United Kingdom',
+  'olanda': 'Netherlands', 'tarile de jos': 'Netherlands',
+  'moldova': 'Moldova', 'republica moldova': 'Moldova',
+  'republica ceha': 'Czech Republic', 'cehia': 'Czech Republic',
+  'rd congo': 'Democratic Republic of Congo', 'congo kinshasa': 'Democratic Republic of Congo', 'republica democrata a congo': 'Democratic Republic of Congo', 'zair': 'Democratic Republic of Congo',
+  'congo brazzaville': 'Congo', 'republica congo': 'Congo',
+  'emiratele arabe': 'United Arab Emirates', 'eau': 'United Arab Emirates',
+  'coreea': 'South Korea', 'timor': 'Timor-Leste', 'timorul de est': 'Timor-Leste', 'timor leste': 'Timor-Leste',
+  'birmania': 'Myanmar', 'ceylon': 'Sri Lanka', 'persia': 'Iran',
+  'kargazstan': 'Kyrgyzstan', 'kirghizstan': 'Kyrgyzstan', 'kirgizstan': 'Kyrgyzstan',
+  'tadjikistan': 'Tajikistan', 'tajikistan': 'Tajikistan', 'azerbaigean': 'Azerbaijan',
+  'macedonia': 'North Macedonia', 'bielorusia': 'Belarus', 'swaziland': 'Eswatini', 'capul verde': 'Cabo Verde',
+  'sao tome': 'Sao Tome and Principe', 'sao tome si principe': 'Sao Tome and Principe',
+  'coasta de fildes': 'Ivory Coast', 'papua noua guinee': 'Papua New Guinea', 'micronezia': 'Federated States of Micronesia',
+  'vatican': 'Vatican', 'sfantul scaun': 'Vatican', 'cetatea vaticanului': 'Vatican',
+  'sfantul kitts si nevis': 'Saint Kitts and Nevis', 'sfanta lucia': 'Saint Lucia', 'sfantul vincentiu si grenadinele': 'Saint Vincent and the Grenadines',
+  'surinam': 'Suriname', 'guiana': 'Guyana', 'columbia': 'Colombia', 'kuweit': 'Kuwait', 'kuwait': 'Kuwait',
+}

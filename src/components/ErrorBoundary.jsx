@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { t } from '../i18n'
 
 /**
  * Catches render/effect crashes so the app shows the error instead of a black screen.
@@ -26,8 +27,8 @@ export default class ErrorBoundary extends Component {
         background: '#08050f', color: '#f0e6ff', fontFamily: 'system-ui, sans-serif', padding: 24,
       }}>
         <div style={{ maxWidth: 640, width: '100%' }}>
-          <h1 style={{ fontSize: 22, marginBottom: 8 }}>⚠️ Orbis crashed</h1>
-          <p style={{ color: '#a98fdb', marginBottom: 16 }}>Copy the error below and send it over.</p>
+          <h1 style={{ fontSize: 22, marginBottom: 8 }}>{t('⚠️ Orbis crashed')}</h1>
+          <p style={{ color: '#a98fdb', marginBottom: 16 }}>{t('Copy the error below and send it over.')}</p>
           <pre style={{
             background: '#110d1e', border: '1px solid #3d2f6e', borderRadius: 10, padding: 14,
             whiteSpace: 'pre-wrap', fontSize: 12, maxHeight: 360, overflow: 'auto',
@@ -38,7 +39,7 @@ export default class ErrorBoundary extends Component {
             onClick={() => window.location.reload()}
             style={{ marginTop: 14, background: '#c77dff', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer' }}
           >
-            Reload
+            {t('Reload')}
           </button>
         </div>
       </div>

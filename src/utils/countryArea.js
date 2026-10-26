@@ -177,6 +177,7 @@ export const COUNTRY_AREA = {
   'Tonga':                                 747,
   'Singapore':                             728,
   'Micronesia':                            702,
+  'Federated States of Micronesia':        702,
   'Saint Lucia':                           616,
   'Andorra':                               468,
   'Palau':                                 459,
@@ -202,4 +203,6 @@ export const COUNTRY_AREA = {
   'Greenland':                          836330,
   'Palestine':                             6020,
   'Sao Tome and Principe':                  964,
+  'France':                              643801,
+  'Solomon Islands':                      28896,
 }

@@ -3,6 +3,7 @@ import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong } from '../utils/sounds'
+import { t, cn } from '../i18n'
 
 function norm(s) {
   return s.trim().toLowerCase().replace(/[^a-z]/g, '')
@@ -45,13 +46,13 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
   if (!started) return (
     <GameIntro
       icon="📌"
-      title="Neighbor Challenge"
-      desc="A country is highlighted — name all countries that share a border with it."
+      title={t('Neighbor Challenge')}
+      desc={t('A country is highlighted — name all countries that share a border with it.')}
       rules={[
-        '🗺️ Countries that share a land border count',
-        '❌ Missed ones revealed in red',
-        '🔄 New country every round',
-        '📈 Build a streak for bonus points',
+        t('🗺️ Countries that share a land border count'),
+        t('❌ Missed ones revealed in red'),
+        t('🔄 New country every round'),
+        t('📈 Build a streak for bonus points'),
       ]}
       onStart={() => { setStarted(true); onGameStart?.() }}
       disabled={!target}
@@ -60,8 +61,8 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
 
   if (!target) return (
     <div className="panel-header">
-      <h2>📌 Neighbor Challenge</h2>
-      <p className="panel-subtitle">Loading…</p>
+      <h2>{t('📌 Neighbor Challenge')}</h2>
+      <p className="panel-subtitle">{t('Loading…')}</p>
     </div>
   )
 
@@ -70,21 +71,21 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
   return (
     <>
       <div className="panel-header">
-        <h2>📌 Neighbor Challenge</h2>
-        <p className="panel-subtitle">Name all countries that share a border with it.</p>
+        <h2>{t('📌 Neighbor Challenge')}</h2>
+        <p className="panel-subtitle">{t('Name all countries that share a border with it.')}</p>
       </div>
 
       {/* Score */}
       <div className="locate-score-bar">
         <span className="locate-score-num">{score}</span>
-        <span className="locate-score-label">total points</span>
-        <span className="locate-round-count">{history.length} rounds</span>
+        <span className="locate-score-label">{t('total points')}</span>
+        <span className="locate-round-count">{history.length} {t('rounds')}</span>
       </div>
 
       {/* Target country */}
       <div className="neighbor-target">
-        <span className="neighbor-target-label">Borders of</span>
-        <span className="neighbor-target-name">{targetName}</span>
+        <span className="neighbor-target-label">{t('Borders of')}</span>
+        <span className="neighbor-target-name">{cn(targetName)}</span>
       </div>
 
       {/* Progress */}
@@ -92,7 +93,7 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
         <span className="na-count-num">{found.length}</span>
         <span className="na-count-sep"> / </span>
         <span className="na-count-total">{total}</span>
-        <span className="na-count-label"> neighbors found</span>
+        <span className="na-count-label"> {t('neighbors found')}</span>
         <div className="na-progress-track">
           <div className="na-progress-fill" style={{ width: `${total ? (found.length / total) * 100 : 0}%` }} />
         </div>
@@ -103,8 +104,8 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
         <div className="win-banner">
           <span className="win-emoji">🎉</span>
           <div>
-            <strong>Perfect!</strong>
-            <p>All {total} neighbors of {targetName} found!</p>
+            <strong>{t('Perfect!')}</strong>
+            <p>{t('All')} {total} {t('neighbors of')} {cn(targetName)} {t('found!')}</p>
           </div>
         </div>
       )}
@@ -117,14 +118,14 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder="Type a neighboring country…"
+              placeholder={t('Type a neighboring country…')}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
               autoComplete="off"
               spellCheck={false}
             />
-            <button className="guess-btn" onClick={() => tryGuess(input)}>Go</button>
+            <button className="guess-btn" onClick={() => tryGuess(input)}>{t('Go')}</button>
           </div>
         </div>
       )}
@@ -133,18 +134,18 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
       <div className="neighbor-actions">
         {!done
           ? <GiveUpButton onConfirm={() => { playWrong(); onGiveUp() }} />
-          : <button className="new-game-btn" onClick={onNext}>Next country →</button>
+          : <button className="new-game-btn" onClick={onNext}>{t('Next country →')}</button>
         }
       </div>
 
       {/* Round summary */}
       {done && (
         <GameSummary
-          noun="neighbors"
-          title={`Neighbors of ${targetName}`}
+          noun={t('neighbors')}
+          title={t('Neighbors of {targetName}', { targetName: cn(targetName) })}
           total={total}
-          found={found.map(n => ({ label: n }))}
-          missed={missed.map(n => ({ label: n }))}
+          found={found.map(n => ({ label: cn(n) }))}
+          missed={missed.map(n => ({ label: cn(n) }))}
         />
       )}
 
@@ -152,7 +153,7 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
       {!done && found.length > 0 && (
         <div className="guesses-section">
           <h3 className="guesses-title">
-            Found <span className="guess-count">{found.length}</span>
+            {t('Found')} <span className="guess-count">{found.length}</span>
           </h3>
           <ul className="guess-list">
             {[...found].reverse().map(n => (
@@ -169,7 +170,7 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
       {/* History */}
       {history.length > 0 && (
         <div className="guesses-section">
-          <h3 className="guesses-title">History</h3>
+          <h3 className="guesses-title">{t('History')}</h3>
           <ul className="guess-list">
             {[...history].reverse().map((h, i) => (
               <li key={i} className="guess-item">

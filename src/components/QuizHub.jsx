@@ -1,62 +1,68 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { loadResults, subscribeResults } from '../utils/results'
 import DailyBanner from './DailyBanner'
+import { GAME_CATALOG } from '../utils/gameCatalog'
+import { t, locale } from '../i18n'
 
 // ── Catalogue ──────────────────────────────────────────────────────────────
 export const QUIZ_CATEGORIES = [
-  { id: 'flags',    label: 'Flags & symbols', icon: '🚩', color: '#c77dff' },
-  { id: 'capitals', label: 'Capitals',        icon: '🏛️', color: '#2dd4bf' },
-  { id: 'words',    label: 'Names & spelling', icon: '🔤', color: '#f59e0b' },
-  { id: 'culture',  label: 'Culture & facts', icon: '📖', color: '#f472b6' },
-  { id: 'numbers',  label: 'Size & numbers',  icon: '📊', color: '#60a5fa' },
-  { id: 'lists',    label: 'Lists & groups',  icon: '📋', color: '#a3e635' },
-  { id: 'puzzles',  label: 'Puzzles',         icon: '🧩', color: '#fb7185' },
+  { id: 'flags',    label: t('Flags & symbols'), icon: '🚩', color: '#c77dff' },
+  { id: 'capitals', label: t('Capitals'),        icon: '🏛️', color: '#2dd4bf' },
+  { id: 'words',    label: t('Names & spelling'), icon: '🔤', color: '#f59e0b' },
+  { id: 'culture',  label: t('Culture & facts'), icon: '📖', color: '#f472b6' },
+  { id: 'numbers',  label: t('Size & numbers'),  icon: '📊', color: '#60a5fa' },
+  { id: 'lists',    label: t('Lists & groups'),  icon: '📋', color: '#a3e635' },
+  { id: 'arcade',   label: t('Arcade'),          icon: '🕹️', color: '#facc15' },
+  { id: 'puzzles',  label: t('Puzzles'),         icon: '🧩', color: '#fb7185' },
 ]
 
 export const QUIZ_ITEMS = [
-  { id: 'flag',           cat: 'flags',    icon: '🚩', label: 'Flags',                difficulty: 'Easy',   desc: 'A grid of flags — name every country' },
-  { id: 'flag-colors',    cat: 'flags',    icon: '🎨', label: 'Flag Colors',          difficulty: 'Hard',   desc: 'Name countries from their flag\'s colour mix' },
-  { id: 'emoji-quiz',     cat: 'flags',    icon: '🌍', label: 'Country Emoji',        difficulty: 'Medium', desc: 'Each row is an emoji combo — name the country' },
-  { id: 'capital',        cat: 'capitals', icon: '🏛️', label: 'Capitals',             difficulty: 'Medium', desc: 'Type the capital of every country' },
-  { id: 'cap-to-country', cat: 'capitals', icon: '🗺️', label: 'Countries by Capital', difficulty: 'Hard',   desc: 'Name the country for every capital' },
-  { id: 'scramble',       cat: 'words',    icon: '🔀', label: 'Scramble',             difficulty: 'Medium', desc: 'Unscramble a whole table of country names' },
-  { id: 'missing-vowels', cat: 'words',    icon: '🔡', label: 'Missing Vowels',       difficulty: 'Medium', desc: 'Only consonants left — name every country' },
-  { id: 'endonyms',       cat: 'words',    icon: '🔠', label: 'Endonyms',             difficulty: 'Hard',   desc: 'Countries by the names they call themselves' },
-  { id: 'country-fact',   cat: 'culture',  icon: '📖', label: 'Country by Fact',      difficulty: 'Hard',   desc: 'One fact per row — name the country' },
-  { id: 'currency',       cat: 'culture',  icon: '💰', label: 'Currencies',           difficulty: 'Hard',   desc: 'Type the currency of every country' },
-  { id: 'language',       cat: 'culture',  icon: '🗣️', label: 'Languages',            difficulty: 'Hard',   desc: 'Type the main language of every country' },
-  { id: 'pop-order',      cat: 'numbers',  icon: '📊', label: 'Most Populous',        difficulty: 'Medium', desc: 'Name the 30 most populous countries' },
-  { id: 'area',           cat: 'numbers',  icon: '📏', label: 'Largest Countries',    difficulty: 'Easy',   desc: 'Name the 30 largest countries by area' },
-  { id: 'flags-crescent', cat: 'flags', icon: '☪️', label: 'Flags with a Crescent', difficulty: 'Medium', desc: 'Name every country with a crescent on its flag' },
-  { id: 'flags-cross', cat: 'flags', icon: '✝️', label: 'Flags with a Cross', difficulty: 'Medium', desc: 'Name every country with a cross or saltire on its flag' },
-  { id: 'flags-sun', cat: 'flags', icon: '☀️', label: 'Flags with a Sun', difficulty: 'Hard', desc: 'Name every country with a sun on its flag' },
-  { id: 'landlocked', cat: 'lists', icon: '🏔️', label: 'Landlocked Countries', difficulty: 'Medium', desc: 'Every country with no coastline' },
-  { id: 'island-nations', cat: 'lists', icon: '🏝️', label: 'Island Nations', difficulty: 'Medium', desc: 'Every country made up entirely of islands' },
-  { id: 'eu-members', cat: 'lists', icon: '🇪🇺', label: 'EU Members', difficulty: 'Easy', desc: 'All 27 members of the European Union' },
-  { id: 'nato-members', cat: 'lists', icon: '🛡️', label: 'NATO Members', difficulty: 'Medium', desc: 'All 32 NATO members' },
-  { id: 'g20', cat: 'lists', icon: '💼', label: 'G20 Countries', difficulty: 'Easy', desc: 'The 19 countries in the G20' },
-  { id: 'former-ussr', cat: 'lists', icon: '☭', label: 'Former Soviet Republics', difficulty: 'Medium', desc: 'The 15 countries that made up the USSR' },
-  { id: 'former-yugoslavia', cat: 'lists', icon: '🧩', label: 'Former Yugoslavia', difficulty: 'Easy', desc: 'The 7 countries that came out of Yugoslavia' },
-  { id: 'equator', cat: 'lists', icon: '🌐', label: 'On the Equator', difficulty: 'Medium', desc: 'Every country the Equator passes through' },
-  { id: 'stans', cat: 'lists', icon: '🐎', label: 'The -stans', difficulty: 'Easy', desc: 'Every country ending in "-stan"' },
-  { id: 'spanish-speaking', cat: 'lists', icon: '🇪🇸', label: 'Spanish-speaking', difficulty: 'Easy', desc: 'Every country where Spanish is official' },
-  { id: 'portuguese-speaking', cat: 'lists', icon: '🇵🇹', label: 'Portuguese-speaking', difficulty: 'Medium', desc: 'Every country where Portuguese is official' },
-  { id: 'french-speaking', cat: 'lists', icon: '🇫🇷', label: 'French-speaking', difficulty: 'Hard', desc: 'Every country where French is official' },
-  { id: 'alphabet', cat: 'lists', icon: '🔤', label: 'A to Z', difficulty: 'Easy', desc: 'One country for every letter of the alphabet' },
-  { id: 'euro-users', cat: 'culture', icon: '💶', label: 'Countries Using the Euro', difficulty: 'Medium', desc: 'Every country that uses the euro' },
-  { id: 'dollar-users', cat: 'culture', icon: '💵', label: 'Countries Using a Dollar', difficulty: 'Hard', desc: 'Every country whose currency is a dollar' },
-  { id: 'english-speaking', cat: 'lists', icon: '🇬🇧', label: 'English-speaking', difficulty: 'Hard', desc: 'Every country where English is a main language' },
-  { id: 'arabic-speaking', cat: 'lists', icon: '🕌', label: 'Arabic-speaking', difficulty: 'Medium', desc: 'Every country where Arabic is a main language' },
-  { id: 'capital-same-name', cat: 'capitals', icon: '🪞', label: 'Capital Shares the Name', difficulty: 'Medium', desc: 'Mexico → Mexico City… find them all' },
-  { id: 'capitals-a-z', cat: 'capitals', icon: '🔠', label: 'Capitals A to Z', difficulty: 'Easy', desc: 'One capital for every letter of the alphabet' },
-  { id: 'caribbean', cat: 'lists', icon: '🌴', label: 'Caribbean Countries', difficulty: 'Medium', desc: 'The 13 island countries of the Caribbean' },
-  { id: 'central-america', cat: 'lists', icon: '🌋', label: 'Central America', difficulty: 'Easy', desc: 'The 7 countries of Central America' },
-  { id: 'nordic', cat: 'lists', icon: '❄️', label: 'Nordic Countries', difficulty: 'Easy', desc: 'The 5 Nordic countries' },
-  { id: 'gulf-states', cat: 'lists', icon: '🛢️', label: 'Gulf States', difficulty: 'Easy', desc: 'The 6 members of the Gulf Cooperation Council' },
-  { id: 'smallest', cat: 'numbers', icon: '🔬', label: 'Smallest Countries', difficulty: 'Hard', desc: 'The 20 smallest countries by area' },
-  { id: 'least-populous', cat: 'numbers', icon: '🧍', label: 'Least Populous', difficulty: 'Hard', desc: 'The 20 countries with the fewest people' },
-  { id: 'connections',    cat: 'puzzles',  icon: '🧩', label: 'Connections',          difficulty: 'Hard',   desc: 'Group 16 countries into 4 hidden categories' },
-  { id: 'border-chain',   cat: 'puzzles',  icon: '🔗', label: 'Border Chain',         difficulty: 'Hard',   desc: 'Connect two countries through shared borders' },
+  { id: 'flag',           cat: 'flags',    icon: '🚩', label: t('Flags'),                difficulty: 'Easy',   desc: t('A grid of flags — name every country') },
+  { id: 'flag-colors',    cat: 'flags',    icon: '🎨', label: t('Flag Colors'),          difficulty: 'Hard',   desc: t('Name countries from their flag\'s colour mix') },
+  { id: 'emoji-quiz',     cat: 'flags',    icon: '🌍', label: t('Country Emoji'),        difficulty: 'Medium', desc: t('Each row is an emoji combo — name the country') },
+  { id: 'capital',        cat: 'capitals', icon: '🏛️', label: t('Capitals'),             difficulty: 'Medium', desc: t('Type the capital of every country') },
+  { id: 'cap-to-country', cat: 'capitals', icon: '🗺️', label: t('Countries by Capital'), difficulty: 'Hard',   desc: t('Name the country for every capital') },
+  { id: 'scramble',       cat: 'words',    icon: '🔀', label: t('Scramble'),             difficulty: 'Medium', desc: t('Unscramble a whole table of country names') },
+  { id: 'missing-vowels', cat: 'words',    icon: '🔡', label: t('Missing Vowels'),       difficulty: 'Medium', desc: t('Only consonants left — name every country') },
+  { id: 'endonyms',       cat: 'words',    icon: '🔠', label: t('Endonyms'),             difficulty: 'Hard',   desc: t('Countries by the names they call themselves') },
+  { id: 'country-fact',   cat: 'culture',  icon: '📖', label: t('Country by Fact'),      difficulty: 'Hard',   desc: t('One fact per row — name the country') },
+  { id: 'currency',       cat: 'culture',  icon: '💰', label: t('Currencies'),           difficulty: 'Hard',   desc: t('Type the currency of every country') },
+  { id: 'language',       cat: 'culture',  icon: '🗣️', label: t('Languages'),            difficulty: 'Hard',   desc: t('Type the main language of every country') },
+  { id: 'pop-order',      cat: 'numbers',  icon: '📊', label: t('Most Populous'),        difficulty: 'Medium', desc: t('Name the 30 most populous countries') },
+  { id: 'area',           cat: 'numbers',  icon: '📏', label: t('Largest Countries'),    difficulty: 'Easy',   desc: t('Name the 30 largest countries by area') },
+  { id: 'flags-crescent', cat: 'flags', icon: '☪️', label: t('Flags with a Crescent'), difficulty: 'Medium', desc: t('Name every country with a crescent on its flag') },
+  { id: 'flags-cross', cat: 'flags', icon: '✝️', label: t('Flags with a Cross'), difficulty: 'Medium', desc: t('Name every country with a cross or saltire on its flag') },
+  { id: 'flags-sun', cat: 'flags', icon: '☀️', label: t('Flags with a Sun'), difficulty: 'Hard', desc: t('Name every country with a sun on its flag') },
+  { id: 'landlocked', cat: 'lists', icon: '🏔️', label: t('Landlocked Countries'), difficulty: 'Medium', desc: t('Every country with no coastline') },
+  { id: 'island-nations', cat: 'lists', icon: '🏝️', label: t('Island Nations'), difficulty: 'Medium', desc: t('Every country made up entirely of islands') },
+  { id: 'eu-members', cat: 'lists', icon: '🇪🇺', label: t('EU Members'), difficulty: 'Easy', desc: t('All 27 members of the European Union') },
+  { id: 'nato-members', cat: 'lists', icon: '🛡️', label: t('NATO Members'), difficulty: 'Medium', desc: t('All 32 NATO members') },
+  { id: 'g20', cat: 'lists', icon: '💼', label: t('G20 Countries'), difficulty: 'Easy', desc: t('The 19 countries in the G20') },
+  { id: 'former-ussr', cat: 'lists', icon: '☭', label: t('Former Soviet Republics'), difficulty: 'Medium', desc: t('The 15 countries that made up the USSR') },
+  { id: 'former-yugoslavia', cat: 'lists', icon: '🧩', label: t('Former Yugoslavia'), difficulty: 'Easy', desc: t('The 7 countries that came out of Yugoslavia') },
+  { id: 'equator', cat: 'lists', icon: '🌐', label: t('On the Equator'), difficulty: 'Medium', desc: t('Every country the Equator passes through') },
+  { id: 'stans', cat: 'lists', icon: '🐎', label: t('The -stans'), difficulty: 'Easy', desc: t('Every country ending in "-stan"') },
+  { id: 'spanish-speaking', cat: 'lists', icon: '🇪🇸', label: t('Spanish-speaking'), difficulty: 'Easy', desc: t('Every country where Spanish is official') },
+  { id: 'portuguese-speaking', cat: 'lists', icon: '🇵🇹', label: t('Portuguese-speaking'), difficulty: 'Medium', desc: t('Every country where Portuguese is official') },
+  { id: 'french-speaking', cat: 'lists', icon: '🇫🇷', label: t('French-speaking'), difficulty: 'Hard', desc: t('Every country where French is official') },
+  { id: 'alphabet', cat: 'lists', icon: '🔤', label: t('A to Z'), difficulty: 'Easy', desc: t('One country for every letter of the alphabet') },
+  { id: 'euro-users', cat: 'culture', icon: '💶', label: t('Countries Using the Euro'), difficulty: 'Medium', desc: t('Every country that uses the euro') },
+  { id: 'dollar-users', cat: 'culture', icon: '💵', label: t('Countries Using a Dollar'), difficulty: 'Hard', desc: t('Every country whose currency is a dollar') },
+  { id: 'english-speaking', cat: 'lists', icon: '🇬🇧', label: t('English-speaking'), difficulty: 'Hard', desc: t('Every country where English is a main language') },
+  { id: 'arabic-speaking', cat: 'lists', icon: '🕌', label: t('Arabic-speaking'), difficulty: 'Medium', desc: t('Every country where Arabic is a main language') },
+  { id: 'capital-same-name', cat: 'capitals', icon: '🪞', label: t('Capital Shares the Name'), difficulty: 'Medium', desc: t('Mexico → Mexico City… find them all') },
+  { id: 'capitals-a-z', cat: 'capitals', icon: '🔠', label: t('Capitals A to Z'), difficulty: 'Easy', desc: t('One capital for every letter of the alphabet') },
+  { id: 'caribbean', cat: 'lists', icon: '🌴', label: t('Caribbean Countries'), difficulty: 'Medium', desc: t('The 13 island countries of the Caribbean') },
+  { id: 'central-america', cat: 'lists', icon: '🌋', label: t('Central America'), difficulty: 'Easy', desc: t('The 7 countries of Central America') },
+  { id: 'nordic', cat: 'lists', icon: '❄️', label: t('Nordic Countries'), difficulty: 'Easy', desc: t('The 5 Nordic countries') },
+  { id: 'gulf-states', cat: 'lists', icon: '🛢️', label: t('Gulf States'), difficulty: 'Easy', desc: t('The 6 members of the Gulf Cooperation Council') },
+  { id: 'smallest', cat: 'numbers', icon: '🔬', label: t('Smallest Countries'), difficulty: 'Hard', desc: t('The 20 smallest countries by area') },
+  { id: 'least-populous', cat: 'numbers', icon: '🧍', label: t('Least Populous'), difficulty: 'Hard', desc: t('The 20 countries with the fewest people') },
+  { id: 'higher-lower',   cat: 'arcade',   icon: '⚖️', label: t('Higher or Lower'),      difficulty: 'Easy',   desc: t('More people? Bigger? Keep the streak alive') },
+  { id: 'true-false',     cat: 'arcade',   icon: '✅', label: t('True or False'),        difficulty: 'Medium', desc: t('Rapid-fire statements against the clock') },
+  { id: 'country-wordle', cat: 'puzzles',  icon: '🟩', label: t('Country Wordle'),       difficulty: 'Medium', desc: t('A new country every day — guess it in 6 tries') },
+  { id: 'connections',    cat: 'puzzles',  icon: '🧩', label: t('Connections'),          difficulty: 'Hard',   desc: t('Group 16 countries into 4 hidden categories') },
+  { id: 'border-chain',   cat: 'puzzles',  icon: '🔗', label: t('Border Chain'),         difficulty: 'Hard',   desc: t('Connect two countries through shared borders') },
 ]
 
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard']
@@ -64,15 +70,17 @@ const DIFF_COLOR = { Easy: '#39ff14', Medium: '#f59e0b', Hard: '#ef4444' }
 
 // Medal = best accuracy in a "real" session (finished, or at least 10 answers)
 const MEDALS = [
-  { min: 0.9,  icon: '🥇', label: 'Gold',   cls: 'gold' },
-  { min: 0.75, icon: '🥈', label: 'Silver', cls: 'silver' },
-  { min: 0.5,  icon: '🥉', label: 'Bronze', cls: 'bronze' },
+  { min: 0.9,  icon: '🥇', label: t('Gold'),   cls: 'gold' },
+  { min: 0.75, icon: '🥈', label: t('Silver'), cls: 'silver' },
+  { min: 0.5,  icon: '🥉', label: t('Bronze'), cls: 'bronze' },
 ]
 
 // ── Stats from saved results ───────────────────────────────────────────────
 function sessionAccuracy(r) {
   // Connections always ends 4/4 — judge it by mistakes instead
   if (r.mode === 'connections') return r.completed ? 4 / (4 + (r.details?.mistakes ?? 0)) : 0
+  if (r.mode === 'higher-lower') return Math.min(1, r.score / 20)       // 20 in a row = gold
+  if (r.mode === 'country-wordle') return r.correct ? Math.min(1, (r.score + 2) / 6) : 0
   return r.total ? r.correct / r.total : 0
 }
 
@@ -97,11 +105,11 @@ export function summarize(results) {
 
 export function timeAgo(iso) {
   const s = (Date.now() - new Date(iso)) / 1000
-  if (s < 3600) return 'just now'
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
-  if (s < 2 * 86400) return 'yesterday'
-  if (s < 30 * 86400) return `${Math.floor(s / 86400)}d ago`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  if (s < 3600) return t('just now')
+  if (s < 86400) return t('{v}h ago', { v: Math.floor(s / 3600) })
+  if (s < 2 * 86400) return t('yesterday')
+  if (s < 30 * 86400) return t('{v}d ago', { v: Math.floor(s / 86400) })
+  return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }
 
 const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -156,16 +164,16 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
       {/* ── Header ── */}
       <header className="qh-head">
         <div>
-          <h1 className="qh-title">Quiz Hub</h1>
-          <p className="qh-sub">{QUIZ_ITEMS.length} quizzes · type answers in any order · pick a region</p>
+          <h1 className="qh-title">{t('Quiz Hub')}</h1>
+          <p className="qh-sub">{QUIZ_ITEMS.length} {t('quizzes · type answers in any order · pick a region')}</p>
         </div>
         <div className="qh-progress">
           <div className="qh-progress-row">
-            <span><strong>{played}</strong>/{QUIZ_ITEMS.length} played</span>
+            <span><strong>{played}</strong>/{QUIZ_ITEMS.length} {t('played')}</span>
             <span className="qh-medals">
-              <span title="Gold">🥇 {medalCount('gold')}</span>
-              <span title="Silver">🥈 {medalCount('silver')}</span>
-              <span title="Bronze">🥉 {medalCount('bronze')}</span>
+              <span title={t('Gold')}>🥇 {medalCount('gold')}</span>
+              <span title={t('Silver')}>🥈 {medalCount('silver')}</span>
+              <span title={t('Bronze')}>🥉 {medalCount('bronze')}</span>
             </span>
           </div>
           <div className="qh-progress-bar"><div style={{ width: `${(played / QUIZ_ITEMS.length) * 100}%` }} /></div>
@@ -182,23 +190,23 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
             style={{ '--cat': QUIZ_CATEGORIES.find(c => c.id === lastQuiz.item.cat).color }}>
             <span className="qh-continue-icon">{lastQuiz.item.icon}</span>
             <span className="qh-continue-body">
-              <span className="qh-continue-kicker">Continue playing</span>
+              <span className="qh-continue-kicker">{t('Continue playing')}</span>
               <span className="qh-continue-name">{lastQuiz.item.label}</span>
               <span className="qh-continue-meta">
-                Last round {lastQuiz.result.correct}/{lastQuiz.result.total} correct · {timeAgo(lastQuiz.result.played_at)}
+                {t('Last round')} {lastQuiz.result.correct}/{lastQuiz.result.total} {t('correct ·')} {timeAgo(lastQuiz.result.played_at)}
               </span>
             </span>
-            <span className="qh-continue-cta">Play ▸</span>
+            <span className="qh-continue-cta">{t('Play ▸')}</span>
           </button>
         ) : (
           <button className="qh-continue" onClick={() => onSelect('flag')} style={{ '--cat': QUIZ_CATEGORIES[0].color }}>
             <span className="qh-continue-icon">🚩</span>
             <span className="qh-continue-body">
-              <span className="qh-continue-kicker">New here?</span>
-              <span className="qh-continue-name">Start with the Flags Quiz</span>
-              <span className="qh-continue-meta">The easiest warm-up — then work your way to Endonyms</span>
+              <span className="qh-continue-kicker">{t('New here?')}</span>
+              <span className="qh-continue-name">{t('Start with the Flags Quiz')}</span>
+              <span className="qh-continue-meta">{t('The easiest warm-up — then work your way to Endonyms')}</span>
             </span>
-            <span className="qh-continue-cta">Play ▸</span>
+            <span className="qh-continue-cta">{t('Play ▸')}</span>
           </button>
         )
       )}
@@ -212,16 +220,16 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={onSearchKey}
-            placeholder="Search quizzes…"
-            aria-label="Search quizzes"
+            placeholder={t('Search quizzes…')}
+            aria-label={t('Search quizzes')}
           />
-          {query ? <button className="qh-search-clear" onClick={() => setQuery('')} aria-label="Clear">✕</button> : <kbd>/</kbd>}
+          {query ? <button className="qh-search-clear" onClick={() => setQuery('')} aria-label={t('Clear')}>✕</button> : <kbd>/</kbd>}
         </label>
         <div className="qh-chips">
           {[
-            { id: 'all', label: 'All' },
-            { id: 'unplayed', label: `Not played (${QUIZ_ITEMS.length - played})` },
-            ...DIFFICULTIES.map(d => ({ id: d, label: d })),
+            { id: 'all', label: t('All') },
+            { id: 'unplayed', label: t('Not played ({v})', { v: QUIZ_ITEMS.length - played }) },
+            ...DIFFICULTIES.map(d => ({ id: d, label: t(d) })),
           ].map(c => (
             <button key={c.id} className={`qh-chip${filter === c.id ? ' active' : ''}`} onClick={() => setFilter(c.id)}>
               {DIFFICULTIES.includes(c.id) && <span className="qh-dot" style={{ background: DIFF_COLOR[c.id] }} />}
@@ -234,8 +242,8 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
       {/* ── Category rows ── */}
       {visible.length === 0 ? (
         <div className="qh-empty">
-          <span>No quizzes match.</span>
-          <button onClick={() => { setQuery(''); setFilter('all') }}>Clear filters</button>
+          <span>{t('No quizzes match.')}</span>
+          <button onClick={() => { setQuery(''); setFilter('all') }}>{t('Clear filters')}</button>
         </div>
       ) : QUIZ_CATEGORIES.map(cat => {
         const items = visible.filter(it => it.cat === cat.id)
@@ -265,21 +273,23 @@ export function QuizTile({ item, st, onSelect }) {
       <span className="qh-tile-top">
         <span className="qh-tile-icon">{item.icon}</span>
         {st?.medal
-          ? <span className={`qh-tile-medal qh-medal-${st.medal.cls}`} title={`${st.medal.label} medal`}>{st.medal.icon}</span>
-          : !st && <span className="qh-tile-new-badge">New</span>}
+          ? <span className={`qh-tile-medal qh-medal-${st.medal.cls}`} title={t('{label} medal', { label: st.medal.label })}>{st.medal.icon}</span>
+          : !st && <span className="qh-tile-new-badge">{t('New')}</span>}
       </span>
       <span className="qh-tile-name">{item.label}</span>
       <span className="qh-tile-desc">{item.desc}</span>
       <span className="qh-tile-foot">
         {item.difficulty
-          ? <span className="qh-tile-diff"><span className="qh-dot" style={{ background: DIFF_COLOR[item.difficulty] }} />{item.difficulty}</span>
+          ? <span className="qh-tile-diff"><span className="qh-dot" style={{ background: DIFF_COLOR[item.difficulty] }} />{t(item.difficulty)}</span>
           : <span className="qh-tile-diff">{item.tag ?? ''}</span>}
         {st ? (
-          <span className="qh-tile-stats" title={`${st.plays} game${st.plays === 1 ? '' : 's'} · last ${timeAgo(st.last)}`}>
-            🏆 {st.bestCorrect}/{st.bestTotal} · {st.total ? Math.round((st.correct / st.total) * 100) : 0}%
+          <span className="qh-tile-stats" title={t('{plays} game{v} · last {v2}', { plays: st.plays, v: st.plays === 1 ? '' : 's', v2: timeAgo(st.last) })}>
+            {GAME_CATALOG[item.id]?.unit
+              ? <>🏆 {st.best} {GAME_CATALOG[item.id].unit.toLowerCase()} · {st.plays}×</>
+              : <>🏆 {st.bestCorrect}/{st.bestTotal} · {st.total ? Math.round((st.correct / st.total) * 100) : 0}%</>}
           </span>
         ) : (
-          <span className="qh-tile-play">Play ▸</span>
+          <span className="qh-tile-play">{t('Play ▸')}</span>
         )}
       </span>
     </button>

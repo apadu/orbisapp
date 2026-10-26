@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { loadResults } from '../utils/results'
 import { GAME_CATALOG } from '../utils/gameCatalog'
 import { setRules } from '../utils/rulesStore'
+import { t } from '../i18n'
 
 const storeKey = (mode) => `orbis-setup-${mode}`
 
@@ -27,17 +28,19 @@ function fmtTime(ms) {
 
 function bestLine(mode) {
   const rows = loadResults().filter(r => r.mode === mode && r.total > 0)
-  if (!rows.length) return 'First time — good luck!'
+  if (!rows.length) return t('First time — good luck!')
   const timed = GAME_CATALOG[mode]?.timed
   if (timed) {
     const best = rows.reduce((a, b) => (b.correct > a.correct || (b.correct === a.correct && b.duration_ms < a.duration_ms) ? b : a))
     const clear = rows.filter(r => r.completed && r.correct === r.total).sort((a, b) => a.duration_ms - b.duration_ms)[0]
     return clear
-      ? `Best: full clear in ${fmtTime(clear.duration_ms)}`
-      : `Best: ${best.correct}/${best.total}`
+      ? t('Best: full clear in {v}', { v: fmtTime(clear.duration_ms) })
+      : t('Best: {correct}/{total}', { correct: best.correct, total: best.total })
   }
   const best = rows.reduce((a, b) => (b.score > a.score ? b : a))
-  return `Best: ${best.score.toLocaleString()} pts · ${rows.length} game${rows.length === 1 ? '' : 's'}`
+  const unit = GAME_CATALOG[mode]?.unit
+  if (unit) return t('Best: {score} {v} · {length} game{v2}', { score: best.score, v: unit.toLowerCase(), length: rows.length, v2: rows.length === 1 ? '' : 's' })
+  return t('Best: {v} pts · {length} game{v2}', { v: best.score.toLocaleString(), length: rows.length, v2: rows.length === 1 ? '' : 's' })
 }
 
 /**
@@ -105,14 +108,14 @@ export default function SetupCard({ mode, icon, title, desc, options = [], rules
       })}
 
       <button className="setup-start" onClick={() => start()}>
-        ▶ {startLabel} <kbd>Enter</kbd>
+        ▶ {t(startLabel)} <kbd>{t('Enter')}</kbd>
       </button>
-      {typeToStart && <p className="setup-type-hint">…or just start typing</p>}
+      {typeToStart && <p className="setup-type-hint">{t('…or just start typing')}</p>}
 
       {rules.length > 0 && (
         <div className="setup-rules">
           <button className="setup-rules-toggle" onClick={() => setShowRules(s => !s)} aria-expanded={showRules}>
-            How to play {showRules ? '▴' : '▾'}
+            {t('How to play')} {showRules ? '▴' : '▾'}
           </button>
           {showRules && (
             <ul>{rules.map((r, i) => <li key={i}>{r}</li>)}</ul>
@@ -126,10 +129,10 @@ export default function SetupCard({ mode, icon, title, desc, options = [], rules
 /** Shared "time" option used by all Name-All style games. */
 export const TIMER_OPTION = {
   id: 'timer',
-  label: 'Time',
+  label: t('Time'),
   default: 'countup',
   choices: [
-    { value: 'countup',   label: '⏱ Free play', hint: 'No limit — the clock just tracks your time' },
-    { value: 'countdown', label: '⏳ 15 min',    hint: 'Race the clock: name as many as you can in 15 minutes' },
+    { value: 'countup',   label: t('⏱ Free play'), hint: t('No limit — the clock just tracks your time') },
+    { value: 'countdown', label: t('⏳ 15 min'),    hint: t('Race the clock: name as many as you can in 15 minutes') },
   ],
 }

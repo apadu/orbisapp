@@ -4,6 +4,7 @@ import { POPULATION } from '../utils/population'
 import { COUNTRY_AREA } from '../utils/countryArea'
 import { COUNTRY_CURRENCY } from '../utils/countryCurrency'
 import { COUNTRY_LANGUAGES } from '../utils/countryLanguages'
+import { t, cn } from '../i18n'
 
 function formatPop(millions) {
   if (!millions) return '—'
@@ -36,43 +37,43 @@ export default function LearnPanel({ selected, history }) {
   return (
     <>
       <div className="panel-header">
-        <h2>🎓 Learning Mode</h2>
-        <p className="panel-subtitle">Click any country on the globe to learn about it.</p>
+        <h2>{t('🎓 Learning Mode')}</h2>
+        <p className="panel-subtitle">{t('Click any country on the globe to learn about it.')}</p>
       </div>
 
       {!name ? (
         <div className="learn-empty">
           <div className="learn-empty-icon">🌐</div>
-          <p>Click a country to get started</p>
+          <p>{t('Click a country to get started')}</p>
         </div>
       ) : (
         <div className="learn-card">
           <div className="learn-flag">{flag}</div>
-          <div className="learn-name">{name}</div>
+          <div className="learn-name">{cn(name)}</div>
           <div className="learn-stats">
             <div className="learn-stat">
-              <span className="learn-stat-label">Capital</span>
+              <span className="learn-stat-label">{t('Capital')}</span>
               <span className="learn-stat-value">🏛️ {capital}</span>
             </div>
             <div className="learn-stat">
-              <span className="learn-stat-label">Continent</span>
+              <span className="learn-stat-label">{t('Continent')}</span>
               <span className="learn-stat-value">{CONTINENT_EMOJI[continent] ?? '🌐'} {continent}</span>
             </div>
             <div className="learn-stat">
-              <span className="learn-stat-label">Population</span>
+              <span className="learn-stat-label">{t('Population')}</span>
               <span className="learn-stat-value">👥 {formatPop(pop)}</span>
             </div>
             <div className="learn-stat">
-              <span className="learn-stat-label">Area</span>
+              <span className="learn-stat-label">{t('Area')}</span>
               <span className="learn-stat-value">📐 {formatArea(area)}</span>
             </div>
             <div className="learn-stat">
-              <span className="learn-stat-label">Currency</span>
+              <span className="learn-stat-label">{t('Currency')}</span>
               <span className="learn-stat-value">💰 {currency ? `${currency.name} (${currency.code})` : '—'}</span>
             </div>
             {langs.length > 0 && (
               <div className="learn-stat">
-                <span className="learn-stat-label">Languages</span>
+                <span className="learn-stat-label">{t('Languages')}</span>
                 <span className="learn-stat-value">🗣️ {langs.join(', ')}</span>
               </div>
             )}
@@ -82,7 +83,7 @@ export default function LearnPanel({ selected, history }) {
 
       {history.length > 0 && (
         <div className="learn-history">
-          <div className="learn-history-label">Recently viewed</div>
+          <div className="learn-history-label">{t('Recently viewed')}</div>
           {history.map(n => {
             const hi = COUNTRY_INFO[n]
             return (

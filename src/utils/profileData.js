@@ -3,6 +3,7 @@
  * Pure functions — no storage access.
  */
 import { GAME_CATALOG } from './gameCatalog'
+import { t } from '../i18n'
 
 // ── XP & levels ────────────────────────────────────────────────────────────
 // XP: 10 per correct answer — but only the FIRST time you get a given item right
@@ -49,9 +50,9 @@ const LEVEL_TITLES = [
   [15, 'Cartographer'], [22, 'Globetrotter'], [30, 'Geographer'], [40, 'Atlas'],
 ]
 export function levelTitle(level) {
-  let t = LEVEL_TITLES[0][1]
-  for (const [l, name] of LEVEL_TITLES) if (level >= l) t = name
-  return t
+  let title = LEVEL_TITLES[0][1]
+  for (const [l, name] of LEVEL_TITLES) if (level >= l) title = name
+  return t(title)
 }
 
 // ── Dates ──────────────────────────────────────────────────────────────────
@@ -86,28 +87,28 @@ function maxRun(answers) {
 // ── Achievements ───────────────────────────────────────────────────────────
 // Each `progress(p)` returns [value, target].
 export const ACHIEVEMENTS = [
-  { id: 'first-steps',   icon: '👣', label: 'First Steps',       desc: 'Finish your first game',                    progress: p => [p.totals.games, 1] },
-  { id: 'regular',       icon: '🎮', label: 'Regular',           desc: 'Play 50 games',                             progress: p => [p.totals.games, 50] },
-  { id: 'addict',        icon: '🕹️', label: 'Can\'t Stop',        desc: 'Play 250 games',                            progress: p => [p.totals.games, 250] },
-  { id: 'century',       icon: '💯', label: 'Century',           desc: '100 correct answers',                       progress: p => [p.totals.correct, 100] },
-  { id: 'thousand',      icon: '🧠', label: 'Big Brain',         desc: '1,000 correct answers',                     progress: p => [p.totals.correct, 1000] },
-  { id: 'five-k',        icon: '🌌', label: 'Encyclopedia',      desc: '5,000 correct answers',                     progress: p => [p.totals.correct, 5000] },
-  { id: 'streak-3',      icon: '🔥', label: 'Warming Up',        desc: 'Play 3 days in a row',                      progress: p => [p.streak.best, 3] },
-  { id: 'streak-7',      icon: '📅', label: 'Week Warrior',      desc: 'Play 7 days in a row',                      progress: p => [p.streak.best, 7] },
-  { id: 'streak-30',     icon: '🗓️', label: 'Habit Formed',      desc: 'Play 30 days in a row',                     progress: p => [p.streak.best, 30] },
-  { id: 'variety',       icon: '🎲', label: 'Variety Pack',      desc: 'Play 10 different games',                   progress: p => [p.modesPlayed, 10] },
-  { id: 'completionist', icon: '🏆', label: 'Completionist',     desc: 'Play every game in Orbis',                  progress: p => [p.modesPlayed, Object.keys(GAME_CATALOG).length] },
-  { id: 'explorer-100',  icon: '🧭', label: 'Well Travelled',    desc: 'Correctly answer 100 different countries',  progress: p => [p.countriesKnown, 100] },
-  { id: 'cartographer',  icon: '🗺️', label: 'Cartographer',      desc: 'Master 50 countries (80%+ over 3+ tries)',  progress: p => [p.countriesMastered, 50] },
-  { id: 'world-clear',   icon: '🌍', label: 'World Clear',       desc: 'Name every country in Name All',            progress: p => [p.flags.worldClear ? 1 : 0, 1] },
-  { id: 'speedrun',      icon: '⚡', label: 'Speedrunner',       desc: 'Name all countries in under 15 minutes',    progress: p => [p.flags.speedrun ? 1 : 0, 1] },
-  { id: 'sharpshooter',  icon: '🎯', label: 'Sharpshooter',      desc: 'Guess a Mystery Country in 3 tries or fewer', progress: p => [p.flags.mystery3 ? 1 : 0, 1] },
-  { id: 'flag-25',       icon: '🚩', label: 'Vexillologist',     desc: '25 flags in a row',                         progress: p => [p.flags.flagRun, 25] },
-  { id: 'perfect-quiz',  icon: '✨', label: 'Flawless',          desc: 'Finish a quiz (10+ questions) with 100%',   progress: p => [p.flags.perfectQuiz ? 1 : 0, 1] },
-  { id: 'connections',   icon: '🧩', label: 'Perfect Connection', desc: 'Solve Connections with no mistakes',       progress: p => [p.flags.connPerfect ? 1 : 0, 1] },
-  { id: 'polyglot',      icon: '🗣️', label: 'Polyglot',          desc: 'Score 90%+ on a full Endonyms round',       progress: p => [p.flags.polyglot ? 1 : 0, 1] },
-  { id: 'bullseye',      icon: '📍', label: 'Bullseye',          desc: 'Hit 25 countries dead-on in Pinpoint',      progress: p => [p.flags.locateHits, 25] },
-  { id: 'level-10',      icon: '⭐', label: 'Navigator',         desc: 'Reach level 10',                            progress: p => [p.level.level, 10] },
+  { id: 'first-steps',   icon: '👣', label: t('First Steps'),       desc: t('Finish your first game'),                    progress: p => [p.totals.games, 1] },
+  { id: 'regular',       icon: '🎮', label: t('Regular'),           desc: t('Play 50 games'),                             progress: p => [p.totals.games, 50] },
+  { id: 'addict',        icon: '🕹️', label: t('Can\'t Stop'),        desc: t('Play 250 games'),                            progress: p => [p.totals.games, 250] },
+  { id: 'century',       icon: '💯', label: t('Century'),           desc: t('100 correct answers'),                       progress: p => [p.totals.correct, 100] },
+  { id: 'thousand',      icon: '🧠', label: t('Big Brain'),         desc: t('1,000 correct answers'),                     progress: p => [p.totals.correct, 1000] },
+  { id: 'five-k',        icon: '🌌', label: t('Encyclopedia'),      desc: t('5,000 correct answers'),                     progress: p => [p.totals.correct, 5000] },
+  { id: 'streak-3',      icon: '🔥', label: t('Warming Up'),        desc: t('Play 3 days in a row'),                      progress: p => [p.streak.best, 3] },
+  { id: 'streak-7',      icon: '📅', label: t('Week Warrior'),      desc: t('Play 7 days in a row'),                      progress: p => [p.streak.best, 7] },
+  { id: 'streak-30',     icon: '🗓️', label: t('Habit Formed'),      desc: t('Play 30 days in a row'),                     progress: p => [p.streak.best, 30] },
+  { id: 'variety',       icon: '🎲', label: t('Variety Pack'),      desc: t('Play 10 different games'),                   progress: p => [p.modesPlayed, 10] },
+  { id: 'completionist', icon: '🏆', label: t('Completionist'),     desc: t('Play every game in Orbis'),                  progress: p => [p.modesPlayed, Object.keys(GAME_CATALOG).length] },
+  { id: 'explorer-100',  icon: '🧭', label: t('Well Travelled'),    desc: t('Correctly answer 100 different countries'),  progress: p => [p.countriesKnown, 100] },
+  { id: 'cartographer',  icon: '🗺️', label: t('Cartographer'),      desc: t('Master 50 countries (80%+ over 3+ tries)'),  progress: p => [p.countriesMastered, 50] },
+  { id: 'world-clear',   icon: '🌍', label: t('World Clear'),       desc: t('Name every country in Name All'),            progress: p => [p.flags.worldClear ? 1 : 0, 1] },
+  { id: 'speedrun',      icon: '⚡', label: t('Speedrunner'),       desc: t('Name all countries in under 15 minutes'),    progress: p => [p.flags.speedrun ? 1 : 0, 1] },
+  { id: 'sharpshooter',  icon: '🎯', label: t('Sharpshooter'),      desc: t('Guess a Mystery Country in 3 tries or fewer'), progress: p => [p.flags.mystery3 ? 1 : 0, 1] },
+  { id: 'flag-25',       icon: '🚩', label: t('Vexillologist'),     desc: t('25 flags in a row'),                         progress: p => [p.flags.flagRun, 25] },
+  { id: 'perfect-quiz',  icon: '✨', label: t('Flawless'),          desc: t('Finish a quiz (10+ questions) with 100%'),   progress: p => [p.flags.perfectQuiz ? 1 : 0, 1] },
+  { id: 'connections',   icon: '🧩', label: t('Perfect Connection'), desc: t('Solve Connections with no mistakes'),       progress: p => [p.flags.connPerfect ? 1 : 0, 1] },
+  { id: 'polyglot',      icon: '🗣️', label: t('Polyglot'),          desc: t('Score 90%+ on a full Endonyms round'),       progress: p => [p.flags.polyglot ? 1 : 0, 1] },
+  { id: 'bullseye',      icon: '📍', label: t('Bullseye'),          desc: t('Hit 25 countries dead-on in Pinpoint'),      progress: p => [p.flags.locateHits, 25] },
+  { id: 'level-10',      icon: '⭐', label: t('Navigator'),         desc: t('Reach level 10'),                            progress: p => [p.level.level, 10] },
 ]
 
 // ── Main derivation ────────────────────────────────────────────────────────

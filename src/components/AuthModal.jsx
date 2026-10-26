@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults } from '../utils/results'
+import { t } from '../i18n'
 
 function GoogleIcon() {
   return (
@@ -40,7 +41,7 @@ export default function AuthModal() {
       if (err) setError(err.message)
       return data
     } catch (e) {
-      setError(e.message ?? 'Something went wrong')
+      setError(e.message ?? t('Something went wrong'))
     } finally {
       setBusy(false)
     }
@@ -49,21 +50,21 @@ export default function AuthModal() {
   if (recovery) {
     const save = async (e) => {
       e.preventDefault()
-      if (password.length < 8) { setError('Password must be at least 8 characters'); return }
+      if (password.length < 8) { setError(t('Password must be at least 8 characters')); return }
       await run(() => setNewPassword(password))
     }
     return (
       <div className="auth-backdrop">
         <div className="auth-modal" role="dialog" aria-modal="true">
           <div className="auth-brand">🔑</div>
-          <h2 className="auth-title">Choose a new password</h2>
+          <h2 className="auth-title">{t('Choose a new password')}</h2>
           <form className="auth-form" onSubmit={save}>
             <input
-              className="auth-input" type="password" placeholder="New password" autoComplete="new-password" required
+              className="auth-input" type="password" placeholder={t('New password')} autoComplete="new-password" required
               value={password} onChange={e => setPassword(e.target.value)}
             />
             {error && <div className="auth-error">{error}</div>}
-            <button className="auth-submit" type="submit" disabled={busy}>{busy ? '…' : 'Save password'}</button>
+            <button className="auth-submit" type="submit" disabled={busy}>{busy ? '…' : t('Save password')}</button>
           </form>
         </div>
       </div>
@@ -77,59 +78,59 @@ export default function AuthModal() {
     if (tab === 'signin') {
       await run(() => signInWithEmail(email, password))
     } else if (tab === 'signup') {
-      if (password.length < 8) { setError('Password must be at least 8 characters'); return }
+      if (password.length < 8) { setError(t('Password must be at least 8 characters')); return }
       const data = await run(() => signUpWithEmail(email, password, username.trim()))
-      if (data && !data.session) setInfo('Check your inbox to confirm your email, then sign in.')
+      if (data && !data.session) setInfo(t('Check your inbox to confirm your email, then sign in.'))
     } else {
       const data = await run(() => resetPassword(email))
-      if (data !== undefined) setInfo('If that email has an account, a reset link is on its way.')
+      if (data !== undefined) setInfo(t('If that email has an account, a reset link is on its way.'))
     }
   }
 
   return (
     <div className="auth-backdrop" onClick={closeAuth}>
       <div className="auth-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
-        <button className="auth-close" onClick={closeAuth} aria-label="Close">✕</button>
+        <button className="auth-close" onClick={closeAuth} aria-label={t('Close')}>✕</button>
 
         <div className="auth-brand">🌐</div>
         <h2 className="auth-title">
-          {tab === 'signup' ? 'Create your Orbis account' : tab === 'reset' ? 'Reset password' : 'Welcome back'}
+          {tab === 'signup' ? t('Create your Orbis account') : tab === 'reset' ? t('Reset password') : t('Welcome back')}
         </h2>
         <p className="auth-sub">
           {tab === 'reset'
-            ? 'We\'ll email you a link to choose a new password.'
+            ? t('We\'ll email you a link to choose a new password.')
             : guestGames > 0
-            ? `Your ${guestGames} guest game${guestGames === 1 ? '' : 's'} will be saved to your account.`
-            : 'Save your stats, unlock achievements and climb the leaderboards.'}
+            ? t('Your {guestGames} guest game{v} will be saved to your account.', { guestGames: guestGames, v: guestGames === 1 ? '' : 's' })
+            : t('Save your stats, unlock achievements and climb the leaderboards.')}
         </p>
 
         {!backendEnabled ? (
-          <div className="auth-error">Accounts aren't configured yet (missing Supabase keys).</div>
+          <div className="auth-error">{t('Accounts aren\'t configured yet (missing Supabase keys).')}</div>
         ) : (
           <>
             {tab !== 'reset' && (
               <>
                 <button className="auth-google" onClick={() => run(signInWithGoogle)} disabled={busy}>
-                  <GoogleIcon /> Continue with Google
+                  <GoogleIcon /> {t('Continue with Google')}
                 </button>
-                <div className="auth-divider"><span>or</span></div>
+                <div className="auth-divider"><span>{t('or')}</span></div>
               </>
             )}
 
             <form className="auth-form" onSubmit={submit}>
               {tab === 'signup' && (
                 <input
-                  className="auth-input" type="text" placeholder="Username" autoComplete="username"
+                  className="auth-input" type="text" placeholder={t('Username')} autoComplete="username"
                   value={username} onChange={e => setUsername(e.target.value)} maxLength={24}
                 />
               )}
               <input
-                className="auth-input" type="email" placeholder="Email" autoComplete="email" required
+                className="auth-input" type="email" placeholder={t('Email')} autoComplete="email" required
                 value={email} onChange={e => setEmail(e.target.value)}
               />
               {tab !== 'reset' && (
                 <input
-                  className="auth-input" type="password" placeholder="Password" required
+                  className="auth-input" type="password" placeholder={t('Password')} required
                   autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
                   value={password} onChange={e => setPassword(e.target.value)}
                 />
@@ -139,26 +140,26 @@ export default function AuthModal() {
               {info  && <div className="auth-info">{info}</div>}
 
               <button className="auth-submit" type="submit" disabled={busy}>
-                {busy ? '…' : tab === 'signup' ? 'Create account' : tab === 'reset' ? 'Send reset link' : 'Sign in'}
+                {busy ? '…' : tab === 'signup' ? t('Create account') : tab === 'reset' ? t('Send reset link') : t('Sign in')}
               </button>
             </form>
 
             <div className="auth-links">
               {tab === 'signin' && (
                 <>
-                  <button onClick={() => setTab('reset')}>Forgot password?</button>
+                  <button onClick={() => setTab('reset')}>{t('Forgot password?')}</button>
                   <span>·</span>
-                  <button onClick={() => setTab('signup')}>Create an account</button>
+                  <button onClick={() => setTab('signup')}>{t('Create an account')}</button>
                 </>
               )}
               {tab !== 'signin' && (
-                <button onClick={() => setTab('signin')}>Already have an account? Sign in</button>
+                <button onClick={() => setTab('signin')}>{t('Already have an account? Sign in')}</button>
               )}
             </div>
           </>
         )}
 
-        <button className="auth-guest" onClick={closeAuth}>Keep playing as guest</button>
+        <button className="auth-guest" onClick={closeAuth}>{t('Keep playing as guest')}</button>
       </div>
     </div>
   )

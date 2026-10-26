@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { dailyNumber, dailyQuizFor, msToNextDaily } from '../quizzes/daily'
 import { loadResults, subscribeResults } from '../utils/results'
+import { t, continentName } from '../i18n'
 
 /** "Daily Quiz #N" banner — shows today's quiz, or your result + countdown if played. */
 export default function DailyBanner({ countryNames, onOpen }) {
@@ -18,19 +19,19 @@ export default function DailyBanner({ countryNames, onOpen }) {
   return (
     <button className={`daily-banner${played ? ' played' : ''}`} onClick={onOpen}>
       <span className="daily-banner-cal">
-        <small>DAILY</small>
+        <small>{t('DAILY')}</small>
         <strong>#{info.day}</strong>
       </span>
       <span className="daily-banner-body">
-        <span className="daily-banner-kicker">{played ? 'Today\'s quiz — done' : 'Quiz of the day'}</span>
-        <span className="daily-banner-title">{info.icon} {info.title}{info.region !== 'World' ? ` · ${info.region}` : ''}</span>
+        <span className="daily-banner-kicker">{played ? t('Today\'s quiz — done') : t('Quiz of the day')}</span>
+        <span className="daily-banner-title">{info.icon} {info.title}{info.region !== 'World' ? ` · ${continentName(info.region)}` : ''}</span>
         <span className="daily-banner-sub">
           {played
-            ? `You scored ${played.correct}/${played.total} · next quiz in ${h}h ${m}m`
-            : `${info.size} answers · one attempt · same quiz for everyone`}
+            ? t('You scored {correct}/{total} · next quiz in {h}h {m}m', { correct: played.correct, total: played.total, h: h, m: m })
+            : t('{size} answers · one attempt · same quiz for everyone', { size: info.size })}
         </span>
       </span>
-      <span className="daily-banner-cta">{played ? 'Results ▸' : 'Play ▸'}</span>
+      <span className="daily-banner-cta">{played ? t('Results ▸') : t('Play ▸')}</span>
     </button>
   )
 }

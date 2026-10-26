@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { fetchLeaderboard } from '../../utils/results'
 import { GAME_CATALOG, CAT_LABELS } from '../../utils/gameCatalog'
 import { useAuth } from '../../auth/AuthContext'
+import { t } from '../../i18n'
 
 const PERIODS = [
-  { id: 'today', label: 'Today' },
-  { id: 'week',  label: 'This week' },
-  { id: 'all',   label: 'All time' },
+  { id: 'today', label: t('Today') },
+  { id: 'week',  label: t('This week') },
+  { id: 'all',   label: t('All time') },
 ]
 
 function fmtTime(ms) {
@@ -35,11 +36,12 @@ export default function Leaderboard({ initialMode = 'flag' }) {
   }, [mode, period, backendEnabled])
 
   if (!backendEnabled) {
-    return <div className="lb-empty">Leaderboards need the online backend — it isn't configured yet.</div>
+    return <div className="lb-empty">{t('Leaderboards need the online backend — it isn\'t configured yet.')}</div>
   }
 
   const timed = GAME_CATALOG[mode]?.timed
-  const isQuiz = GAME_CATALOG[mode]?.cat === 'quiz'
+  const unit = GAME_CATALOG[mode]?.unit
+  const isQuiz = GAME_CATALOG[mode]?.cat === 'quiz' && !unit
   const groups = Object.entries(CAT_LABELS).map(([cat, label]) => ({
     label, items: Object.entries(GAME_CATALOG).filter(([, g]) => g.cat === cat),
   }))
@@ -65,19 +67,19 @@ export default function Leaderboard({ initialMode = 'flag' }) {
 
       {!user && (
         <div className="lb-signin-hint">
-          You're not on the board yet. <button onClick={openAuth}>Sign in</button> to submit your scores.
+          {t('You\'re not on the board yet.')} <button onClick={openAuth}>{t('Sign in')}</button> {t('to submit your scores.')}
         </div>
       )}
 
-      {state === 'loading' && <div className="lb-empty">Loading…</div>}
-      {state === 'error'   && <div className="lb-empty">Couldn't load the leaderboard. Try again in a moment.</div>}
-      {state === 'idle' && rows.length === 0 && <div className="lb-empty">No scores yet — be the first!</div>}
+      {state === 'loading' && <div className="lb-empty">{t('Loading…')}</div>}
+      {state === 'error'   && <div className="lb-empty">{t('Couldn\'t load the leaderboard. Try again in a moment.')}</div>}
+      {state === 'idle' && rows.length === 0 && <div className="lb-empty">{t('No scores yet — be the first!')}</div>}
 
       {state === 'idle' && rows.length > 0 && (
         <div className="lb-table">
           <div className="lb-row lb-header">
-            <span>#</span><span>Player</span><span>{isQuiz ? "Correct" : "Score"}</span>
-            <span>{timed ? 'Time' : 'Accuracy'}</span>
+            <span>#</span><span>{t('Player')}</span><span>{unit ?? (isQuiz ? t('Correct') : t('Score'))}</span>
+            <span>{timed ? t('Time') : t('Accuracy')}</span>
           </div>
           {rows.map(r => (
             <div key={r.user_id} className={`lb-row${r.user_id === user?.id ? ' lb-me' : ''}${r.rank <= 3 ? ` lb-top${r.rank}` : ''}`}>

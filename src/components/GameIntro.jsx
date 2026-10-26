@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { setRules } from '../utils/rulesStore'
+import { t } from '../i18n'
 
 /**
  * Games start immediately — no intro screen.
@@ -19,5 +20,5 @@ export default function GameIntro({ icon, title, desc, rules = [], onStart, disa
     onStart?.()
   }, [disabled]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return disabled ? <div className="game-intro-wait">Loading…</div> : null
+  return disabled ? <div className="game-intro-wait">{t('Loading…')}</div> : null
 }

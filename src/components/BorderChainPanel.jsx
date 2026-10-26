@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import GiveUpButton from './GiveUpButton'
 import { resolveAlias } from '../utils/aliases'
 import GameIntro from './GameIntro'
+import { t, cn } from '../i18n'
 
 /** BFS: shortest path from `start` to `end` using adjacency map. Returns path array or null. */
 function bfs(start, end, adjacency) {
@@ -31,15 +32,16 @@ function calcScore(optimal, actual) {
 }
 
 function norm(s) {
-  return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim()
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim()
 }
 
 function getSuggestions(input, countryNames, max = 7) {
   if (!input || input.length < 1) return []
   const q = norm(input)
   // prefix matches first, then contains
-  const prefix   = countryNames.filter(n => norm(n).startsWith(q))
-  const contains = countryNames.filter(n => !norm(n).startsWith(q) && norm(n).includes(q))
+  const key = (n) => norm(cn(n))
+  const prefix   = countryNames.filter(n => key(n).startsWith(q) || norm(n).startsWith(q))
+  const contains = countryNames.filter(n => !prefix.includes(n) && key(n).includes(q))
   return [...prefix, ...contains].slice(0, max)
 }
 
@@ -102,13 +104,13 @@ export default function BorderChainPanel({
     const raw = (nameOverride ?? input).trim()
     if (!raw) return
     const resolved = resolveAlias(raw, countryNames)
-    if (!resolved) { setError(`"${raw}" not recognised.`); return }
+    if (!resolved) { setError(t('"{raw}" not recognised.', { raw: raw })); return }
 
     const tail = chain[chain.length - 1]
     const nbSet = new Set(adjacency[tail] ?? [])
 
-    if (!nbSet.has(resolved)) { setError(`${resolved} doesn't border ${tail}.`); return }
-    if (chain.includes(resolved)) { setError(`${resolved} is already in your chain.`); return }
+    if (!nbSet.has(resolved)) { setError(t('{resolved} doesn\'t border {tail}.', { resolved: cn(resolved), tail: cn(tail) })); return }
+    if (chain.includes(resolved)) { setError(t('{resolved} is already in your chain.', { resolved: cn(resolved) })); return }
 
     const newChain = [...chain, resolved]
     setChain(newChain)
@@ -173,13 +175,13 @@ export default function BorderChainPanel({
   if (!started) return (
     <GameIntro
       icon="🔗"
-      title="Border Chain"
-      desc="Connect two highlighted countries through a chain of shared borders."
+      title={t('Border Chain')}
+      desc={t('Connect two highlighted countries through a chain of shared borders.')}
       rules={[
-        '🗺️ Each step must share a land border with the previous',
-        '⭐ Try to find the shortest chain',
-        '💡 The optimal path is calculated — try to match it',
-        '🔄 New challenge after each round',
+        t('🗺️ Each step must share a land border with the previous'),
+        t('⭐ Try to find the shortest chain'),
+        t('💡 The optimal path is calculated — try to match it'),
+        t('🔄 New challenge after each round'),
       ]}
       onStart={() => setStarted(true)}
       disabled={!startCountry || !endCountry}
@@ -189,29 +191,29 @@ export default function BorderChainPanel({
   return (
     <>
       <div className="panel-header">
-        <h2>🔗 Border Chain</h2>
+        <h2>{t('🔗 Border Chain')}</h2>
         <p className="panel-subtitle">
-          Connect the two countries by naming a chain of bordering nations.
+          {t('Connect the two countries by naming a chain of bordering nations.')}
         </p>
       </div>
 
       {/* Score bar */}
       <div className="locate-score-bar">
         <span className="locate-score-num">{history.filter(h => h.pts > 0).length}</span>
-        <span className="locate-score-label">chains solved</span>
-        <span className="locate-round-count">{history.length} rounds</span>
+        <span className="locate-score-label">{t('chains solved')}</span>
+        <span className="locate-round-count">{history.length} {t('rounds')}</span>
       </div>
 
       {/* Start / End */}
       <div className="bc-endpoints">
         <div className="bc-endpoint bc-start">
-          <span className="bc-ep-label">From</span>
-          <span className="bc-ep-name">{startName}</span>
+          <span className="bc-ep-label">{t('From')}</span>
+          <span className="bc-ep-name">{cn(startName)}</span>
         </div>
         <div className="bc-arrow">→</div>
         <div className="bc-endpoint bc-end">
-          <span className="bc-ep-label">To</span>
-          <span className="bc-ep-name">{endName}</span>
+          <span className="bc-ep-label">{t('To')}</span>
+          <span className="bc-ep-name">{cn(endName)}</span>
         </div>
       </div>
 
@@ -220,7 +222,7 @@ export default function BorderChainPanel({
         {chain.map((name, i) => (
           <span key={i} className="bc-chain-item">
             <span className={`bc-chip ${name === startName ? 'bc-chip-start' : name === endName ? 'bc-chip-end' : 'bc-chip-mid'}`}>
-              {name}
+              {cn(name)}
             </span>
             {i < chain.length - 1 && <span className="bc-chain-sep">→</span>}
           </span>
@@ -232,8 +234,8 @@ export default function BorderChainPanel({
       {!won && !gaveUp && remaining !== null && (
         <p className="bc-hint">
           {remaining === 1
-            ? `${chain[chain.length - 1]} borders ${endName} — type it!`
-            : `~${remaining} more hop${remaining !== 1 ? 's' : ''} to go`}
+            ? t('{v} borders {endName} — type it!', { v: cn(chain[chain.length - 1]), endName: cn(endName) })
+            : t('~{remaining} more hop{v} to go', { remaining: remaining, v: remaining !== 1 ? 's' : '' })}
         </p>
       )}
 
@@ -247,14 +249,14 @@ export default function BorderChainPanel({
                 ref={inputRef}
                 className="country-input"
                 type="text"
-                placeholder="Next bordering country…"
+                placeholder={t('Next bordering country…')}
                 value={input}
                 onChange={e => { setInput(e.target.value); setError(null) }}
                 onKeyDown={onKeyDown}
                 autoComplete="off"
                 spellCheck={false}
               />
-              <button className="guess-btn" onClick={() => trySubmit()}>Go</button>
+              <button className="guess-btn" onClick={() => trySubmit()}>{t('Go')}</button>
             </div>
 
             {showDropdown && (
@@ -266,7 +268,7 @@ export default function BorderChainPanel({
                     onMouseDown={e => { e.preventDefault(); selectSuggestion(name) }}
                     onMouseEnter={() => setActiveIdx(i)}
                   >
-                    {name}
+                    {cn(name)}
                   </li>
                 ))}
               </ul>
@@ -279,13 +281,13 @@ export default function BorderChainPanel({
       {won && lastResult && (() => {
         const { pts } = lastResult
         const color = pts === 1000 ? '#39ff14' : pts >= 700 ? '#a3e635' : pts >= 400 ? '#eab308' : '#f97316'
-        const label = pts === 1000 ? 'Optimal!' : pts >= 700 ? 'Great!' : pts >= 400 ? 'Good' : 'Could be shorter'
+        const label = pts === 1000 ? t('Optimal!') : pts >= 700 ? t('Great!') : pts >= 400 ? t('Good') : t('Could be shorter')
         return (
           <div className="po-result" style={{ color }}>
-            🎉 {label} — {chain.length - 1} hop{chain.length - 1 !== 1 ? 's' : ''}
+            🎉 {label} — {chain.length - 1} {t('hop')}{chain.length - 1 !== 1 ? 's' : ''}
             {optimalPath && optimalPath.length - 1 < chain.length - 1 && (
               <div className="bc-optimal">
-                Shortest: {optimalPath.join(' → ')}
+                {t('Shortest:')} {optimalPath.join(' → ')}
               </div>
             )}
           </div>
@@ -295,17 +297,17 @@ export default function BorderChainPanel({
       {/* Give up reveal */}
       {gaveUp && optimalPath && (
         <div className="give-up-reveal" style={{ padding: '12px 18px' }}>
-          Shortest path: <strong>{optimalPath.join(' → ')}</strong>
+          {t('Shortest path:')} <strong>{optimalPath.join(' → ')}</strong>
         </div>
       )}
 
       {/* Next / Give up buttons */}
       <div className="panel-footer">
         {won || gaveUp ? (
-          <button className="new-game-btn" onClick={onNext}>Next →</button>
+          <button className="new-game-btn" onClick={onNext}>{t('Next →')}</button>
         ) : (
           <>
-            <button className="new-game-btn" onClick={onNext}>🔄 New Pair</button>
+            <button className="new-game-btn" onClick={onNext}>{t('🔄 New Pair')}</button>
             <GiveUpButton compact onConfirm={handleGiveUp} />
           </>
         )}
@@ -314,7 +316,7 @@ export default function BorderChainPanel({
       {/* History */}
       {history.length > 0 && (
         <div className="guesses-section">
-          <h3 className="guesses-title">History <span className="guess-count">{history.length}</span></h3>
+          <h3 className="guesses-title">{t('History')} <span className="guess-count">{history.length}</span></h3>
           <ul className="guess-list">
             {[...history].reverse().map((h, i) => {
               const color = h.pts === 1000 ? '#39ff14' : h.pts >= 700 ? '#a3e635' : h.pts >= 400 ? '#eab308' : '#f97316'
@@ -324,7 +326,7 @@ export default function BorderChainPanel({
                   <span className="guess-name" style={{ fontSize: '0.75rem' }}>
                     {h.chain[0]} → {h.chain[h.chain.length - 1]}
                   </span>
-                  <span className="guess-dist">{h.chain.length - 1} hops</span>
+                  <span className="guess-dist">{h.chain.length - 1} {t('hops')}</span>
                 </li>
               )
             })}

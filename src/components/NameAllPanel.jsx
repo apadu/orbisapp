@@ -5,6 +5,7 @@ import SetupCard, { TIMER_OPTION } from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { playCorrect, playWin } from '../utils/sounds'
+import { t, cn } from '../i18n'
 
 const normalize = normalizeInput
 const COUNTDOWN_SECONDS = 15 * 60
@@ -152,13 +153,13 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
   if (!started) return (
     <GameIntro
       icon="🌍"
-      title="Name All Countries"
-      desc="Type every country in the world. Countries light up on the globe as you name them."
+      title={t('Name All Countries')}
+      desc={t('Type every country in the world. Countries light up on the globe as you name them.')}
       rules={[
-        '⏱ Choose countdown or free play',
-        '🙈 Optional: start with an empty globe',
-        '💡 Alternate spellings and aliases accepted',
-        '🌐 All 196 countries included',
+        t('⏱ Choose countdown or free play'),
+        t('🙈 Optional: start with an empty globe'),
+        t('💡 Alternate spellings and aliases accepted'),
+        t('🌐 All 196 countries included'),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -168,20 +169,20 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     <SetupCard
       mode="name-all"
       icon="🌍"
-      title="Name All Countries"
-      desc="Type every country in the world. Countries light up on the globe as you name them."
+      title={t('Name All Countries')}
+      desc={t('Type every country in the world. Countries light up on the globe as you name them.')}
       rules={[
-        '💡 Alternate spellings and aliases accepted',
-        '🙈 Empty globe: countries only appear once you name them',
-        '🏳️ Give up any time to reveal what you missed',
-        '🌐 All 196 countries included',
+        t('💡 Alternate spellings and aliases accepted'),
+        t('🙈 Empty globe: countries only appear once you name them'),
+        t('🏳️ Give up any time to reveal what you missed'),
+        t('🌐 All 196 countries included'),
       ]}
       options={[
         {
-          id: 'map', label: 'Globe', default: 'normal',
+          id: 'map', label: t('Globe'), default: 'normal',
           choices: [
-            { value: 'normal', label: '🗺️ Normal', hint: 'Every country is drawn — they light up as you name them' },
-            { value: 'blind',  label: '🙈 Empty',  hint: 'Blank globe — countries appear only once you name them' },
+            { value: 'normal', label: t('🗺️ Normal'), hint: t('Every country is drawn — they light up as you name them') },
+            { value: 'blind',  label: t('🙈 Empty'),  hint: t('Blank globe — countries appear only once you name them') },
           ],
         },
         TIMER_OPTION,
@@ -195,11 +196,11 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     <>
       {/* Header */}
       <div className="panel-header">
-        <h2>🌍 All Countries</h2>
+        <h2>{t('🌍 All Countries')}</h2>
         <p className="panel-subtitle">
           {blindMode
-            ? 'Globe starts empty — countries appear as you name them.'
-            : 'Type every country in the world. Countries light up as you find them.'}
+            ? t('Globe starts empty — countries appear as you name them.')
+            : t('Type every country in the world. Countries light up as you find them.')}
         </p>
       </div>
 
@@ -210,7 +211,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? '⏳ countdown' : '⏱ free play'}
+            {timerMode === 'countdown' ? t('⏳ countdown') : t('⏱ free play')}
           </span>
           <div className="na-timer-controls">
             {!gameOver && !expired && !allFound && (
@@ -224,7 +225,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       {/* Expired */}
       {expired && (
         <div className="na-expired">
-          ⌛ Time's up! You found <strong>{activeFound.length}</strong> / {total} countries.
+          {t('⌛ Time\'s up! You found')} <strong>{activeFound.length}</strong> / {total} {t('countries.')}
         </div>
       )}
 
@@ -234,7 +235,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
           <span className="na-count-num">{activeFound.length}</span>
           <span className="na-count-sep">/</span>
           <span className="na-count-total">{total}</span>
-          <span className="na-count-label">countries found</span>
+          <span className="na-count-label">{t('countries found')}</span>
         </div>
         <div className="na-progress-track">
           <div className="na-progress-fill" style={{ width: `${total ? (activeFound.length / total) * 100 : 0}%` }} />
@@ -246,11 +247,11 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
         <div className="win-banner">
           <span className="win-emoji">🎉</span>
           <div>
-            <strong>You got them all!</strong>
+            <strong>{t('You got them all!')}</strong>
             <p>
-              Every country named
+              {t('Every country named')}
               {timerMode === 'countup'   ? ` in ${formatTime(elapsed)}` : ''}
-              {timerMode === 'countdown' ? ` with ${formatTime(remaining)} to spare` : ''}
+              {timerMode === 'countdown' ? t(' with {v} to spare', { v: formatTime(remaining) }) : ''}
               !
             </p>
           </div>
@@ -265,7 +266,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder="Type a country name…"
+              placeholder={t('Type a country name…')}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
@@ -273,7 +274,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
               spellCheck={false}
               disabled={!running}
             />
-            <button className="guess-btn" onClick={() => tryGuess(input)} disabled={!running}>Go</button>
+            <button className="guess-btn" onClick={() => tryGuess(input)} disabled={!running}>{t('Go')}</button>
           </div>
         </div>
       )}
@@ -281,11 +282,11 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       {/* End-of-game summary */}
       {(gameOver || allFound) && (
         <GameSummary
-          noun="countries"
+          noun={t('countries')}
           total={total}
-          timeLabel={timerMode === 'countdown' ? `${formatTime(COUNTDOWN_SECONDS - remaining)} used` : formatTime(elapsed)}
-          found={activeFound.map(f => ({ label: f.name, icon: countryInfo?.[f.name]?.flag }))}
-          missed={missedCountries.map(n => ({ label: n, icon: countryInfo?.[n]?.flag }))}
+          timeLabel={timerMode === 'countdown' ? t('{v} used', { v: formatTime(COUNTDOWN_SECONDS - remaining) }) : formatTime(elapsed)}
+          found={activeFound.map(f => ({ label: cn(f.name), icon: countryInfo?.[f.name]?.flag }))}
+          missed={missedCountries.map(n => ({ label: cn(n), icon: countryInfo?.[n]?.flag }))}
         />
       )}
 
@@ -293,13 +294,13 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       {!(gameOver || allFound) && activeFound.length > 0 && (
         <div className="guesses-section">
           <h3 className="guesses-title">
-            Found <span className="guess-count">{activeFound.length}</span>
+            {t('Found')} <span className="guess-count">{activeFound.length}</span>
           </h3>
           <ul className="guess-list">
             {[...activeFound].reverse().map(f => (
               <li key={f.name} className="guess-item">
                 <span className="guess-swatch" style={{ background: '#39ff14' }} />
-                <span className="guess-name">{f.name}</span>
+                <span className="guess-name">{cn(f.name)}</span>
               </li>
             ))}
           </ul>
@@ -310,11 +311,11 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       <div className="panel-footer">
         {(gameOver || expired || allFound) ? (
           <>
-            <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>▶ Play again</button>
-            <button className="new-game-btn" onClick={handleReset}>⚙ Settings</button>
+            <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>{t('▶ Play again')}</button>
+            <button className="new-game-btn" onClick={handleReset}>{t('⚙ Settings')}</button>
           </>
         ) : (
-          <button className="new-game-btn" onClick={handleReset}>↩ Reset</button>
+          <button className="new-game-btn" onClick={handleReset}>{t('↩ Reset')}</button>
         )}
       </div>
     </>

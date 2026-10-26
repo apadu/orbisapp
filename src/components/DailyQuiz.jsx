@@ -3,6 +3,7 @@ import TableQuiz from './TableQuiz'
 import { dailyNumber, dailyQuizFor, msToNextDaily, dailyShareText, utcDayStartISO } from '../quizzes/daily'
 import { loadResults, subscribeResults, fetchLeaderboard } from '../utils/results'
 import { useAuth } from '../auth/AuthContext'
+import { t, locale, continentName } from '../i18n'
 
 function fmtClock(ms) {
   const s = Math.max(0, Math.floor(ms / 1000))
@@ -51,10 +52,10 @@ function DailyLeaderboard() {
   if (!backendEnabled) return null
   return (
     <div className="dq-lb">
-      <div className="dq-lb-head">🏆 Today's leaderboard</div>
-      {!user && <div className="dq-lb-hint"><button onClick={openAuth}>Sign in</button> to appear on it.</div>}
-      {rows === null ? <div className="dq-lb-empty">Loading…</div>
-        : rows.length === 0 ? <div className="dq-lb-empty">No scores yet today — be the first!</div>
+      <div className="dq-lb-head">{t('🏆 Today\'s leaderboard')}</div>
+      {!user && <div className="dq-lb-hint"><button onClick={openAuth}>{t('Sign in')}</button> {t('to appear on it.')}</div>}
+      {rows === null ? <div className="dq-lb-empty">{t('Loading…')}</div>
+        : rows.length === 0 ? <div className="dq-lb-empty">{t('No scores yet today — be the first!')}</div>
         : rows.slice(0, 10).map(r => (
           <div key={r.user_id} className={`dq-lb-row${r.user_id === user?.id ? ' me' : ''}`}>
             <span className="dq-lb-rank">{r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</span>
@@ -83,15 +84,15 @@ function ResultCard({ info, res, streak, onPractice }) {
       <div className="dq-result-top">
         <div className="dq-result-score">
           <span className="dq-big">{res.score}<small>/{res.total}</small></span>
-          <span className="dq-sub">{pct}% · ⏱ {fmtTime(res.durationMs)}{streak > 1 ? ` · 🔥 ${streak}-day streak` : ''}</span>
+          <span className="dq-sub">{pct}% · ⏱ {fmtTime(res.durationMs)}{streak > 1 ? t(' · 🔥 {streak}-day streak', { streak: streak }) : ''}</span>
         </div>
         <div className="dq-result-btns">
-          <button className="tq-btn tq-btn-primary" onClick={share}>{copied ? '✅ Copied!' : '📋 Share result'}</button>
-          <button className="tq-btn" onClick={onPractice}>Practice this quiz</button>
+          <button className="tq-btn tq-btn-primary" onClick={share}>{copied ? t('✅ Copied!') : t('📋 Share result')}</button>
+          <button className="tq-btn" onClick={onPractice}>{t('Practice this quiz')}</button>
         </div>
       </div>
       <pre className="dq-share-preview">{text}</pre>
-      <div className="dq-next">Next daily quiz in <strong>{fmtClock(left)}</strong></div>
+      <div className="dq-next">{t('Next daily quiz in')} <strong>{fmtClock(left)}</strong></div>
       <DailyLeaderboard />
     </div>
   )
@@ -115,7 +116,7 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
     ),
   }), [info, today, onPlayQuiz])
 
-  if (!info) return <div className="game-intro-wait">Loading today's quiz…</div>
+  if (!info) return <div className="game-intro-wait">{t('Loading today\'s quiz…')}</div>
 
   // Playing (or just finished — TableQuiz shows the table + our result card)
   if (playing || justFinished) {
@@ -128,7 +129,7 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
     return (
       <div className="dq">
         <DailyHeader info={info} streak={streak} />
-        <div className="dq-done-note">You've played today's quiz{previous.completed ? '' : ' (you left before the end)'}. Come back tomorrow for a new one!</div>
+        <div className="dq-done-note">{t('You\'ve played today\'s quiz')}{previous.completed ? '' : t(' (you left before the end)')}{t('. Come back tomorrow for a new one!')}</div>
         <ResultCard info={info} res={res} streak={streak} onPractice={() => onPlayQuiz(info.quizId)} />
       </div>
     )
@@ -140,15 +141,15 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
       <DailyHeader info={info} streak={streak} />
       <div className="dq-intro">
         <span className="dq-intro-icon">{info.icon}</span>
-        <h2>{info.title}{info.region !== 'World' && <span> · {info.region}</span>}</h2>
+        <h2>{info.title}{info.region !== 'World' && <span> · {continentName(info.region)}</span>}</h2>
         <p>{info.prompt}</p>
         <div className="dq-facts">
-          <span>📋 {info.size} answers</span>
-          <span>🎯 One attempt</span>
-          <span>🌍 Same quiz for everyone</span>
+          <span>📋 {info.size} {t('answers')}</span>
+          <span>{t('🎯 One attempt')}</span>
+          <span>{t('🌍 Same quiz for everyone')}</span>
         </div>
-        <button className="dq-start" onClick={() => setPlaying(true)}>▶ Start daily #{info.day}</button>
-        <span className="dq-warn">Leaving mid-game counts as your attempt.</span>
+        <button className="dq-start" onClick={() => setPlaying(true)}>{t('▶ Start daily #')}{info.day}</button>
+        <span className="dq-warn">{t('Leaving mid-game counts as your attempt.')}</span>
       </div>
     </div>
   )
@@ -157,8 +158,8 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
 function DailyHeader({ info, streak }) {
   return (
     <div className="dq-header">
-      <span className="dq-badge">📅 Daily #{info.day}</span>
-      <span className="dq-date">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+      <span className="dq-badge">{t('📅 Daily #')}{info.day}</span>
+      <span className="dq-date">{new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
       {streak > 0 && <span className="dq-streak">🔥 {streak}</span>}
     </div>
   )

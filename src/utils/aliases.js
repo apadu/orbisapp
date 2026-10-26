@@ -1,3 +1,4 @@
+import { COUNTRY_RO, RO_ALIASES } from '../i18n/countriesRo'
 // Alternate country names → canonical app name (after NAME_OVERRIDES)
 export const ALIASES = {
   'cape verde':                       'Cabo Verde',
@@ -62,7 +63,21 @@ export function resolveAlias(typed, countryNames) {
   // Alias match
   const canonical = ALIASES[q]
   if (canonical && countryNames.includes(canonical)) return canonical
+  // Romanian names (always accepted, with or without diacritics)
+  const ro = RO_LOOKUP[stripDiacritics(q)]
+  if (ro && countryNames.includes(ro)) return ro
   return null
+}
+
+const stripDiacritics = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[ș]/g, 's').replace(/[ț]/g, 't')
+// normalised Romanian name / alias → canonical name
+const RO_LOOKUP = {}
+for (const [en, ro] of Object.entries(COUNTRY_RO)) RO_LOOKUP[stripDiacritics(normalizeInput(ro))] = en
+for (const [alias, en] of Object.entries(RO_ALIASES)) RO_LOOKUP[alias] = en
+
+/** Every Romanian spelling accepted for a country (for engines with their own matching). */
+export function roAnswers(name) {
+  return Object.entries(RO_LOOKUP).filter(([, en]) => en === name).map(([k]) => k)
 }
 
 /** Levenshtein distance between two strings */
@@ -91,8 +106,9 @@ export function findClosestMatch(typed, countryNames) {
   let best = null, bestDist = Infinity
   for (const name of countryNames) {
     const n = normalizeInput(name)
-    // Also check aliases
-    const d = levenshtein(q, n)
+    // Also compare with the Romanian name
+    const ro = COUNTRY_RO[name] ? stripDiacritics(normalizeInput(COUNTRY_RO[name])) : null
+    const d = Math.min(levenshtein(q, n), ro ? levenshtein(stripDiacritics(q), ro) : Infinity)
     if (d < bestDist) { bestDist = d; best = name }
   }
 

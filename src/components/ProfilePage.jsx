@@ -7,6 +7,7 @@ import { DAILY_CHALLENGES, getChallengeProgress } from '../utils/dailyChallenges
 import KnowledgeMap from './profile/KnowledgeMap'
 import ActivityHeatmap from './profile/ActivityHeatmap'
 import Leaderboard from './profile/Leaderboard'
+import { t, cn, locale } from '../i18n'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function useResults() {
@@ -29,11 +30,11 @@ function fmtHours(ms) {
 
 function timeAgo(iso) {
   const s = (Date.now() - new Date(iso)) / 1000
-  if (s < 60) return 'just now'
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
-  if (s < 7 * 86400) return `${Math.floor(s / 86400)}d ago`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  if (s < 60) return t('just now')
+  if (s < 3600) return t('{v}m ago', { v: Math.floor(s / 60) })
+  if (s < 86400) return t('{v}h ago', { v: Math.floor(s / 3600) })
+  if (s < 7 * 86400) return t('{v}d ago', { v: Math.floor(s / 86400) })
+  return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }
 
 const pct = (x) => `${Math.round(x * 100)}%`
@@ -52,11 +53,11 @@ function Sparkline({ values }) {
 }
 
 const TABS = [
-  { id: 'overview',     label: '📈 Overview' },
-  { id: 'games',        label: '🎮 Games' },
-  { id: 'map',          label: '🗺️ Knowledge Map' },
-  { id: 'achievements', label: '🏅 Achievements' },
-  { id: 'leaderboards', label: '🏆 Leaderboards' },
+  { id: 'overview',     label: t('📈 Overview') },
+  { id: 'games',        label: t('🎮 Games') },
+  { id: 'map',          label: t('🗺️ Knowledge Map') },
+  { id: 'achievements', label: t('🏅 Achievements') },
+  { id: 'leaderboards', label: t('🏆 Leaderboards') },
 ]
 
 // ── Page ───────────────────────────────────────────────────────────────────
@@ -69,7 +70,7 @@ export default function ProfilePage({ countries = [], onBack, onPlay, dailyProgr
   const [nameInput, setNameInput] = useState('')
   const [nameError, setNameError] = useState(null)
 
-  const username = auth.profile?.username ?? 'Guest'
+  const username = auth.profile?.username ?? t('Guest')
   const joined = auth.profile?.created_at ?? results[results.length - 1]?.played_at
   const unlocked = p.achievements.filter(a => a.unlocked)
 
@@ -81,13 +82,13 @@ export default function ProfilePage({ countries = [], onBack, onPlay, dailyProgr
 
   return (
     <div className="profile-page pp">
-      <button className="profile-back" onClick={onBack}>← Back</button>
+      <button className="profile-back" onClick={onBack}>{t('← Back')}</button>
 
       {/* ── Guest banner ── */}
       {!auth.user && auth.backendEnabled && (
         <div className="pp-guest-banner">
-          <span>👋 You're playing as a guest. Your progress is saved on this device only.</span>
-          <button onClick={auth.openAuth}>Sign in to save it</button>
+          <span>{t('👋 You\'re playing as a guest. Your progress is saved on this device only.')}</span>
+          <button onClick={auth.openAuth}>{t('Sign in to save it')}</button>
         </div>
       )}
 
@@ -108,37 +109,37 @@ export default function ProfilePage({ countries = [], onBack, onPlay, dailyProgr
                 onChange={e => { setNameInput(e.target.value); setNameError(null) }}
                 onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditing(false) }}
               />
-              <button onClick={saveName}>Save</button>
-              <button className="pp-ghost" onClick={() => setEditing(false)}>Cancel</button>
+              <button onClick={saveName}>{t('Save')}</button>
+              <button className="pp-ghost" onClick={() => setEditing(false)}>{t('Cancel')}</button>
               {nameError && <span className="pp-name-error">{nameError}</span>}
             </div>
           ) : (
             <div className="pp-name-row">
               <h1>{username}</h1>
               {auth.user && (
-                <button className="pp-icon-btn" title="Change username" onClick={() => { setNameInput(username); setEditing(true) }}>✏️</button>
+                <button className="pp-icon-btn" title={t('Change username')} onClick={() => { setNameInput(username); setEditing(true) }}>✏️</button>
               )}
             </div>
           )}
           <div className="pp-meta">
             <span className="pp-title-chip">{levelTitle(p.level.level)}</span>
-            {joined && <span>Joined {new Date(joined).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>}
-            {auth.user && <button className="pp-link" onClick={auth.signOut}>Sign out</button>}
+            {joined && <span>{t('Joined')} {new Date(joined).toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</span>}
+            {auth.user && <button className="pp-link" onClick={auth.signOut}>{t('Sign out')}</button>}
           </div>
 
           <div className="pp-xp">
             <div className="pp-xp-bar"><div className="pp-xp-fill" style={{ width: `${p.level.pct}%` }} /></div>
             <span className="pp-xp-label">
-              Level {p.level.level} · {p.xp.toLocaleString()} XP · {(p.level.next - p.xp).toLocaleString()} to level {p.level.level + 1}
+              {t('Level')} {p.level.level} · {p.xp.toLocaleString()} {t('XP ·')} {(p.level.next - p.xp).toLocaleString()} {t('to level')} {p.level.level + 1}
             </span>
           </div>
         </div>
 
         <div className="pp-hero-stats">
-          <div className="pp-stat pp-stat-fire"><span className="pp-stat-num">🔥 {p.streak.current}</span><span className="pp-stat-label">day streak</span></div>
-          <div className="pp-stat"><span className="pp-stat-num">{p.totals.games.toLocaleString()}</span><span className="pp-stat-label">games</span></div>
-          <div className="pp-stat"><span className="pp-stat-num">{p.totals.answers ? pct(p.totals.accuracy) : '—'}</span><span className="pp-stat-label">accuracy</span></div>
-          <div className="pp-stat"><span className="pp-stat-num">{p.countriesKnown}</span><span className="pp-stat-label">countries known</span></div>
+          <div className="pp-stat pp-stat-fire"><span className="pp-stat-num">🔥 {p.streak.current}</span><span className="pp-stat-label">{t('day streak')}</span></div>
+          <div className="pp-stat"><span className="pp-stat-num">{p.totals.games.toLocaleString()}</span><span className="pp-stat-label">{t('games')}</span></div>
+          <div className="pp-stat"><span className="pp-stat-num">{p.totals.answers ? pct(p.totals.accuracy) : '—'}</span><span className="pp-stat-label">{t('accuracy')}</span></div>
+          <div className="pp-stat"><span className="pp-stat-num">{p.countriesKnown}</span><span className="pp-stat-label">{t('countries known')}</span></div>
         </div>
       </section>
 
@@ -177,16 +178,16 @@ function Overview({ p, results, onPlay, dailyProgress, dailyStreak, goTo }) {
       <div className="pp-card pp-span-2">
         <ActivityHeatmap heatmap={p.heatmap} />
         <div className="pp-mini-stats">
-          <span><strong>{p.activeDays}</strong> active days</span>
-          <span><strong>{p.streak.best}</strong> best streak</span>
-          <span><strong>{fmtHours(p.totals.timeMs)}</strong> played</span>
-          <span><strong>{p.totals.correct.toLocaleString()}</strong> correct answers</span>
+          <span><strong>{p.activeDays}</strong> {t('active days')}</span>
+          <span><strong>{p.streak.best}</strong> {t('best streak')}</span>
+          <span><strong>{fmtHours(p.totals.timeMs)}</strong> {t('played')}</span>
+          <span><strong>{p.totals.correct.toLocaleString()}</strong> {t('correct answers')}</span>
         </div>
       </div>
 
       <div className="pp-card">
         <div className="pp-card-head">
-          <h3>📅 Today's challenges</h3>
+          <h3>{t('📅 Today\'s challenges')}</h3>
           {dailyStreak > 0 && <span className="pp-chip">🔥 {dailyStreak}</span>}
         </div>
         <div className="profile-daily-list">
@@ -210,26 +211,26 @@ function Overview({ p, results, onPlay, dailyProgress, dailyStreak, goTo }) {
 
       <div className="pp-card">
         <div className="pp-card-head">
-          <h3>🏅 Almost there</h3>
-          <button className="pp-link" onClick={() => goTo('achievements')}>All achievements →</button>
+          <h3>{t('🏅 Almost there')}</h3>
+          <button className="pp-link" onClick={() => goTo('achievements')}>{t('All achievements →')}</button>
         </div>
         {nextAch.length === 0
-          ? <p className="pp-muted">You've unlocked everything. Legend.</p>
+          ? <p className="pp-muted">{t('You\'ve unlocked everything. Legend.')}</p>
           : nextAch.map(a => <AchievementRow key={a.id} a={a} />)}
       </div>
 
       <div className="pp-card">
         <div className="pp-card-head">
-          <h3>🎯 Needs practice</h3>
-          <button className="pp-link" onClick={() => goTo('map')}>Knowledge map →</button>
+          <h3>{t('🎯 Needs practice')}</h3>
+          <button className="pp-link" onClick={() => goTo('map')}>{t('Knowledge map →')}</button>
         </div>
         {p.weakest.length === 0
-          ? <p className="pp-muted">Play a few more games and your weakest countries will show up here.</p>
+          ? <p className="pp-muted">{t('Play a few more games and your weakest countries will show up here.')}</p>
           : (
             <div className="pp-weak-list">
               {p.weakest.slice(0, 8).map(c => (
                 <div key={c.name} className="pp-weak">
-                  <span>{c.name}</span>
+                  <span>{cn(c.name)}</span>
                   <span className="pp-weak-pct">{c.ok}/{c.total}</span>
                 </div>
               ))}
@@ -238,15 +239,15 @@ function Overview({ p, results, onPlay, dailyProgress, dailyStreak, goTo }) {
       </div>
 
       <div className="pp-card">
-        <div className="pp-card-head"><h3>🕑 Recent games</h3></div>
+        <div className="pp-card-head"><h3>{t('🕑 Recent games')}</h3></div>
         {results.length === 0
-          ? <p className="pp-muted">No games yet. Go play something!</p>
+          ? <p className="pp-muted">{t('No games yet. Go play something!')}</p>
           : (
             <div className="pp-recent">
               {results.slice(0, 8).map(r => {
                 const g = gameMeta(r.mode)
                 return (
-                  <button key={r.client_id} className="pp-recent-row" onClick={() => onPlay(r.mode)} title={`Play ${g.label}`}>
+                  <button key={r.client_id} className="pp-recent-row" onClick={() => onPlay(r.mode)} title={t('Play {label}', { label: g.label })}>
                     <span className="pp-recent-icon">{g.icon}</span>
                     <span className="pp-recent-name">{g.label}</span>
                     <span className="pp-recent-score">{g.cat === 'quiz' ? `${r.correct}/${r.total}` : r.score.toLocaleString()}</span>
@@ -279,16 +280,16 @@ function GamesTab({ p, onPlay }) {
                     <div className="pp-game-head">
                       <span className="pp-game-icon">{g.icon}</span>
                       <span className="pp-game-name">{g.label}</span>
-                      <button className="pp-play" onClick={() => onPlay(id)}>Play</button>
+                      <button className="pp-play" onClick={() => onPlay(id)}>{t('Play')}</button>
                     </div>
                     {m ? (
                       <>
                         <div className="pp-game-stats">
-                          <div><span className="pp-gs-num">{g.cat === 'quiz' ? (m.best ? `${m.best.correct}/${m.best.total}` : '—') : (m.best?.score.toLocaleString() ?? '—')}</span><span className="pp-gs-label">best</span></div>
-                          <div><span className="pp-gs-num">{pct(m.accuracy)}</span><span className="pp-gs-label">accuracy</span></div>
+                          <div><span className="pp-gs-num">{g.cat === 'quiz' ? (m.best ? `${m.best.correct}/${m.best.total}` : '—') : (m.best?.score.toLocaleString() ?? '—')}</span><span className="pp-gs-label">{t('best')}</span></div>
+                          <div><span className="pp-gs-num">{pct(m.accuracy)}</span><span className="pp-gs-label">{t('accuracy')}</span></div>
                           <div>
                             <span className="pp-gs-num">{g.timed ? fmtDuration(m.bestTime) : m.plays}</span>
-                            <span className="pp-gs-label">{g.timed ? 'best clear' : 'played'}</span>
+                            <span className="pp-gs-label">{g.timed ? t('best clear') : t('played')}</span>
                           </div>
                         </div>
                         <div className="pp-game-foot">
@@ -297,7 +298,7 @@ function GamesTab({ p, onPlay }) {
                         </div>
                       </>
                     ) : (
-                      <p className="pp-muted pp-game-empty">Not played yet</p>
+                      <p className="pp-muted pp-game-empty">{t('Not played yet')}</p>
                     )}
                   </div>
                 )
@@ -319,22 +320,22 @@ function MapTab({ p, countries }) {
     <div className="pp-map-tab">
       <div className="pp-card">
         <div className="pp-card-head">
-          <h3>Your world</h3>
-          <span className="pp-muted">{p.countriesKnown} known · {p.countriesMastered} mastered</span>
+          <h3>{t('Your world')}</h3>
+          <span className="pp-muted">{p.countriesKnown} {t('known ·')} {p.countriesMastered} {t('mastered')}</span>
         </div>
         <KnowledgeMap countries={countries} mastery={p.mastery} />
       </div>
       <div className="pp-map-lists">
         <div className="pp-card">
-          <h3>💪 Strongest</h3>
-          {strongest.length === 0 ? <p className="pp-muted">Not enough data yet.</p> : strongest.map(c => (
-            <div key={c.name} className="pp-weak"><span>{c.name}</span><span className="pp-strong-pct">{pct(c.pct)}</span></div>
+          <h3>{t('💪 Strongest')}</h3>
+          {strongest.length === 0 ? <p className="pp-muted">{t('Not enough data yet.')}</p> : strongest.map(c => (
+            <div key={c.name} className="pp-weak"><span>{cn(c.name)}</span><span className="pp-strong-pct">{pct(c.pct)}</span></div>
           ))}
         </div>
         <div className="pp-card">
-          <h3>🎯 Weakest</h3>
-          {p.weakest.length === 0 ? <p className="pp-muted">Nothing below 70% yet.</p> : p.weakest.slice(0, 8).map(c => (
-            <div key={c.name} className="pp-weak"><span>{c.name}</span><span className="pp-weak-pct">{pct(c.pct)}</span></div>
+          <h3>{t('🎯 Weakest')}</h3>
+          {p.weakest.length === 0 ? <p className="pp-muted">{t('Nothing below 70% yet.')}</p> : p.weakest.slice(0, 8).map(c => (
+            <div key={c.name} className="pp-weak"><span>{cn(c.name)}</span><span className="pp-weak-pct">{pct(c.pct)}</span></div>
           ))}
         </div>
       </div>

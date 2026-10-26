@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { geoNaturalEarth1, geoPath, geoArea } from 'd3-geo'
+import { t, cn } from '../../i18n'
 
 const W = 960
 const H = 500
@@ -67,19 +68,19 @@ export default function KnowledgeMap({ countries, mastery }) {
 
       {hover && (
         <div className="km-tooltip" style={{ left: hover.x + 14, top: hover.y + 14 }}>
-          <strong>{hover.name}</strong>
+          <strong>{cn(hover.name)}</strong>
           {stat
-            ? <span>{Math.round((stat.ok / stat.total) * 100)}% · {stat.ok}/{stat.total} correct</span>
-            : <span className="km-tip-muted">Not seen yet</span>}
+            ? <span>{Math.round((stat.ok / stat.total) * 100)}% · {stat.ok}/{stat.total} {t('correct')}</span>
+            : <span className="km-tip-muted">{t('Not seen yet')}</span>}
         </div>
       )}
 
       <div className="km-legend">
-        <span className="km-legend-label">Never right</span>
+        <span className="km-legend-label">{t('Never right')}</span>
         <span className="km-legend-bar" />
-        <span className="km-legend-label">Always right</span>
+        <span className="km-legend-label">{t('Always right')}</span>
         <span className="km-legend-sep" />
-        <span className="km-legend-swatch km-unplayed-swatch" /> <span className="km-legend-label">Not seen</span>
+        <span className="km-legend-swatch km-unplayed-swatch" /> <span className="km-legend-label">{t('Not seen')}</span>
       </div>
     </div>
   )

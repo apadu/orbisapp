@@ -4,6 +4,7 @@ import GameIntro from './GameIntro'
 import SetupCard, { TIMER_OPTION } from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
+import { t } from '../i18n'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -153,11 +154,11 @@ const HISTORY_ALIASES = {
 const ERAS = [
   {
     id:    'interwar',
-    label: 'Interwar Europe',
+    label: t('Interwar Europe'),
     year:  '1920',
     dataKey: 'history1920',
     url:   'https://cdn.jsdelivr.net/gh/aourednik/historical-basemaps@master/geojson/world_1920.geojson',
-    desc:  'Name every country in Europe between WW1 and WW2.',
+    desc:  t('Name every country in Europe between WW1 and WW2.'),
   },
   // Future eras:
   // { id: 'preww1', label: 'Pre-WW1 Europe', year: '1900', url: '...world_1900.geojson', desc: '...' },
@@ -376,13 +377,13 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
   if (!started) return (
     <GameIntro
       icon="🏛️"
-      title="History Maps"
-      desc="Name countries in Europe as they were in different historical eras."
+      title={t('History Maps')}
+      desc={t('Name countries in Europe as they were in different historical eras.')}
       rules={[
-        '🗺️ Country borders change across different eras',
-        '💡 Historical names and modern names both accepted',
-        '⏱ Choose countdown or free play',
-        '📜 Pick an era to begin',
+        t('🗺️ Country borders change across different eras'),
+        t('💡 Historical names and modern names both accepted'),
+        t('⏱ Choose countdown or free play'),
+        t('📜 Pick an era to begin'),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -392,15 +393,15 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
     <SetupCard
       mode="history-maps"
       icon="🏛️"
-      title="History Maps"
-      desc="Name countries in Europe as they were in different historical eras."
+      title={t('History Maps')}
+      desc={t('Name countries in Europe as they were in different historical eras.')}
       rules={[
-        '🗺️ Country borders change across different eras',
-        '💡 Historical names and modern names both accepted',
-        '🌍 Countries appear on the globe as you name them',
+        t('🗺️ Country borders change across different eras'),
+        t('💡 Historical names and modern names both accepted'),
+        t('🌍 Countries appear on the globe as you name them'),
       ]}
       options={[
-        { id: 'era', label: 'Era', choices: ERAS.map(e => ({ value: e.id, label: `${e.label} · ${e.year}`, hint: e.desc })) },
+        { id: 'era', label: t('Era'), choices: ERAS.map(e => ({ value: e.id, label: `${e.label} · ${e.year}`, hint: e.desc })) },
         TIMER_OPTION,
       ]}
       typeToStart
@@ -415,9 +416,9 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
   return (
     <>
       <div className="panel-header">
-        <h2>🗺️ History Maps</h2>
+        <h2>{t('🗺️ History Maps')}</h2>
         <p className="panel-subtitle">
-          {era ? era.desc : 'Pick a historical era and name every country in Europe.'}
+          {era ? era.desc : t('Pick a historical era and name every country in Europe.')}
         </p>
       </div>
 
@@ -426,15 +427,15 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
       {era && loadState === 'loading' && (
         <div className="history-loading">
           <div className="history-loading-spinner" />
-          <span>Loading {era.year} map…</span>
+          <span>{t('Loading')} {era.year} {t('map…')}</span>
         </div>
       )}
 
       {/* Error state */}
       {era && loadState === 'error' && (
         <div className="history-loading">
-          <span>⚠️ Could not load map data. Check your connection.</span>
-          <button className="new-game-btn" onClick={handleBackToEra} style={{ marginTop: 8 }}>Try Again</button>
+          <span>{t('⚠️ Could not load map data. Check your connection.')}</span>
+          <button className="new-game-btn" onClick={handleBackToEra} style={{ marginTop: 8 }}>{t('Try Again')}</button>
         </div>
       )}
 
@@ -446,7 +447,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? '⏳ countdown' : '⏱ count up'}
+            {timerMode === 'countdown' ? t('⏳ countdown') : t('⏱ count up')}
           </span>
           <div className="na-timer-controls">
             {!gameOver && !expired && !allFound && (
@@ -460,7 +461,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
       {/* Time's up */}
       {expired && (
         <div className="na-expired">
-          ⌛ Time's up! You found <strong>{found.length}</strong> / {total} countries.
+          {t('⌛ Time\'s up! You found')} <strong>{found.length}</strong> / {total} {t('countries.')}
         </div>
       )}
 
@@ -470,7 +471,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
           <span className="na-count-num">{found.length}</span>
           <span className="na-count-sep"> / </span>
           <span className="na-count-total">{total}</span>
-          <span className="na-count-label"> countries found</span>
+          <span className="na-count-label"> {t('countries found')}</span>
           <div className="na-progress-track">
             <div className="na-progress-fill" style={{ width: `${total ? (found.length / total) * 100 : 0}%` }} />
           </div>
@@ -482,11 +483,11 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
         <div className="win-banner">
           <span className="win-emoji">🎉</span>
           <div>
-            <strong>You got them all!</strong>
+            <strong>{t('You got them all!')}</strong>
             <p>
-              Every {era.label} country named
+              {t('Every')} {era.label} {t('country named')}
               {timerMode === 'countup'   ? ` in ${formatTime(elapsed)}` : ''}
-              {timerMode === 'countdown' ? ` with ${formatTime(remaining)} remaining` : ''}
+              {timerMode === 'countdown' ? t(' with {v} remaining', { v: formatTime(remaining) }) : ''}
               !
             </p>
           </div>
@@ -501,7 +502,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder={!running ? 'Game paused' : `Type a country name…`}
+              placeholder={!running ? t('Game paused') : t('Type a country name…')}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
@@ -509,7 +510,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
               spellCheck={false}
               disabled={!running}
             />
-            <button className="guess-btn" onClick={() => tryGuess(input)} disabled={!running}>Go</button>
+            <button className="guess-btn" onClick={() => tryGuess(input)} disabled={!running}>{t('Go')}</button>
           </div>
         </div>
       )}
@@ -517,9 +518,9 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
       {/* End-of-game summary */}
       {(gameOver || allFound) && (
         <GameSummary
-          noun="countries"
+          noun={t('countries')}
           total={total}
-          timeLabel={timerMode === 'countdown' ? `${formatTime(COUNTDOWN_SECONDS - remaining)} used` : formatTime(elapsed)}
+          timeLabel={timerMode === 'countdown' ? t('{v} used', { v: formatTime(COUNTDOWN_SECONDS - remaining) }) : formatTime(elapsed)}
           found={found.map(f => ({ label: f.properties.NAME }))}
           missed={sortedEuro.filter(f => !foundSet.has(f.properties.NAME)).map(f => ({ label: f.properties.NAME }))}
         />
@@ -528,7 +529,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
       {/* Found list (live, during play) */}
       {!(gameOver || allFound) && found.length > 0 && (
         <div className="guesses-section">
-          <h3 className="guesses-title">Found <span className="guess-count">{found.length}</span></h3>
+          <h3 className="guesses-title">{t('Found')} <span className="guess-count">{found.length}</span></h3>
           <ul className="guess-list">
             {[...found].reverse().map(f => (
               <li key={f.properties.NAME} className="guess-item">
@@ -543,11 +544,11 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
       <div className="panel-footer">
         {!timerMode ? null : (gameOver || expired || allFound) ? (
           <>
-            <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>▶ Play again</button>
-            <button className="new-game-btn" onClick={handleReset}>⚙ Settings</button>
+            <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>{t('▶ Play again')}</button>
+            <button className="new-game-btn" onClick={handleReset}>{t('⚙ Settings')}</button>
           </>
         ) : (
-          <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
+          <button className="new-game-btn" onClick={handleReset}>{t('🔄 Reset')}</button>
         )}
       </div>
     </>

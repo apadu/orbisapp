@@ -1,4 +1,5 @@
 import { todaySeed } from './daily'
+import { t } from '../i18n'
 
 // Deterministic today key: "YYYY-MM-DD"
 export function todayKey() {
@@ -14,8 +15,8 @@ export const DAILY_CHALLENGES = [
     id:     'mystery',
     mode:   'mystery',
     icon:   '🔍',
-    label:  'Mystery Country',
-    task:   'Solve today\'s mystery',
+    label:  t('Mystery Country'),
+    task:   t('Solve today\'s mystery'),
     type:   'boolean',
     target: 1,
   },
@@ -23,8 +24,8 @@ export const DAILY_CHALLENGES = [
     id:     'flags',
     mode:   'flag',
     icon:   '🚩',
-    label:  'Flags Quiz',
-    task:   'Identify 5 flags correctly',
+    label:  t('Flags Quiz'),
+    task:   t('Identify 5 flags correctly'),
     type:   'count',
     target: 5,
   },
@@ -32,8 +33,8 @@ export const DAILY_CHALLENGES = [
     id:     'countries',
     mode:   'name-all',
     icon:   '🌍',
-    label:  'Name All Countries',
-    task:   'Name 30 countries',
+    label:  t('Name All Countries'),
+    task:   t('Name 30 countries'),
     type:   'count',
     target: 30,
   },

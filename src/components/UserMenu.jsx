@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
 import { levelForXp, computeXp } from '../utils/profileData'
+import { t, lang, setLang, LANGS } from '../i18n'
 
 function useLevel() {
   const [results, setResults] = useState(loadResults)
@@ -35,13 +36,13 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
 
   return (
     <div className="um" ref={ref}>
-      <button className="um-level" onClick={onProfile} title={`${level.next - level.xp} XP to level ${level.level + 1}`}>
-        <span className="um-level-num">Lv {level.level}</span>
+      <button className="um-level" onClick={onProfile} title={t('{v} XP to level {v2}', { v: level.next - level.xp, v2: level.level + 1 })}>
+        <span className="um-level-num">{t('Lv')} {level.level}</span>
         <span className="um-level-bar"><span style={{ width: `${level.pct}%` }} /></span>
       </button>
 
       {!auth.user && auth.backendEnabled && (
-        <button className="um-signin" onClick={auth.openAuth}>Sign in</button>
+        <button className="um-signin" onClick={auth.openAuth}>{t('Sign in')}</button>
       )}
 
       <button className={`um-avatar${open ? ' open' : ''}`} onClick={() => setOpen(o => !o)} aria-haspopup="menu" aria-expanded={open}>
@@ -56,16 +57,23 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
         <div className="um-menu" role="menu">
           <div className="um-menu-head">
             <strong>{displayName}</strong>
-            <span>{auth.user ? auth.user.email : 'Playing as guest'}</span>
+            <span>{auth.user ? auth.user.email : t('Playing as guest')}</span>
           </div>
-          <button role="menuitem" onClick={item(onProfile)}>👤 Profile &amp; stats</button>
-          <button role="menuitem" onClick={item(onToggleSound)}>{soundEnabled ? '🔊 Sound on' : '🔇 Sound off'}</button>
-          <button role="menuitem" onClick={item(onToggleTheme)}>{lightMode ? '🌙 Dark mode' : '☀️ Light mode'}</button>
-          <a role="menuitem" href="https://forms.gle/hDpMyhns9PD7ghdBA" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>🐛 Report a bug</a>
+          <button role="menuitem" onClick={item(onProfile)}>{t('👤 Profile & stats')}</button>
+          <button role="menuitem" onClick={item(onToggleSound)}>{soundEnabled ? t('🔊 Sound on') : t('🔇 Sound off')}</button>
+          <button role="menuitem" onClick={item(onToggleTheme)}>{lightMode ? t('🌙 Dark mode') : t('☀️ Light mode')}</button>
+          <div className="um-lang" role="group" aria-label={t('Language')}>
+            {LANGS.map(l => (
+              <button key={l.id} className={lang === l.id ? 'active' : ''} onClick={() => { if (lang !== l.id) setLang(l.id) }}>
+                {l.flag} {l.id.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <a role="menuitem" href="https://forms.gle/hDpMyhns9PD7ghdBA" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>{t('🐛 Report a bug')}</a>
           <div className="um-sep" />
           {auth.user
-            ? <button role="menuitem" onClick={item(auth.signOut)}>↩ Sign out</button>
-            : auth.backendEnabled && <button role="menuitem" onClick={item(auth.openAuth)}>🔑 Sign in</button>}
+            ? <button role="menuitem" onClick={item(auth.signOut)}>{t('↩ Sign out')}</button>
+            : auth.backendEnabled && <button role="menuitem" onClick={item(auth.openAuth)}>{t('🔑 Sign in')}</button>}
         </div>
       )}
     </div>

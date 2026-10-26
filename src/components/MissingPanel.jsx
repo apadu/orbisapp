@@ -3,6 +3,7 @@ import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { resolveAlias } from '../utils/aliases'
+import { t, cn } from '../i18n'
 
 const TOTAL = 20
 const SECS  = 240   // 4 minutes
@@ -159,13 +160,13 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
       <SetupCard
         mode="missing"
         icon="🗺️"
-        title="Blind Map"
-        desc="20 countries vanish from the globe. Name them all before the clock runs out!"
+        title={t('Blind Map')}
+        desc={t('20 countries vanish from the globe. Name them all before the clock runs out!')}
         rules={[
-          '⏱ 4 minutes on the clock',
-          '🌍 Countries reappear as you find them',
-          '🔴 Missed ones revealed in red at the end',
-          '🔹 Really small countries are opted out',
+          t('⏱ 4 minutes on the clock'),
+          t('🌍 Countries reappear as you find them'),
+          t('🔴 Missed ones revealed in red at the end'),
+          t('🔹 Really small countries are opted out'),
         ]}
         typeToStart
         onStart={(_, typed) => { startGame(); if (typed) setInput(typed) }}
@@ -200,7 +201,7 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
             className={`missing-input ${flash ?? ''}`}
             value={input}
             onChange={handleInputChange}
-            placeholder="Type a country name…"
+            placeholder={t('Type a country name…')}
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
@@ -214,39 +215,39 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
         <div className="missing-done-banner">
           {found.length === TOTAL ? (
             <div className="missing-perfect-wrap">
-              <span className="missing-perfect">🎉 Perfect! All 20 found!</span>
-              <span className="missing-finish-time">Time: {fmt(finishTime)}</span>
+              <span className="missing-perfect">{t('🎉 Perfect! All 20 found!')}</span>
+              <span className="missing-finish-time">{t('Time:')} {fmt(finishTime)}</span>
               {isNewPB
-                ? <span className="missing-new-pb">🏆 New personal best!</span>
-                : pb !== null && <span className="missing-pb-ref">PB: {fmt(pb)}</span>
+                ? <span className="missing-new-pb">{t('🏆 New personal best!')}</span>
+                : pb !== null && <span className="missing-pb-ref">{t('PB:')} {fmt(pb)}</span>
               }
             </div>
           ) : (
-            <span className="missing-score">{found.length === 0 ? 'No countries found.' : `Found ${found.length} of 20`}</span>
+            <span className="missing-score">{found.length === 0 ? t('No countries found.') : t('Found {length} of 20', { length: found.length })}</span>
           )}
-          <button className="missing-start-btn" onClick={startGame}>Play Again</button>
+          <button className="missing-start-btn" onClick={startGame}>{t('Play Again')}</button>
         </div>
       )}
 
       {/* End-of-game summary */}
       {phase === 'done' && (
         <GameSummary
-          noun="countries"
+          noun={t('countries')}
           total={TOTAL}
           timeLabel={finishTime != null ? fmt(finishTime) : null}
-          found={found.map(n => ({ label: n, icon: countryInfo[n]?.flag }))}
-          missed={stillHidden.map(n => ({ label: n, icon: countryInfo[n]?.flag }))}
+          found={found.map(n => ({ label: cn(n), icon: countryInfo[n]?.flag }))}
+          missed={stillHidden.map(n => ({ label: cn(n), icon: countryInfo[n]?.flag }))}
         />
       )}
 
       {/* Found list (live, during play) */}
       {phase !== 'done' && found.length > 0 && (
         <div className="missing-list-block">
-          <div className="missing-list-header found-header">✓ Found ({found.length})</div>
+          <div className="missing-list-header found-header">{t('✓ Found (')}{found.length})</div>
           {[...found].reverse().map(name => (
             <div key={name} className="missing-list-item found-item">
               <span className="missing-item-flag">{countryInfo[name]?.flag ?? '🏳️'}</span>
-              <span className="missing-item-name">{name}</span>
+              <span className="missing-item-name">{cn(name)}</span>
             </div>
           ))}
         </div>

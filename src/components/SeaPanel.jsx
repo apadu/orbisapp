@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import GameIntro from './GameIntro'
+import { t } from '../i18n'
 
 /** Loose sea name matching — accepts partial names without "Sea", "Ocean", etc. */
 function normalizeSea(s) {
@@ -66,13 +67,13 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
   if (!started) return (
     <GameIntro
       icon="🌊"
-      title="Seas Quiz"
-      desc="A body of water is highlighted on the globe — name it."
+      title={t('Seas Quiz')}
+      desc={t('A body of water is highlighted on the globe — name it.')}
       rules={[
-        '🌍 Oceans, seas, gulfs, and bays are all fair game',
-        '↩ Skip to pass on any question',
-        '📈 Build a streak for a score multiplier',
-        '🗺️ Rotate the globe to get a better view',
+        t('🌍 Oceans, seas, gulfs, and bays are all fair game'),
+        t('↩ Skip to pass on any question'),
+        t('📈 Build a streak for a score multiplier'),
+        t('🗺️ Rotate the globe to get a better view'),
       ]}
       onStart={() => { setStarted(true); onGameStart?.() }}
     />
@@ -82,10 +83,10 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
     <>
       {/* Header */}
       <div className="panel-header">
-        <h2>🌊 Guess the Sea</h2>
+        <h2>{t('🌊 Guess the Sea')}</h2>
         <p className="panel-subtitle">
-          The highlighted body of water is shown on the globe.<br />
-          Type its name to score.
+          {t('The highlighted body of water is shown on the globe.')}<br />
+          {t('Type its name to score.')}
         </p>
       </div>
 
@@ -94,7 +95,7 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
         <span className="na-count-num">{score.correct}</span>
         <span className="na-count-sep"> / </span>
         <span className="na-count-total">{score.total}</span>
-        <span className="na-count-label"> correct</span>
+        <span className="na-count-label"> {t('correct')}</span>
         {score.total > 0 && (
           <div className="na-progress-track">
             <div
@@ -109,7 +110,7 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
       <div className="cap-question">
         {!current ? (
           <p style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '20px' }}>
-            All seas completed! 🎉
+            {t('All seas completed! 🎉')}
           </p>
         ) : answered ? (
           <div className="cap-reveal cap-skipped">
@@ -122,24 +123,24 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
                 ref={inputRef}
                 className="country-input"
                 type="text"
-                placeholder="Name this sea or ocean…"
+                placeholder={t('Name this sea or ocean…')}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
                 autoComplete="off"
                 spellCheck={false}
               />
-              <button className="guess-btn" onClick={submit}>Go</button>
+              <button className="guess-btn" onClick={submit}>{t('Go')}</button>
             </div>
           </div>
         )}
 
         <div className="cap-actions">
           {current && !answered && (
-            <button className="cap-skip-btn" onClick={skip}>Skip ⏭</button>
+            <button className="cap-skip-btn" onClick={skip}>{t('Skip ⏭')}</button>
           )}
           {current && (
-            <button className="cap-next-btn" onClick={onCorrect}>Next →</button>
+            <button className="cap-next-btn" onClick={onCorrect}>{t('Next →')}</button>
           )}
         </div>
       </div>
@@ -148,7 +149,7 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
       {history.length > 0 && (
         <div className="guesses-section">
           <h3 className="guesses-title">
-            History <span className="guess-count">{history.length}</span>
+            {t('History')} <span className="guess-count">{history.length}</span>
           </h3>
           <ul className="guess-list">
             {[...history].reverse().map((h, i) => (
@@ -165,7 +166,7 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
       )}
 
       <div className="panel-footer">
-        <button className="new-game-btn" onClick={onNewGame}>🔄 New Game</button>
+        <button className="new-game-btn" onClick={onNewGame}>{t('🔄 New Game')}</button>
       </div>
     </>
   )

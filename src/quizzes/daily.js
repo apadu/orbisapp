@@ -6,6 +6,7 @@
  * whole pool has been used, and every client computes the same schedule.
  */
 import { TABLE_QUIZZES, REGIONS } from './tableQuizzes'
+import { continentName } from '../i18n'
 
 export const DAILY_EPOCH = Date.UTC(2026, 9, 26)   // 26 Oct 2026 = Daily #1
 const DAY_MS = 86_400_000
@@ -83,7 +84,7 @@ export function dailyShareText({ day, title, region }, { score, total, durationM
   const where = typeof window !== 'undefined' ? (window.location?.origin ?? '') : ''
   return [
     `Orbis Daily #${day} 🌍`,
-    `${title}${region && region !== 'World' ? ` · ${region}` : ''}`,
+    `${title}${region && region !== 'World' ? ` · ${continentName(region)}` : ''}`,
     `${score}/${total} · ⏱ ${time}`,
     bar,
     where,

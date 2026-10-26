@@ -94,18 +94,13 @@ export function oceanGradient(ctx, H) {
 export const SHALLOW_OUTER = 'rgba(80, 185, 255, 0.35)'
 export const SHALLOW_INNER = 'rgba(130, 220, 255, 0.45)'
 
-function hash(str) {
-  let h = 2166136261
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) }
-  return ((h >>> 0) % 1000) / 1000
-}
-
-/** Rich green with a slight per-country tone shift so neighbours read apart. */
-export function landColor(name) {
-  const t = hash(name)
-  const hue = 128 + t * 22          // 128–150: yellow-green → emerald
-  const light = 41 + ((t * 7) % 1) * 9
-  return `hsl(${hue.toFixed(1)}, 62%, ${light.toFixed(1)}%)`
+/**
+ * One uniform land green for every country — a deeper forest tone, so guessed
+ * countries (neon #39ff14) and other highlights stand out clearly.
+ */
+export const LAND_COLOR = '#2b7a4b'
+export function landColor() {
+  return LAND_COLOR
 }
 
 /** Standard lights for the globes (brighter ambient — the texture is now in proper sRGB). */

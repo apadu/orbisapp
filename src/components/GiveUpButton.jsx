@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { t } from '../i18n'
 
 const ARM_MS = 3000
 
@@ -28,10 +29,10 @@ export default function GiveUpButton({ onConfirm, label = 'Give up', armedLabel 
       type="button"
       className={`giveup${armed ? ' armed' : ''}${compact ? ' compact' : ''} ${className}`}
       onClick={click}
-      title={armed ? 'Click again to give up' : 'Give up and reveal the answers'}
+      title={armed ? t('Click again to give up') : t('Give up and reveal the answers')}
     >
       <span className="giveup-icon" aria-hidden="true">🏳️</span>
-      <span className="giveup-label">{armed ? armedLabel : label}</span>
+      <span className="giveup-label">{armed ? t(armedLabel) : t(label)}</span>
       {armed && <span className="giveup-timer" style={{ animationDuration: `${ARM_MS}ms` }} />}
     </button>
   )

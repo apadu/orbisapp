@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { DAILY_CHALLENGES, getChallengeProgress } from '../utils/dailyChallenges'
+import { t, locale } from '../i18n'
 
 export default function StreakBadge({ streak, dailyProgress, onSelectMode }) {
   const [open, setOpen] = useState(false)
@@ -15,14 +16,14 @@ export default function StreakBadge({ streak, dailyProgress, onSelectMode }) {
 
   const allDone = DAILY_CHALLENGES.every(c => getChallengeProgress(c.id, dailyProgress).done)
 
-  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  const todayLabel = new Date().toLocaleDateString(locale, { weekday: 'long', month: 'short', day: 'numeric' })
 
   return (
     <div className="streak-badge-wrap" ref={ref}>
       <button
         className={`topbar-streak${allDone ? ' streak-all-done' : ''}`}
         onClick={() => setOpen(o => !o)}
-        title="Daily challenges"
+        title={t('Daily challenges')}
       >
         🔥 {streak > 0 ? streak : '0'}
       </button>
@@ -31,7 +32,7 @@ export default function StreakBadge({ streak, dailyProgress, onSelectMode }) {
         <div className="streak-popover">
           <div className="streak-pop-header">
             <span className="streak-pop-date">{todayLabel}</span>
-            {streak > 0 && <span className="streak-pop-streak">🔥 {streak} day streak</span>}
+            {streak > 0 && <span className="streak-pop-streak">🔥 {streak} {t('day streak')}</span>}
           </div>
 
           <div className="streak-pop-challenges">
@@ -62,7 +63,7 @@ export default function StreakBadge({ streak, dailyProgress, onSelectMode }) {
           </div>
 
           {allDone && (
-            <div className="streak-pop-complete">All done today! See you tomorrow 🌍</div>
+            <div className="streak-pop-complete">{t('All done today! See you tomorrow 🌍')}</div>
           )}
         </div>
       )}

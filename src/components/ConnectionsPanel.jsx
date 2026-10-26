@@ -3,6 +3,7 @@ import GameIntro from './GameIntro'
 import { CONNECTIONS_ROUNDS, DIFF_COLORS } from '../utils/connectionsData'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { startSession, trackAnswer, finishGame } from '../utils/results'
+import { t, cn } from '../i18n'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -113,13 +114,13 @@ export default function ConnectionsPanel() {
   if (!started) return (
     <GameIntro
       icon="🔗"
-      title="Country Connections"
-      desc="Group 16 countries into 4 categories of 4. Each category has a hidden connection."
+      title={t('Country Connections')}
+      desc={t('Group 16 countries into 4 categories of 4. Each category has a hidden connection.')}
       rules={[
-        '🟡 Yellow = easiest, 🟣 Purple = hardest',
-        '✅ Select 4 countries then press Submit',
-        '❌ You have unlimited guesses',
-        '💡 "One away!" means 3 of your 4 are correct',
+        t('🟡 Yellow = easiest, 🟣 Purple = hardest'),
+        t('✅ Select 4 countries then press Submit'),
+        t('❌ You have unlimited guesses'),
+        t('💡 "One away!" means 3 of your 4 are correct'),
       ]}
       onStart={() => { setStarted(true); startGame(0) }}
     />
@@ -128,12 +129,12 @@ export default function ConnectionsPanel() {
   if (done) {
     return (
       <>
-        <div className="panel-header"><h2>🔗 Country Connections</h2></div>
+        <div className="panel-header"><h2>{t('🔗 Country Connections')}</h2></div>
         <div className="quiz-done-wrap">
           <div className="quiz-done-icon">🎉</div>
-          <div className="quiz-done-title">Puzzle solved!</div>
+          <div className="quiz-done-title">{t('Puzzle solved!')}</div>
           <div className="quiz-done-score">
-            {mistakes === 0 ? 'Perfect — no mistakes!' : `${mistakes} mistake${mistakes !== 1 ? 's' : ''}`}
+            {mistakes === 0 ? t('Perfect — no mistakes!') : t('{mistakes} mistake{v}', { mistakes: mistakes, v: mistakes !== 1 ? 's' : '' })}
           </div>
           {/* Show all categories */}
           <div className="conn-results">
@@ -148,8 +149,8 @@ export default function ConnectionsPanel() {
             })}
           </div>
           <div className="conn-done-btns">
-            <button className="quiz-reset-btn" onClick={() => startGame(roundIdx)}>↺ Replay</button>
-            <button className="quiz-reset-btn" onClick={nextRound}>Next puzzle →</button>
+            <button className="quiz-reset-btn" onClick={() => startGame(roundIdx)}>{t('↺ Replay')}</button>
+            <button className="quiz-reset-btn" onClick={nextRound}>{t('Next puzzle →')}</button>
           </div>
         </div>
       </>
@@ -160,10 +161,10 @@ export default function ConnectionsPanel() {
     <>
       <div className="panel-header">
         <div className="quiz-header-row">
-          <h2>🔗 Country Connections</h2>
-          <span className="conn-round-label">Puzzle {(roundIdx % CONNECTIONS_ROUNDS.length) + 1}</span>
+          <h2>{t('🔗 Country Connections')}</h2>
+          <span className="conn-round-label">{t('Puzzle')} {(roundIdx % CONNECTIONS_ROUNDS.length) + 1}</span>
         </div>
-        <p className="panel-subtitle">Find four groups of four countries.</p>
+        <p className="panel-subtitle">{t('Find four groups of four countries.')}</p>
       </div>
 
       {/* Solved categories */}
@@ -187,7 +188,7 @@ export default function ConnectionsPanel() {
               className={`conn-tile ${isSel ? 'conn-tile-sel' : ''}`}
               onClick={() => toggleSelect(tile.country)}
             >
-              {tile.country}
+              {cn(tile.country)}
             </button>
           )
         })}
@@ -195,26 +196,26 @@ export default function ConnectionsPanel() {
 
       {/* Controls */}
       <div className="conn-controls">
-        {oneAway && <div className="conn-one-away">💡 One away!</div>}
+        {oneAway && <div className="conn-one-away">{t('💡 One away!')}</div>}
         <div className="conn-btn-row">
           <button
             className="conn-btn-deselect"
             onClick={() => { setSelected([]); setOneAway(false) }}
             disabled={selected.length === 0}
           >
-            Deselect all
+            {t('Deselect all')}
           </button>
           <button
             className="conn-btn-submit"
             onClick={submit}
             disabled={selected.length !== 4}
           >
-            Submit ({selected.length}/4)
+            {t('Submit (')}{selected.length}/4)
           </button>
         </div>
         <div className="conn-mistakes">
-          Mistakes: {mistakes}
-          {mistakes === 0 && <span className="conn-perfect-hint"> · Stay perfect!</span>}
+          {t('Mistakes:')} {mistakes}
+          {mistakes === 0 && <span className="conn-perfect-hint"> {t('· Stay perfect!')}</span>}
         </div>
       </div>
     </>

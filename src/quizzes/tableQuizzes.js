@@ -25,8 +25,9 @@ import { ENDONYMS } from '../utils/endonyms'
 import { EMOJI_CLUES } from '../utils/emojiClues'
 import { COUNTRY_FACTS } from '../utils/countryFacts'
 import { FLAG_COLORS } from '../utils/flagColors'
-import { ALIASES } from '../utils/aliases'
+import { ALIASES, roAnswers } from '../utils/aliases'
 import { LIST_QUIZZES } from './listQuizzes'
+import { t, cn, isRo, locale } from '../i18n'
 
 export const REGIONS = ['World', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania']
 
@@ -40,7 +41,10 @@ const aliasesByCountry = {}
 for (const [alias, canonical] of Object.entries(ALIASES)) {
   (aliasesByCountry[canonical] ??= []).push(alias)
 }
-const countryAnswers = (name) => [name, ...(aliasesByCountry[name] ?? [])]
+const countryAnswers = (name) => [name, ...(aliasesByCountry[name] ?? []), ...roAnswers(name)]
+
+// Word puzzles use the name in the current language
+const word = (n) => isRo ? cn(n) : n
 
 const inRegion = (name, region) => region === 'World' || COUNTRY_INFO[name]?.continent === region
 
@@ -65,7 +69,7 @@ function scramble(word, seed) {
 }
 
 const fmtPop = (m) => m >= 1000 ? `${(m / 1000).toFixed(2)} bn` : m >= 1 ? `${m.toFixed(1)} M` : `${Math.round(m * 1000)} k`
-const fmtArea = (km2) => `${Math.round(km2).toLocaleString('en-US')} km²`
+const fmtArea = (km2) => `${Math.round(km2).toLocaleString(locale)} km²`
 
 // Currency: accept the full name, the ISO code, and the last word when it's unambiguous
 const lastWordCount = {}
@@ -77,9 +81,9 @@ for (const c of Object.values(COUNTRY_CURRENCY)) {
 // ── Catalogue ──────────────────────────────────────────────────────────────
 export const TABLE_QUIZZES = {
   capital: {
-    title: 'Capitals', icon: '🏛️',
-    prompt: 'Type the capital of each country',
-    columns: { hint: 'Country', answer: 'Capital' },
+    title: t('Capitals'), icon: '🏛️',
+    prompt: t('Type the capital of each country'),
+    columns: { hint: t('Country'), answer: t('Capital') },
     build: ({ countries, region }) => countries
       .filter(n => CAPITALS[n] && inRegion(n, region))
       .sort()
@@ -87,9 +91,9 @@ export const TABLE_QUIZZES = {
   },
 
   'cap-to-country': {
-    title: 'Countries by Capital', icon: '🗺️',
-    prompt: 'Name the country for each capital',
-    columns: { hint: 'Capital', answer: 'Country' },
+    title: t('Countries by Capital'), icon: '🗺️',
+    prompt: t('Name the country for each capital'),
+    columns: { hint: t('Capital'), answer: t('Country') },
     build: ({ countries, region }) => countries
       .filter(n => CAPITALS[n] && inRegion(n, region))
       .sort((a, b) => CAPITALS[a][0].localeCompare(CAPITALS[b][0]))
@@ -97,17 +101,24 @@ export const TABLE_QUIZZES = {
   },
 
   flag: {
-    title: 'Flags', icon: '🚩', layout: 'grid',
-    prompt: 'Name the country for every flag',
-    columns: { hint: 'Flag', answer: 'Country' },
+    title: t('Flags'), icon: '🚩', layout: 'grid',
+    // One flag at a time: your answer only counts for the highlighted flag, so you
+    // can't just type every country you know. Random world selection, no regions.
+    focus: true, regions: false, sample: 30,
+    sizes: [
+      { value: '20', label: t('20 random'), hint: t('20 random flags from around the world') },
+      { value: '30', label: t('30 random'), hint: t('30 random flags from around the world') },
+    ],
+    prompt: t('Name the highlighted flag — Tab to skip, click any flag to jump to it'),
+    columns: { hint: t('Flag'), answer: t('Country') },
     build: ({ countries, region }) => seededShuffle(countries.filter(n => COUNTRY_INFO[n]?.flag && inRegion(n, region)), 11)
       .map(n => ({ id: n, country: n, hint: { type: 'flag', value: COUNTRY_INFO[n].flag }, answers: countryAnswers(n), display: n })),
   },
 
   currency: {
-    title: 'Currencies', icon: '💰',
-    prompt: 'Type the currency of each country (name or code)',
-    columns: { hint: 'Country', answer: 'Currency' },
+    title: t('Currencies'), icon: '💰',
+    prompt: t('Type the currency of each country (name or code)'),
+    columns: { hint: t('Country'), answer: t('Currency') },
     build: ({ countries, region }) => countries
       .filter(n => COUNTRY_CURRENCY[n] && inRegion(n, region))
       .sort()
@@ -121,9 +132,9 @@ export const TABLE_QUIZZES = {
   },
 
   language: {
-    title: 'Languages', icon: '🗣️',
-    prompt: 'Type the main official language of each country',
-    columns: { hint: 'Country', answer: 'Language' },
+    title: t('Languages'), icon: '🗣️',
+    prompt: t('Type the main official language of each country'),
+    columns: { hint: t('Country'), answer: t('Language') },
     build: ({ countries, region }) => countries
       .filter(n => COUNTRY_LANGUAGES[n]?.length && inRegion(n, region))
       .sort()
@@ -131,18 +142,18 @@ export const TABLE_QUIZZES = {
   },
 
   endonyms: {
-    title: 'Endonyms', icon: '🔠', sample: 30,
-    prompt: 'Name each country from what it calls itself',
-    columns: { hint: 'Endonym', answer: 'Country' },
+    title: t('Endonyms'), icon: '🔠', sample: 30,
+    prompt: t('Name each country from what it calls itself'),
+    columns: { hint: t('Endonym'), answer: t('Country') },
     build: ({ countries, region }) => ENDONYMS
       .filter(e => countries.includes(e.country) && inRegion(e.country, region))
       .map(e => ({ id: e.country, country: e.country, hint: { type: 'script', value: e.endonym, sub: e.roman }, answers: countryAnswers(e.country), display: e.country })),
   },
 
   'emoji-quiz': {
-    title: 'Country Emoji', icon: '🌍', sample: 30,
-    prompt: 'Name the country behind each emoji combo',
-    columns: { hint: 'Emojis', answer: 'Country' },
+    title: t('Country Emoji'), icon: '🌍', sample: 30,
+    prompt: t('Name the country behind each emoji combo'),
+    columns: { hint: t('Emojis'), answer: t('Country') },
     build: ({ countries, region }) => {
       const seen = new Set()
       return EMOJI_CLUES
@@ -152,25 +163,25 @@ export const TABLE_QUIZZES = {
   },
 
   'missing-vowels': {
-    title: 'Missing Vowels', icon: '🔡', sample: 30,
-    prompt: 'Only the consonants are left — name each country',
-    columns: { hint: 'Consonants', answer: 'Country' },
-    build: ({ countries, region }) => seededShuffle(countries.filter(n => !n.includes(' ') && n.length >= 4 && inRegion(n, region)), 5)
-      .map(n => ({ id: n, country: n, hint: { type: 'text', value: n.toUpperCase().replace(/[AEIOU]/g, ''), mono: true }, answers: [n], display: n })),
+    title: t('Missing Vowels'), icon: '🔡', sample: 30,
+    prompt: t('Only the consonants are left — name each country'),
+    columns: { hint: t('Consonants'), answer: t('Country') },
+    build: ({ countries, region }) => seededShuffle(countries.filter(n => !word(n).includes(' ') && word(n).length >= 4 && inRegion(n, region)), 5)
+      .map(n => ({ id: n, country: n, hint: { type: 'text', value: word(n).toUpperCase().replace(/[AEIOUĂÂÎ]/g, ''), mono: true }, answers: [n, word(n)], display: word(n) })),
   },
 
   scramble: {
-    title: 'Scramble', icon: '🔀', sample: 30,
-    prompt: 'Unscramble every country name',
-    columns: { hint: 'Scrambled', answer: 'Country' },
-    build: ({ countries, region }) => seededShuffle(countries.filter(n => !n.includes(' ') && n.length >= 5 && inRegion(n, region)), 3)
-      .map((n, i) => ({ id: n, country: n, hint: { type: 'text', value: scramble(n, i + 1), mono: true }, answers: [n], display: n })),
+    title: t('Scramble'), icon: '🔀', sample: 30,
+    prompt: t('Unscramble every country name'),
+    columns: { hint: t('Scrambled'), answer: t('Country') },
+    build: ({ countries, region }) => seededShuffle(countries.filter(n => !word(n).includes(' ') && word(n).length >= 5 && inRegion(n, region)), 3)
+      .map((n, i) => ({ id: n, country: n, hint: { type: 'text', value: scramble(word(n), i + 1), mono: true }, answers: [n, word(n)], display: word(n) })),
   },
 
   'country-fact': {
-    title: 'Country by Fact', icon: '📖', sample: 30,
-    prompt: 'Name the country each fact describes',
-    columns: { hint: 'Fact', answer: 'Country' },
+    title: t('Country by Fact'), icon: '📖', sample: 30,
+    prompt: t('Name the country each fact describes'),
+    columns: { hint: t('Fact'), answer: t('Country') },
     build: ({ countries, region }) => {
       const seen = new Set()
       return COUNTRY_FACTS
@@ -180,17 +191,17 @@ export const TABLE_QUIZZES = {
   },
 
   'flag-colors': {
-    title: 'Flag Colors', icon: '🎨', sample: 30,
-    prompt: 'Name the country from its flag\'s colour mix',
-    columns: { hint: 'Colours', answer: 'Country' },
+    title: t('Flag Colors'), icon: '🎨', sample: 30,
+    prompt: t('Name the country from its flag\'s colour mix'),
+    columns: { hint: t('Colours'), answer: t('Country') },
     build: ({ countries, region }) => seededShuffle(Object.keys(FLAG_COLORS).filter(n => countries.includes(n) && inRegion(n, region)), 9)
       .map(n => ({ id: n, country: n, hint: { type: 'colors', value: FLAG_COLORS[n] }, answers: countryAnswers(n), display: n })),
   },
 
   'pop-order': {
-    title: 'Most Populous Countries', icon: '📊', ranked: true, limit: 30,
-    prompt: 'Name the most populous countries — ranks and populations are your clues',
-    columns: { hint: '#', extra: 'Population', answer: 'Country' },
+    title: t('Most Populous Countries'), icon: '📊', ranked: true, limit: 30,
+    prompt: t('Name the most populous countries — ranks and populations are your clues'),
+    columns: { hint: '#', extra: t('Population'), answer: t('Country') },
     build: ({ countries, region }) => countries
       .filter(n => POPULATION[n] && inRegion(n, region))
       .sort((a, b) => POPULATION[b] - POPULATION[a])
@@ -199,9 +210,9 @@ export const TABLE_QUIZZES = {
   },
 
   area: {
-    title: 'Largest Countries', icon: '📏', ranked: true, limit: 30,
-    prompt: 'Name the largest countries by area',
-    columns: { hint: '#', extra: 'Area', answer: 'Country' },
+    title: t('Largest Countries'), icon: '📏', ranked: true, limit: 30,
+    prompt: t('Name the largest countries by area'),
+    columns: { hint: '#', extra: t('Area'), answer: t('Country') },
     build: ({ countries, region }) => countries
       .filter(n => COUNTRY_AREA[n] && inRegion(n, region))
       .sort((a, b) => COUNTRY_AREA[b] - COUNTRY_AREA[a])
@@ -213,6 +224,20 @@ export const TABLE_QUIZZES = {
 // Merge in the list / smaller-target quizzes (they get the shared helpers via ctx)
 for (const [id, q] of Object.entries(LIST_QUIZZES)) {
   TABLE_QUIZZES[id] = { ...q, build: (ctx) => q.build({ ...ctx, countryAnswers, inRegion, currency: COUNTRY_CURRENCY, languages: COUNTRY_LANGUAGES, area: COUNTRY_AREA, population: POPULATION, capitals: CAPITALS }) }
+}
+
+// Localise country names shown in the tables (keys / ids stay English)
+if (isRo) {
+  for (const q of Object.values(TABLE_QUIZZES)) {
+    const build = q.build
+    q.build = (ctx) => build(ctx).map(r => ({
+      ...r,
+      display: r.display === r.country ? cn(r.country) : r.display,
+      hint: r.hint?.type === 'text' && r.hint.value === r.country ? { ...r.hint, value: cn(r.country) }
+        : r.hint?.type === 'text' && ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania'].includes(r.hint.value) ? { ...r.hint, value: t(r.hint.value) }
+        : r.hint,
+    }))
+  }
 }
 
 export const TABLE_QUIZ_IDS = new Set(Object.keys(TABLE_QUIZZES))

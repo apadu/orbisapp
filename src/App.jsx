@@ -1,21 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import Globe, { FIXED_ELLIPSE_CENTERS, HULL_COUNTRY_NAMES } from './components/Globe'
+import Globe, { FIXED_ELLIPSE_CENTERS } from './components/Globe'
 import HydroGlobe from './components/HydroGlobe'
 import GamePanel from './components/GamePanel'
 import NameAllPanel from './components/NameAllPanel'
-import CapitalPanel from './components/CapitalPanel'
 import SeaPanel from './components/SeaPanel'
 import LocatePanel from './components/LocatePanel'
-import PopOrderPanel from './components/PopOrderPanel'
 import BorderChainPanel from './components/BorderChainPanel'
-import CapToCountryPanel from './components/CapToCountryPanel'
-import FlagPanel from './components/FlagPanel'
 import MissingPanel from './components/MissingPanel'
 import LearnPanel from './components/LearnPanel'
 import SpotlightPanel from './components/SpotlightPanel'
-import AreaPanel from './components/AreaPanel'
-import CurrencyPanel from './components/CurrencyPanel'
-import LanguagePanel from './components/LanguagePanel'
+import SilhouettePanel from './components/SilhouettePanel'
+import CapitalDropPanel from './components/CapitalDropPanel'
+import LineUpPanel from './components/LineUpPanel'
+import TimeZonesPanel from './components/TimeZonesPanel'
 import NameAllCapitalsPanel from './components/NameAllCapitalsPanel'
 import NameAllCurrenciesPanel from './components/NameAllCurrenciesPanel'
 import NameAllLanguagesPanel from './components/NameAllLanguagesPanel'
@@ -26,16 +23,9 @@ import RiverGlobe from './components/RiverGlobe'
 import HistoryMapPanel from './components/HistoryMapPanel'
 import HistoryGlobe from './components/HistoryGlobe'
 import NeighborPanel from './components/NeighborPanel'
-import { generateQuestion } from './utils/oddOneOut'
-import { setSoundEnabled, playCorrect, playWrong, playStreak, playWin } from './utils/sounds'
+import { setSoundEnabled, playCorrect, playWrong, playWin } from './utils/sounds'
 import StreakBadge from './components/StreakBadge'
-import ScramblePanel from './components/ScramblePanel'
-import MissingVowelsPanel from './components/MissingVowelsPanel'
-import FlagColorsPanel from './components/FlagColorsPanel'
 import ConnectionsPanel from './components/ConnectionsPanel'
-import EmojiQuizPanel from './components/EmojiQuizPanel'
-import CountryFactPanel from './components/CountryFactPanel'
-import EndonymPanel from './components/EndonymPanel'
 import QuizHub from './components/QuizHub'
 import { loadDailyProgress, markDailyComplete, incrementDailyCount, getDailyStreak } from './utils/dailyChallenges'
 import MountainGlobe from './components/MountainGlobe'
@@ -47,15 +37,9 @@ import { union } from '@turf/union'
 import { featureCollection } from '@turf/helpers'
 import { MOUNTAIN_RANGES } from './utils/mountainRanges'
 import { WORLD_RIVERS } from './utils/rivers'
-import { CAPITALS } from './utils/capitals'
 import { COUNTRY_INFO } from './utils/countryInfo'
 import { pickDailyCountry, todayLabel } from './utils/daily'
 import { getStats, recordWin, recordGiveUp } from './utils/stats'
-import {
-  loadProfile, recordMysteryResult, recordNameAllCompletion, recordContinentPB,
-  recordCapitalResult, recordLocateRound, recordC2cResult,
-  recordBorderChainRound, recordPopOrderRound, recordFlagRound,
-} from './utils/profileStats'
 import ProfilePage from './components/ProfilePage'
 import { useAuth } from './auth/AuthContext'
 import { startSession, trackAnswer, finishGame, flushSessions } from './utils/results'
@@ -65,6 +49,9 @@ import UserMenu from './components/UserMenu'
 import RulesHint from './components/RulesHint'
 import TableQuiz from './components/TableQuiz'
 import DailyQuiz from './components/DailyQuiz'
+import HigherLower from './components/HigherLower'
+import TrueFalse from './components/TrueFalse'
+import CountryWordle from './components/CountryWordle'
 import { TABLE_QUIZ_IDS, TABLE_QUIZZES } from './quizzes/tableQuizzes'
 import { clearRules } from './utils/rulesStore'
 import HomePage from './components/HomePage'
@@ -73,6 +60,7 @@ import CompletionModal from './components/CompletionModal'
 import './App.css'
 import { Analytics } from "@vercel/analytics/react"
 import { fetchData } from './utils/fetchData'
+import { t } from './i18n'
 
 // Map data: served from /data (see `npm run fetch-maps`), remote fallback in src/data/sources.js
 
@@ -133,7 +121,13 @@ const QUIZ_MODES = new Set([
   'missing-vowels', 'flag-colors', 'connections', 'emoji-quiz', 'country-fact', 'endonyms',
   ...TABLE_QUIZ_IDS,
   'daily-quiz',
+  'higher-lower', 'true-false', 'country-wordle',
 ])
+
+// Globe games that drive the globe through one generic "extras" object (see onGlobe)
+const EXTRA_GLOBE_MODES = new Set(['silhouette', 'capital-drop', 'line-up', 'time-zones'])
+const NO_EXTRAS = {}
+const EMPTY_LIST = []
 
 const QUIZ_LABELS = {
   scramble:         '🔤 Scramble',
@@ -151,44 +145,52 @@ const QUIZ_LABELS = {
   'emoji-quiz':     '🌍 Country Emoji',
   'country-fact':   '📖 Country by Fact',
   endonyms:         '🗺️ Endonyms',
+  'higher-lower':   '⚖️ Higher or Lower',
+  'true-false':     '✅ True or False',
+  'country-wordle': '🟩 Country Wordle',
 }
 
 const NAV_ITEMS = [
-  { section: 'Guess' },
-  { id: 'mystery',             icon: '🔍', label: 'Mystery Country' },
-  { id: 'locate',              icon: '📍', label: 'Pinpoint Country' },
-  { id: 'neighbor',            icon: '📌', label: 'Neighbors' },
-  { id: 'missing',             icon: '🗺️', label: 'Blind Map' },
-  { id: 'spotlight',           icon: '🔦', label: 'Solo Map' },
-  { section: 'Name All' },
-  { id: 'name-all',            icon: '🌍', label: 'Countries' },
-  { id: 'name-all-caps',       icon: '🏙️', label: 'Capitals' },
-  { id: 'name-all-currencies', icon: '💰', label: 'Currencies' },
-  { id: 'name-all-languages',  icon: '🗣️', label: 'Languages' },
-  { id: 'mountains',           icon: '⛰️', label: 'Mountain Ranges' },
-  { id: 'name-all-seas',       icon: '🌊', label: 'Seas' },
-  { id: 'name-all-rivers',     icon: '🏞️', label: 'Rivers' },
+  { section: t('Guess') },
+  { id: 'mystery',             icon: '🔍', label: t('Mystery Country') },
+  { id: 'locate',              icon: '📍', label: t('Pinpoint Country') },
+  { id: 'neighbor',            icon: '📌', label: t('Neighbors') },
+  { id: 'missing',             icon: '🗺️', label: t('Blind Map') },
+  { id: 'spotlight',           icon: '🔦', label: t('Solo Map') },
+  { section: t('Globe challenges') },
+  { id: 'silhouette',          icon: '🌀', label: t('Silhouette Spin') },
+  { id: 'capital-drop',        icon: '📍', label: t('Capital Drop') },
+  { id: 'line-up',             icon: '📐', label: t('Line Up') },
+  { id: 'time-zones',          icon: '🕰️', label: t('Time Zones') },
+  { section: t('Name All') },
+  { id: 'name-all',            icon: '🌍', label: t('Countries') },
+  { id: 'name-all-caps',       icon: '🏙️', label: t('Capitals') },
+  { id: 'name-all-currencies', icon: '💰', label: t('Currencies') },
+  { id: 'name-all-languages',  icon: '🗣️', label: t('Languages') },
+  { id: 'mountains',           icon: '⛰️', label: t('Mountain Ranges') },
+  { id: 'name-all-seas',       icon: '🌊', label: t('Seas') },
+  { id: 'name-all-rivers',     icon: '🏞️', label: t('Rivers') },
   // HIDDEN until ready — uncomment to bring History Maps back:
   // { id: 'history-maps',        icon: '🏛️', label: 'History' },
-  { section: 'Quiz' },
-  { id: 'scramble',            icon: '🔤', label: 'Scramble' },
-  { id: 'capital',             icon: '🏛️', label: 'Capitals Quiz' },
-  { id: 'seas',                icon: '🌊', label: 'Seas' },
-  { id: 'cap-to-country',      icon: '🗺️', label: 'Cap to Country' },
-  { id: 'flag',                icon: '🚩', label: 'Flags' },
-  { id: 'border-chain',        icon: '🔗', label: 'Borders' },
-  { id: 'pop-order',           icon: '📊', label: 'Population' },
-  { id: 'area',                icon: '📏', label: 'Bigger or Smaller' },
-  { id: 'currency',            icon: '💰', label: 'Currency Quiz' },
-  { id: 'language',            icon: '🗣️', label: 'Language Quiz' },
-  { id: 'missing-vowels',      icon: '🔡', label: 'Missing Vowels' },
-  { id: 'flag-colors',         icon: '🎨', label: 'Flag Colors' },
-  { id: 'connections',         icon: '🔗', label: 'Connections' },
-  { id: 'emoji-quiz',          icon: '🌍', label: 'Country Emoji' },
-  { id: 'country-fact',        icon: '📖', label: 'Country by Fact' },
-  { id: 'endonyms',            icon: '🗺️', label: 'Endonyms' },
-  { section: 'Explore' },
-  { id: 'learn',               icon: '🎓', label: 'Learn' },
+  { section: t('Quiz') },
+  { id: 'scramble',            icon: '🔤', label: t('Scramble') },
+  { id: 'capital',             icon: '🏛️', label: t('Capitals Quiz') },
+  { id: 'seas',                icon: '🌊', label: t('Seas') },
+  { id: 'cap-to-country',      icon: '🗺️', label: t('Cap to Country') },
+  { id: 'flag',                icon: '🚩', label: t('Flags') },
+  { id: 'border-chain',        icon: '🔗', label: t('Borders') },
+  { id: 'pop-order',           icon: '📊', label: t('Population') },
+  { id: 'area',                icon: '📏', label: t('Bigger or Smaller') },
+  { id: 'currency',            icon: '💰', label: t('Currency Quiz') },
+  { id: 'language',            icon: '🗣️', label: t('Language Quiz') },
+  { id: 'missing-vowels',      icon: '🔡', label: t('Missing Vowels') },
+  { id: 'flag-colors',         icon: '🎨', label: t('Flag Colors') },
+  { id: 'connections',         icon: '🔗', label: t('Connections') },
+  { id: 'emoji-quiz',          icon: '🌍', label: t('Country Emoji') },
+  { id: 'country-fact',        icon: '📖', label: t('Country by Fact') },
+  { id: 'endonyms',            icon: '🗺️', label: t('Endonyms') },
+  { section: t('Explore') },
+  { id: 'learn',               icon: '🎓', label: t('Learn') },
 ]
 
 export default function App() {
@@ -250,10 +252,8 @@ export default function App() {
   const [page,        setPage]        = useState('home') // 'home' | 'game' | 'quiz' | 'profile'
   const [drawerOpen,     setDrawerOpen]     = useState(false)
   const [completionStats,     setCompletionStats]     = useState(null)
-  const [scrambleHighlighted, setScrambleHighlighted] = useState(null)
-  const [profile, setProfile] = useState(() => loadProfile())
   const auth = useAuth()
-  const displayName = auth.profile?.username ?? (auth.user ? '…' : 'Guest')
+  const displayName = auth.profile?.username ?? (auth.user ? '…' : t('Guest'))
   const [prevPage, setPrevPage] = useState('home')
   const openProfile = () => { if (page !== 'profile') setPrevPage(page); setPage('profile') }
 
@@ -271,33 +271,17 @@ export default function App() {
   const [practiceMode,   setPracticeMode]  = useState(false)
   const [gaveUp,         setGaveUp]        = useState(false)
   const [flyToFeature,   setFlyToFeature]  = useState(null)
+  const [globeExtra,     setGlobeExtra]    = useState(NO_EXTRAS) // { guesses, highlighted, missed, soloMode, overlay, flyTo, onClick }
+  const onGlobe = useCallback((x) => setGlobeExtra(x ?? NO_EXTRAS), [])
 
   // ── Name All Countries state ─────────────────────────────────────────────
   const [found, setFound] = useState([]) // [{ name, feature }]
 
   // ── Capital Quiz state ───────────────────────────────────────────────────
-  const [capCurrent,  setCapCurrent]  = useState(null)   // current feature
-  const [capAnswered, setCapAnswered] = useState(false)   // answered/skipped this round
-  const [capHistory,  setCapHistory]  = useState([])      // [{country, capital, correct}]
-  const [capScore,    setCapScore]    = useState({ correct: 0, total: 0 })
-  const [capUsed,     setCapUsed]     = useState(new Set())
 
   // ── Cap-to-Country state ─────────────────────────────────────────────────
-  const [c2cCurrent,  setC2cCurrent]  = useState(null) // { country, capital }
-  const [c2cAnswered, setC2cAnswered] = useState(false)
-  const [c2cCorrect,  setC2cCorrect]  = useState(false)
-  const [c2cScore,    setC2cScore]    = useState({ correct: 0, total: 0 })
-  const [c2cHistory,  setC2cHistory]  = useState([])
-  const [c2cUsed,     setC2cUsed]     = useState(new Set())
 
   // ── Flag Quiz state ──────────────────────────────────────────────────────
-  const [flagCurrent,  setFlagCurrent]  = useState(null)
-  const [flagAnswered, setFlagAnswered] = useState(false)
-  const [flagCorrect,  setFlagCorrect]  = useState(false)
-  const [flagScore,    setFlagScore]    = useState({ correct: 0, total: 0, points: 0 })
-  const [flagHistory,  setFlagHistory]  = useState([])
-  const [flagUsed,     setFlagUsed]     = useState(new Set())
-  const [flagStreak,   setFlagStreak]   = useState(0)
 
   // ── Border Chain state ───────────────────────────────────────────────────
   const [bcStart,   setBcStart]   = useState(null)
@@ -306,9 +290,6 @@ export default function App() {
   const [bcHistory, setBcHistory] = useState([])
 
   // ── Population Order state ───────────────────────────────────────────────
-  const [popCountries,  setPopCountries]  = useState([]) // 3 features
-  const [popScore,      setPopScore]      = useState(0)
-  const [popHistory,    setPopHistory]    = useState([])
 
   // ── Locate It state ─────────────────────────────────────────────────────
   const [locateCurrent,  setLocateCurrent]  = useState(null)
@@ -371,20 +352,12 @@ export default function App() {
   const [neighborHistory, setNeighborHistory] = useState([])
 
   // ── Odd One Out state ────────────────────────────────────────────────────
-  const [oooQuestion,  setOooQuestion]  = useState(null)
-  const [oooAnswered,  setOooAnswered]  = useState(false)
-  const [oooChosen,    setOooChosen]    = useState(null)
-  const [oooScore,     setOooScore]     = useState(0)
-  const [oooStreak,    setOooStreak]    = useState(0)
-  const [oooHistory,   setOooHistory]   = useState([])
-  const [oooLastCat,   setOooLastCat]   = useState(null)
 
   // ── Learn mode state ─────────────────────────────────────────────────────
   const [learnSelected, setLearnSelected] = useState(null)   // feature
   const [learnHistory,  setLearnHistory]  = useState([])     // [name, ...]
 
   // ── Bigger/Smaller (Area) state ──────────────────────────────────────────
-  const [areaPair, setAreaPair] = useState([]) // [featureA, featureB]
 
   // ── Blind Map (Missing Countries) state ─────────────────────────────────
   const [missingHidden,      setMissingHidden]      = useState(new Set())
@@ -401,7 +374,6 @@ export default function App() {
   const [seaUsed,     setSeaUsed]     = useState(new Set())
 
   // ── Intro "game started" flags (suppress globe highlight until user clicks Start) ──
-  const [capGameStarted,      setCapGameStarted]      = useState(false)
   const [seaGameStarted,      setSeaGameStarted]      = useState(false)
   const [neighborGameStarted, setNeighborGameStarted] = useState(false)
   const [seaStatus,   setSeaStatus]   = useState(null) // null | 'correct' | 'skipped'
@@ -444,12 +416,11 @@ export default function App() {
         setGameCountries(game)
         setAdjacency(computeAdjacency(features))
         pickMystery(game)
-        setCapCurrent(pickNextCapital(new Set(), game))
         setLoading(false)
       })
       .catch(e => {
         console.error(e)
-        setError('Could not load country data. Check your internet connection.')
+        setError(t('Could not load country data. Check your internet connection.'))
         setLoading(false)
       })
   }, [])
@@ -490,12 +461,6 @@ export default function App() {
     }
   }
 
-  // ── Capital Quiz: pick next country ─────────────────────────────────────
-  const pickNextCapital = useCallback((used, pool) => {
-    const eligible = pool.filter(f => CAPITALS[f.properties.NAME] && !used.has(f.properties.NAME))
-    if (!eligible.length) return null
-    return eligible[Math.floor(Math.random() * eligible.length)]
-  }, [])
 
   // ── Sea Quiz: pick next sea ──────────────────────────────────────────────
   function pickNextSea(used, pool) {
@@ -553,60 +518,6 @@ export default function App() {
     setSeaCurrent(pickNextSea(fresh))
   }, [seas])
 
-  // ── Switch mode — reset both games ───────────────────────────────────────
-  // ── Cap-to-Country handlers ──────────────────────────────────────────────
-  const pickNextC2c = useCallback((used, pool) => {
-    const eligible = pool.filter(f => CAPITALS[f.properties.NAME] && !used.has(f.properties.NAME))
-    if (!eligible.length) return null
-    const f = eligible[Math.floor(Math.random() * eligible.length)]
-    return { country: f.properties.NAME, capital: CAPITALS[f.properties.NAME][0] }
-  }, [])
-
-  const handleC2cGuess = useCallback((guessed) => {
-    if (!c2cCurrent || c2cAnswered) return
-    const isCorrect = guessed === c2cCurrent.country
-    const newStreak = isCorrect ? (c2cScore.streak ?? 0) + 1 : 0
-    setC2cCorrect(isCorrect)
-    setC2cAnswered(true)
-    setC2cScore(s => ({ correct: s.correct + (isCorrect ? 1 : 0), total: s.total + 1, streak: newStreak }))
-    setC2cHistory(h => [...h, { capital: c2cCurrent.capital, country: c2cCurrent.country, correct: isCorrect }])
-    setProfile(recordC2cResult(isCorrect, newStreak))
-    trackAnswer('cap-to-country', c2cCurrent.country, isCorrect, isCorrect ? 10 : 0)
-    if (isCorrect) {
-      const f = gameCountries.find(c => c.properties.NAME === c2cCurrent.country)
-      if (f) setFlyToFeature({ ...f, _ts: Date.now() })
-      if (newStreak >= 3) playStreak(); else playCorrect()
-    } else {
-      playWrong()
-    }
-  }, [c2cCurrent, c2cAnswered, c2cScore, gameCountries])
-
-  const handleC2cSkip = useCallback(() => {
-    if (!c2cCurrent || c2cAnswered) return
-    setC2cCorrect(false)
-    setC2cAnswered(true)
-    setC2cScore(s => ({ ...s, total: s.total + 1 }))
-    setC2cHistory(h => [...h, { capital: c2cCurrent.capital, country: c2cCurrent.country, correct: false }])
-    trackAnswer('cap-to-country', c2cCurrent.country, false)
-    playWrong()
-  }, [c2cCurrent, c2cAnswered])
-
-  const handleC2cNext = useCallback(() => {
-    const newUsed = new Set(c2cUsed).add(c2cCurrent?.country)
-    // Reset used if all exhausted
-    const eligible = gameCountries.filter(f => CAPITALS[f.properties.NAME] && !newUsed.has(f.properties.NAME))
-    const finalUsed = eligible.length ? newUsed : new Set()
-    setC2cUsed(finalUsed)
-    setC2cCurrent(pickNextC2c(finalUsed, gameCountries))
-    setC2cAnswered(false)
-    setC2cCorrect(false)
-  }, [c2cCurrent, c2cUsed, gameCountries, pickNextC2c])
-
-  useEffect(() => {
-    if (mode === 'cap-to-country' && gameCountries.length > 0 && !c2cCurrent) {
-      setC2cCurrent(pickNextC2c(new Set(), gameCountries))
-    }
-  }, [mode, gameCountries, c2cCurrent, pickNextC2c])
 
   // ── Fly to sea when it changes ───────────────────────────────────────────
   useEffect(() => {
@@ -615,75 +526,6 @@ export default function App() {
     }
   }, [seaCurrent, mode])
 
-  // ── Flag Quiz handlers ───────────────────────────────────────────────────
-  const calcFlagPoints = (streak) => {
-    if (streak <= 1) return 100
-    if (streak === 2) return 150
-    if (streak === 3) return 200
-    if (streak === 4) return 300
-    return 400
-  }
-
-  const pickNextFlag = useCallback((used, pool) => {
-    const eligible = pool.filter(f => {
-      const name = f.properties.NAME
-      return COUNTRY_INFO[name]?.flag && !used.has(name)
-    })
-    const src = eligible.length ? eligible : pool.filter(f => COUNTRY_INFO[f.properties.NAME]?.flag)
-    if (!src.length) return null
-    const f = src[Math.floor(Math.random() * src.length)]
-    return { name: f.properties.NAME, flag: COUNTRY_INFO[f.properties.NAME].flag }
-  }, [])
-
-  const handleFlagGuess = useCallback((guessed) => {
-    if (!flagCurrent || flagAnswered) return
-    const isCorrect = guessed === flagCurrent.name
-    const newStreak = isCorrect ? flagStreak + 1 : 0
-    const pts = isCorrect ? calcFlagPoints(newStreak) : 0
-    setFlagCorrect(isCorrect)
-    setFlagAnswered(true)
-    setFlagStreak(newStreak)
-    setFlagScore(s => ({
-      correct: s.correct + (isCorrect ? 1 : 0),
-      total: s.total + 1,
-      points: s.points + pts,
-    }))
-    setFlagHistory(h => [...h, { name: flagCurrent.name, flag: flagCurrent.flag, correct: isCorrect, pts }])
-    setProfile(recordFlagRound(isCorrect, newStreak, pts))
-    trackAnswer('flag', flagCurrent.name, isCorrect, isCorrect ? 10 : 0)
-    if (isCorrect) {
-      if (newStreak >= 3) playStreak(); else playCorrect()
-      incrementDailyCount('flags')
-      refreshDaily()
-    } else playWrong()
-  }, [flagCurrent, flagAnswered, flagStreak])
-
-  const handleFlagSkip = useCallback(() => {
-    if (!flagCurrent || flagAnswered) return
-    setFlagCorrect(false)
-    setFlagAnswered(true)
-    setFlagStreak(0)
-    setFlagScore(s => ({ ...s, total: s.total + 1 }))
-    setFlagHistory(h => [...h, { name: flagCurrent.name, flag: flagCurrent.flag, correct: false, pts: 0 }])
-    trackAnswer('flag', flagCurrent.name, false)
-    playWrong()
-  }, [flagCurrent, flagAnswered])
-
-  const handleFlagNext = useCallback(() => {
-    const newUsed = new Set(flagUsed).add(flagCurrent?.name)
-    const eligible = gameCountries.filter(f => COUNTRY_INFO[f.properties.NAME]?.flag && !newUsed.has(f.properties.NAME))
-    const finalUsed = eligible.length ? newUsed : new Set()
-    setFlagUsed(finalUsed)
-    setFlagCurrent(pickNextFlag(finalUsed, gameCountries))
-    setFlagAnswered(false)
-    setFlagCorrect(false)
-  }, [flagCurrent, flagUsed, gameCountries, pickNextFlag])
-
-  useEffect(() => {
-    if (mode === 'flag' && gameCountries.length > 0 && !flagCurrent) {
-      setFlagCurrent(pickNextFlag(new Set(), gameCountries))
-    }
-  }, [mode, gameCountries, flagCurrent, pickNextFlag])
 
   // ── Border Chain handlers ────────────────────────────────────────────────
   const pickBcPair = useCallback(() => {
@@ -738,7 +580,6 @@ export default function App() {
   const handleBcWin = useCallback((pts, chain, optimal) => {
     setBcScore(s => s + pts)
     setBcHistory(h => [...h, { pts, chain, optimal }])
-    setProfile(recordBorderChainRound(pts))
     trackAnswer('border-chain', null, true, pts, chain?.join('>'))
   }, [])
 
@@ -774,57 +615,15 @@ export default function App() {
     setFlyToFeature(midFeature)
   }, [bcStart, bcEnd])
 
-  // ── Population Order handlers ────────────────────────────────────────────
-  const pickPopCountries = useCallback((exclude = []) => {
-    const pool = gameCountries.filter(f => !exclude.includes(f))
-    const picks = []
-    while (picks.length < 3 && pool.length > picks.length) {
-      const idx = Math.floor(Math.random() * pool.length)
-      if (!picks.includes(pool[idx])) picks.push(pool[idx])
-    }
-    return picks
-  }, [gameCountries])
-
-  const handlePopScore = useCallback((pts, names, correctOrder) => {
-    setPopScore(s => s + pts)
-    setPopHistory(h => [...h, { pts, names, correctOrder }])
-    setProfile(recordPopOrderRound(pts))
-    trackAnswer('pop-order', null, pts >= 1000, pts, names?.join('|'))
-    if (pts >= 1000) playWin()
-    else if (pts > 0) playCorrect()
-    else playWrong()
-  }, [])
-
-  const handlePopNext = useCallback(() => {
-    setPopCountries(pickPopCountries())
-  }, [pickPopCountries])
-
-  useEffect(() => {
-    if (mode === 'pop-order' && gameCountries.length > 0 && popCountries.length === 0) {
-      setPopCountries(pickPopCountries())
-    }
-  }, [mode, gameCountries, popCountries, pickPopCountries])
 
   const switchMode = useCallback((m) => {
     clearRules()
+    setGlobeExtra(NO_EXTRAS)
     setMode(m)
     setMysteryGuesses([])
     setGameWon(false)
     setFound([])
-    setCapHistory([])
-    setCapScore({ correct: 0, total: 0 })
-    setCapUsed(new Set())
-    setCapAnswered(false)
     if (m === 'mystery') pickMystery(gameCountries)
-    if (m === 'capital') setCapCurrent(pickNextCapital(new Set(), gameCountries))
-    if (m === 'cap-to-country') {
-      setC2cCurrent(null)
-      setC2cAnswered(false)
-      setC2cCorrect(false)
-      setC2cScore({ correct: 0, total: 0 })
-      setC2cHistory([])
-      setC2cUsed(new Set())
-    }
     if (m === 'border-chain') {
       setBcStart(null)
       setBcEnd(null)
@@ -832,9 +631,6 @@ export default function App() {
       setBcHistory([])
     }
     if (m === 'pop-order') {
-      setPopCountries([])
-      setPopScore(0)
-      setPopHistory([])
     }
     if (m === 'locate') {
       setLocateCurrent(null)
@@ -849,13 +645,6 @@ export default function App() {
       setLocateExpired(false)
     }
     if (m === 'flag') {
-      setFlagCurrent(null)
-      setFlagAnswered(false)
-      setFlagCorrect(false)
-      setFlagScore({ correct: 0, total: 0, points: 0 })
-      setFlagHistory([])
-      setFlagUsed(new Set())
-      setFlagStreak(0)
     }
     if (m !== 'missing') {
       setMissingHidden(new Set())
@@ -903,25 +692,12 @@ export default function App() {
       setNeighborHistory([])
       setNeighborGameStarted(false)
     }
-    if (m !== 'capital') setCapGameStarted(false)
     if (m !== 'seas')    setSeaGameStarted(false)
-    if (m !== 'ooo') {
-      setOooQuestion(null)
-      setOooAnswered(false)
-      setOooChosen(null)
-      setOooScore(0)
-      setOooStreak(0)
-      setOooHistory([])
-      setOooLastCat(null)
-    }
     if (m !== 'learn') {
       setLearnSelected(null)
       setLearnHistory([])
     }
-    if (m !== 'area') {
-      setAreaPair([])
-    }
-  }, [gameCountries, pickNextCapital])
+  }, [gameCountries])
 
   // ── Mystery: handle a guess ──────────────────────────────────────────────
   const handleMysteryGuess = useCallback((feature) => {
@@ -940,7 +716,6 @@ export default function App() {
         markDailyComplete('mystery')
         refreshDaily()
       }
-      setProfile(recordMysteryResult(true))
       const guesses = mysteryGuesses.length + 1
       startSession('mystery')
       trackAnswer('mystery', name, true, Math.max(100, 1100 - guesses * 100))
@@ -990,46 +765,8 @@ export default function App() {
   }, [])
 
   // ── Capital Quiz handlers ────────────────────────────────────────────────
-  const handleCapCorrect = useCallback(() => {
-    if (!capCurrent) return
-    const name = capCurrent.properties.NAME
-    const cap  = CAPITALS[name]?.[0]
 
-    if (!capAnswered) {
-      const newStreak = (capScore.streak ?? 0) + 1
-      setCapScore(s => ({ correct: s.correct + 1, total: s.total + 1, streak: newStreak }))
-      setCapHistory(h => [...h, { country: name, capital: cap, correct: true }])
-      setProfile(recordCapitalResult(true, newStreak))
-      trackAnswer('capital', name, true, 10)
-      if (newStreak >= 3) playStreak(); else playCorrect()
-    }
 
-    const newUsed = new Set(capUsed).add(name)
-    setCapUsed(newUsed)
-    setCapAnswered(false)
-    setCapCurrent(pickNextCapital(newUsed, countries))
-  }, [capCurrent, capAnswered, capUsed, countries, pickNextCapital])
-
-  const handleCapSkip = useCallback(() => {
-    if (!capCurrent || capAnswered) return
-    const name = capCurrent.properties.NAME
-    const cap  = CAPITALS[name]?.[0]
-    setCapScore(s => ({ ...s, total: s.total + 1 }))
-    setCapHistory(h => [...h, { country: name, capital: cap, correct: false }])
-    setCapAnswered(true)
-    trackAnswer('capital', name, false)
-    playWrong()
-  }, [capCurrent, capAnswered])
-
-  const handleCapNewGame = useCallback(() => {
-    startSession('capital')
-    const fresh = new Set()
-    setCapUsed(fresh)
-    setCapScore({ correct: 0, total: 0 })
-    setCapHistory([])
-    setCapAnswered(false)
-    setCapCurrent(pickNextCapital(fresh, gameCountries))
-  }, [gameCountries, pickNextCapital])
 
   // ── Learn mode handler ──────────────────────────────────────────────────
   const handleLearnClick = useCallback((lon, lat) => {
@@ -1151,7 +888,6 @@ export default function App() {
     setLocateGuessed(true)
     setLocateScore(s => s + pts)
     setLocateHistory(h => [...h, { name: locateCurrent.properties.NAME, km, pts, isHit }])
-    setProfile(recordLocateRound(pts))
     trackAnswer('locate', locateCurrent.properties.NAME, isHit, pts)
 
     // Sudden death: score < 950 → game over after a brief pause to show the result
@@ -1276,44 +1012,6 @@ export default function App() {
     }
   }, [neighborTarget, mode])
 
-  // ── Odd One Out handlers ─────────────────────────────────────────────────
-  const pickOooQuestion = useCallback((lastCat = null) => {
-    const q = generateQuestion(gameCountries, lastCat)
-    setOooQuestion(q)
-    setOooAnswered(false)
-    setOooChosen(null)
-    if (q) setOooLastCat(q.category)
-  }, [gameCountries])
-
-  const handleOooGuess = useCallback((index) => {
-    if (oooAnswered || !oooQuestion) return
-    const correct = index === oooQuestion.oddIndex
-    const streakMult = [1, 1, 1.5, 2, 3, 4]
-    const newStreak = correct ? oooStreak + 1 : 0
-    const mult = streakMult[Math.min(oooStreak, streakMult.length - 1)]
-    const pts = correct ? Math.round(100 * mult) : 0
-    setOooChosen(index)
-    setOooAnswered(true)
-    setOooStreak(newStreak)
-    if (pts) setOooScore(s => s + pts)
-    trackAnswer('ooo', null, correct, correct ? 10 : 0, oooQuestion.options[oooQuestion.oddIndex].name)
-    setOooHistory(h => [...h, {
-      odd: oooQuestion.options[oooQuestion.oddIndex].name,
-      correct,
-      pts,
-    }])
-  }, [oooAnswered, oooQuestion, oooStreak])
-
-  const handleOooNext = useCallback(() => {
-    pickOooQuestion(oooLastCat)
-  }, [pickOooQuestion, oooLastCat])
-
-  // Auto-start OOO
-  useEffect(() => {
-    if (mode === 'ooo' && gameCountries.length > 0 && !oooQuestion) {
-      pickOooQuestion(null)
-    }
-  }, [mode, gameCountries, oooQuestion, pickOooQuestion])
 
   const gameCountryNames = useMemo(() => gameCountries.map(f => f.properties.NAME), [gameCountries])
   const playQuizFromDaily = useCallback((id) => switchMode(id), [switchMode])
@@ -1388,53 +1086,42 @@ export default function App() {
       ? found.map(f => ({ name: f.name, color: '#39ff14', feature: f.feature }))
       : mode === 'locate' && locateGuessed && locateCurrent
         ? [{ name: locateCurrent.properties.NAME, color: '#39ff14', feature: locateCurrent }]
-        : mode === 'cap-to-country' && c2cCurrent && c2cAnswered
-          ? (() => {
-              const f = gameCountries.find(c => c.properties.NAME === c2cCurrent.country)
-              return f ? [{ name: f.properties.NAME, color: c2cCorrect ? '#39ff14' : '#ef4444', feature: f }] : []
-            })()
         : mode === 'border-chain' && bcStart && bcEnd
           ? [
               { name: bcStart.properties.NAME, color: '#39ff14', feature: bcStart },
               { name: bcEnd.properties.NAME,   color: '#f97316', feature: bcEnd },
             ]
-          : mode === 'pop-order'
-          ? popCountries.map(f => ({ name: f.properties.NAME, color: '#c77dff', feature: f }))
           : mode === 'neighbor'
           ? [
               ...neighborFound.map(n => { const f = gameCountries.find(c => c.properties.NAME === n); return f ? { name: n, color: '#39ff14', feature: f } : null }).filter(Boolean),
               ...neighborMissed.map(n => { const f = gameCountries.find(c => c.properties.NAME === n); return f ? { name: n, color: '#ef4444', feature: f } : null }).filter(Boolean),
             ]
-          : mode === 'area'
-          ? areaPair.map((f, i) => ({ name: f.properties.NAME, color: i === 0 ? '#3b82f6' : '#f97316', feature: f }))
-          : capHistory.map(h => ({
-            name: h.country,
-            color: h.correct ? '#39ff14' : '#ef4444',
-            feature: gameCountries.find(c => c.properties.NAME === h.country),
-          })).filter(g => g.feature)
+          : []
 
   const globeHighlighted = mode === 'spotlight' ? spotlightCurrentFeature
-    : mode === 'capital' ? (capGameStarted ? capCurrent : null)
     : mode === 'learn' ? learnSelected
     : mode === 'neighbor' ? (neighborGameStarted ? neighborTarget : null)
-    : mode === 'flag' && flagAnswered ? gameCountries.find(f => f.properties.NAME === flagCurrent?.name) ?? null
-    : mode === 'scramble' ? scrambleHighlighted
     : null
+
+  // Extra-mode globe: only re-fly when the target actually changes
+  const extraMode = EXTRA_GLOBE_MODES.has(mode) && page === 'game'
+  const extraFlyKey = JSON.stringify(globeExtra.flyTo ?? null)
+  const extraFlyTo = useMemo(() => globeExtra.flyTo ?? null, [extraFlyKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Render ───────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="loading-screen">
       <div className="loading-globe">🌐</div>
-      <h1 className="loading-title">Orbis</h1>
+      <h1 className="loading-title">{t('Orbis')}</h1>
       <div className="loading-spinner-wrap"><div className="spinner" /></div>
-      <p className="loading-text">Loading the globe…</p>
+      <p className="loading-text">{t('Loading the globe…')}</p>
     </div>
   )
   if (error) return (
     <div className="error-screen">
       <div className="error-icon">⚠️</div>
       <p className="error-msg">{error}</p>
-      <button className="error-retry-btn" onClick={() => window.location.reload()}>↺ Retry</button>
+      <button className="error-retry-btn" onClick={() => window.location.reload()}>{t('↺ Retry')}</button>
     </div>
   )
 
@@ -1444,13 +1131,13 @@ export default function App() {
       {/* ── Top bar ── */}
       <header className="topbar">
         <div className="topbar-left">
-          <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
+          <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)} aria-label={t('Open menu')}>
             ☰
           </button>
           <div className="topbar-brand" onClick={() => setPage('home')} style={{ cursor: 'pointer' }}>
             <span className="topbar-logo">🌐</span>
-            <span className="topbar-name">Orbis</span>
-            <span className="topbar-tagline">Geography Games</span>
+            <span className="topbar-name">{t('Orbis')}</span>
+            <span className="topbar-tagline">{t('Geography Games')}</span>
           </div>
         </div>
         <div className="topbar-auth">
@@ -1506,15 +1193,15 @@ export default function App() {
         <div className="quiz-shell">
           <div className="quiz-nav-bar">
             <button className="quiz-nav-back" onClick={() => setPage('home')}>
-              ← Home
+              {t('← Home')}
             </button>
             {QUIZ_MODES.has(mode) && (
               <button className="quiz-nav-hub" onClick={() => setMode('quiz-hub')}>
-                ← All Quizzes
+                {t('← All Quizzes')}
               </button>
             )}
             <span className="quiz-nav-title">
-              {mode === 'daily-quiz' ? '📅 Daily Quiz' : TABLE_QUIZ_IDS.has(mode) ? `${TABLE_QUIZZES[mode].icon} ${TABLE_QUIZZES[mode].title}` : QUIZ_MODES.has(mode) ? QUIZ_LABELS[mode] : '🎯 Quiz Hub'}
+              {mode === 'daily-quiz' ? t('📅 Daily Quiz') : TABLE_QUIZ_IDS.has(mode) ? `${TABLE_QUIZZES[mode].icon} ${TABLE_QUIZZES[mode].title}` : QUIZ_MODES.has(mode) ? t(QUIZ_LABELS[mode]) : t('🎯 Quiz Hub')}
             </span>
             {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && <RulesHint className="rules-hint-quiz" />}
           </div>
@@ -1524,75 +1211,17 @@ export default function App() {
               <QuizHub onSelect={(id) => switchMode(id)} countryNames={gameCountryNames} />
             ) : mode === 'daily-quiz' ? (
               <DailyQuiz countryNames={gameCountryNames} onPlayQuiz={playQuizFromDaily} />
+            ) : mode === 'higher-lower' ? (
+              <HigherLower key={mode} countryNames={gameCountryNames} />
+            ) : mode === 'true-false' ? (
+              <TrueFalse key={mode} countryNames={gameCountryNames} />
+            ) : mode === 'country-wordle' ? (
+              <CountryWordle key={mode} countryNames={gameCountryNames} />
             ) : TABLE_QUIZ_IDS.has(mode) ? (
               <TableQuiz key={mode} quizId={mode} countryNames={gameCountryNames} onDaily={refreshDaily} />
             ) : (
               <div className="quiz-panel-wrap">
                 <div className="panel quiz-panel-inner">
-                  {mode === 'scramble' && (
-                    <ScramblePanel
-                      gameCountries={gameCountries}
-                      countryInfo={COUNTRY_INFO}
-                      onHighlight={() => {}}
-                    />
-                  )}
-                  {mode === 'flag' && (
-                    <FlagPanel
-                      current={flagCurrent}
-                      answered={flagAnswered}
-                      correct={flagCorrect}
-                      countryNames={gameCountries.map(f => f.properties.NAME)}
-                      onGuess={handleFlagGuess}
-                      onSkip={handleFlagSkip}
-                      onNext={handleFlagNext}
-                      score={flagScore}
-                      history={flagHistory}
-                      streak={flagStreak}
-                    />
-                  )}
-                  {mode === 'capital' && (
-                    <CapitalPanel
-                      countries={gameCountries}
-                      current={capCurrent}
-                      answered={capAnswered}
-                      onCorrect={handleCapCorrect}
-                      onSkip={handleCapSkip}
-                      onNewGame={handleCapNewGame}
-                      score={capScore}
-                      history={capHistory}
-                      onGameStart={() => setCapGameStarted(true)}
-                    />
-                  )}
-                  {mode === 'cap-to-country' && (
-                    <CapToCountryPanel
-                      current={c2cCurrent}
-                      answered={c2cAnswered}
-                      correct={c2cCorrect}
-                      countryNames={gameCountries.map(f => f.properties.NAME)}
-                      onGuess={handleC2cGuess}
-                      onSkip={handleC2cSkip}
-                      onNext={handleC2cNext}
-                      score={c2cScore}
-                      history={c2cHistory}
-                    />
-                  )}
-                  {mode === 'currency' && <CurrencyPanel />}
-                  {mode === 'language' && <LanguagePanel />}
-                  {mode === 'area' && (
-                    <AreaPanel
-                      gameCountries={gameCountries}
-                      onPairChange={() => {}}
-                    />
-                  )}
-                  {mode === 'pop-order' && (
-                    <PopOrderPanel
-                      countries={popCountries}
-                      onScore={handlePopScore}
-                      totalScore={popScore}
-                      history={popHistory}
-                      onNext={handlePopNext}
-                    />
-                  )}
                   {mode === 'border-chain' && bcStart && bcEnd && (
                     <BorderChainPanel
                       startCountry={bcStart}
@@ -1608,38 +1237,8 @@ export default function App() {
                       onGiveUp={handleBcGiveUp}
                     />
                   )}
-                  {mode === 'missing-vowels' && (
-                    <MissingVowelsPanel
-                      gameCountries={gameCountries}
-                      countryInfo={COUNTRY_INFO}
-                    />
-                  )}
-                  {mode === 'flag-colors' && (
-                    <FlagColorsPanel
-                      gameCountries={gameCountries}
-                      countryInfo={COUNTRY_INFO}
-                    />
-                  )}
                   {mode === 'connections' && (
                     <ConnectionsPanel />
-                  )}
-                  {mode === 'emoji-quiz' && (
-                    <EmojiQuizPanel
-                      gameCountries={gameCountries}
-                      countryInfo={COUNTRY_INFO}
-                    />
-                  )}
-                  {mode === 'country-fact' && (
-                    <CountryFactPanel
-                      gameCountries={gameCountries}
-                      countryInfo={COUNTRY_INFO}
-                    />
-                  )}
-                  {mode === 'endonyms' && (
-                    <EndonymPanel
-                      gameCountries={gameCountries}
-                      countryInfo={COUNTRY_INFO}
-                    />
                   )}
                 </div>
               </div>
@@ -1653,7 +1252,7 @@ export default function App() {
         <div className="mobile-drawer-backdrop" onClick={() => setDrawerOpen(false)}>
           <nav className="mobile-drawer" onClick={e => e.stopPropagation()}>
             <div className="drawer-header">
-              <span className="drawer-title">🌐 Orbis</span>
+              <span className="drawer-title">{t('🌐 Orbis')}</span>
               <button className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
             </div>
             <div className="drawer-scroll">
@@ -1698,7 +1297,7 @@ export default function App() {
                     className="sidebar-quiz-hub-link"
                     onClick={() => { setMode('quiz-hub'); setPage('quiz') }}
                   >
-                    Open Hub →
+                    {t('Open Hub →')}
                   </button>
                 </div>
               ) : (
@@ -1770,6 +1369,20 @@ export default function App() {
               spinEnabled={false}
             />
           ) : (
+            extraMode ? (
+            <Globe
+                countries={countries}
+                guesses={globeExtra.guesses ?? EMPTY_LIST}
+                highlighted={globeExtra.highlighted ?? null}
+                missed={globeExtra.missed ?? EMPTY_LIST}
+                soloMode={!!globeExtra.soloMode}
+                onGlobeClick={globeExtra.onClick ?? null}
+                overlay={globeExtra.overlay ?? null}
+                flyToPoint={extraFlyTo}
+                spinEnabled={false}
+                lightMode={lightMode}
+              />
+            ) : (
             <Globe
                 countries={(mode === 'spotlight') ? gameCountries : countries}
                 guesses={globeGuesses}
@@ -1790,6 +1403,7 @@ export default function App() {
                 lightMode={lightMode}
                 flyToFeature={flyToFeature}
               />
+            )
           )}
           {page === 'game' && <GlobeFeedback />}
         </div>
@@ -1831,19 +1445,6 @@ export default function App() {
             blindMode={nameAllBlind}
             onBlindChange={setNameAllBlind}
             onComplete={setCompletionStats}
-          />
-        )}
-        {mode === 'capital' && (
-          <CapitalPanel
-            countries={gameCountries}
-            current={capCurrent}
-            answered={capAnswered}
-            onCorrect={handleCapCorrect}
-            onSkip={handleCapSkip}
-            onNewGame={handleCapNewGame}
-            score={capScore}
-            history={capHistory}
-            onGameStart={() => setCapGameStarted(true)}
           />
         )}
         {mode === 'name-all-caps' && (
@@ -1908,76 +1509,6 @@ export default function App() {
             onNewGame={() => { setHistFound([]); setHistMissed([]) }}
           />
         )}
-        {mode === 'cap-to-country' && (
-          <CapToCountryPanel
-            current={c2cCurrent}
-            answered={c2cAnswered}
-            correct={c2cCorrect}
-            countryNames={gameCountries.map(f => f.properties.NAME)}
-            onGuess={handleC2cGuess}
-            onSkip={handleC2cSkip}
-            onNext={handleC2cNext}
-            score={c2cScore}
-            history={c2cHistory}
-          />
-        )}
-        {mode === 'border-chain' && bcStart && bcEnd && (
-          <BorderChainPanel
-            startCountry={bcStart}
-            endCountry={bcEnd}
-            adjacency={Object.fromEntries(
-              Object.entries(adjacency).map(([k, v]) => [k, [...v]])
-            )}
-            countries={gameCountries}
-            onWin={handleBcWin}
-            totalScore={bcScore}
-            history={bcHistory}
-            onNext={handleBcNext}
-            onGiveUp={handleBcGiveUp}
-          />
-        )}
-        {mode === 'pop-order' && (
-          <PopOrderPanel
-            countries={popCountries}
-            onScore={handlePopScore}
-            totalScore={popScore}
-            history={popHistory}
-            onNext={handlePopNext}
-          />
-        )}
-        {mode === 'area' && (
-          <AreaPanel
-            gameCountries={gameCountries}
-            onPairChange={setAreaPair}
-          />
-        )}
-        {mode === 'currency' && (
-          <CurrencyPanel />
-        )}
-        {mode === 'language' && (
-          <LanguagePanel />
-        )}
-        {mode === 'scramble' && (
-          <ScramblePanel
-            gameCountries={gameCountries}
-            countryInfo={COUNTRY_INFO}
-            onHighlight={setScrambleHighlighted}
-          />
-        )}
-        {mode === 'flag' && (
-          <FlagPanel
-            current={flagCurrent}
-            answered={flagAnswered}
-            correct={flagCorrect}
-            countryNames={gameCountries.map(f => f.properties.NAME)}
-            onGuess={handleFlagGuess}
-            onSkip={handleFlagSkip}
-            onNext={handleFlagNext}
-            score={flagScore}
-            history={flagHistory}
-            streak={flagStreak}
-          />
-        )}
         {mode === 'locate' && (
           <LocatePanel
             current={locateCurrent}
@@ -2030,6 +1561,10 @@ export default function App() {
             onMissedChange={setSpotlightMissedNames}
           />
         )}
+        {mode === 'silhouette'   && <SilhouettePanel  gameCountries={gameCountries} onGlobe={onGlobe} />}
+        {mode === 'capital-drop' && <CapitalDropPanel gameCountries={gameCountries} onGlobe={onGlobe} />}
+        {mode === 'line-up'      && <LineUpPanel      gameCountries={gameCountries} onGlobe={onGlobe} />}
+        {mode === 'time-zones'   && <TimeZonesPanel   gameCountries={gameCountries} onGlobe={onGlobe} />}
         {mode === 'learn' && (
           <LearnPanel
             selected={learnSelected}

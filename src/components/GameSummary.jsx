@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { t } from '../i18n'
 
 /**
  * End-of-game summary: big score, accuracy ring, and a Missed / Found toggle
@@ -10,8 +11,8 @@ export default function GameSummary({ found = [], missed = [], total, noun = 'it
   const [tab, setTab] = useState(missed.length ? 'missed' : 'found')
   const [query, setQuery] = useState('')
 
-  const t = total ?? found.length + missed.length
-  const pct = t ? Math.round((found.length / t) * 100) : 0
+  const tot = total ?? found.length + missed.length
+  const pct = tot ? Math.round((found.length / tot) * 100) : 0
   const perfect = missed.length === 0 && found.length > 0
 
   const list = tab === 'missed' ? missed : found
@@ -21,7 +22,7 @@ export default function GameSummary({ found = [], missed = [], total, noun = 'it
     return q ? sorted.filter(i => `${i.label} ${i.sub ?? ''}`.toLowerCase().includes(q)) : sorted
   }, [list, query])
 
-  const verdict = perfect ? 'Perfect run!' : pct >= 90 ? 'Outstanding' : pct >= 70 ? 'Great job' : pct >= 40 ? 'Solid effort' : 'Keep practising'
+  const verdict = perfect ? t('Perfect run!') : pct >= 90 ? t('Outstanding') : pct >= 70 ? t('Great job') : pct >= 40 ? t('Solid effort') : t('Keep practising')
 
   return (
     <div className={`gs${perfect ? ' gs-perfect' : ''}`}>
@@ -31,7 +32,7 @@ export default function GameSummary({ found = [], missed = [], total, noun = 'it
         </div>
         <div className="gs-head-text">
           <span className="gs-verdict">{title ?? verdict}</span>
-          <span className="gs-score"><strong>{found.length}</strong> / {t} {noun}</span>
+          <span className="gs-score"><strong>{found.length}</strong> / {tot} {noun}</span>
           {timeLabel && <span className="gs-time">⏱ {timeLabel}</span>}
         </div>
       </div>
@@ -41,16 +42,16 @@ export default function GameSummary({ found = [], missed = [], total, noun = 'it
           <div className="gs-tabs" role="tablist">
             <button role="tab" aria-selected={tab === 'missed'} className={`gs-tab gs-tab-missed${tab === 'missed' ? ' active' : ''}`}
               onClick={() => setTab('missed')} disabled={!missed.length}>
-              Missed <span>{missed.length}</span>
+              {t('Missed')} <span>{missed.length}</span>
             </button>
             <button role="tab" aria-selected={tab === 'found'} className={`gs-tab gs-tab-found${tab === 'found' ? ' active' : ''}`}
               onClick={() => setTab('found')} disabled={!found.length}>
-              Found <span>{found.length}</span>
+              {t('Found')} <span>{found.length}</span>
             </button>
           </div>
 
           {list.length > 12 && (
-            <input className="gs-search" placeholder={`Filter ${tab}…`} value={query} onChange={e => setQuery(e.target.value)} />
+            <input className="gs-search" placeholder={t('Filter {tab}…', { tab: tab })} value={query} onChange={e => setQuery(e.target.value)} />
           )}
 
           <div className={`gs-chips gs-chips-${tab}`}>
@@ -61,7 +62,7 @@ export default function GameSummary({ found = [], missed = [], total, noun = 'it
                 {i.sub && <span className="gs-chip-sub">{i.sub}</span>}
               </span>
             ))}
-            {shown.length === 0 && <span className="gs-empty">Nothing matches.</span>}
+            {shown.length === 0 && <span className="gs-empty">{t('Nothing matches.')}</span>}
           </div>
         </>
       )}

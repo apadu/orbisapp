@@ -5,6 +5,7 @@ import GameIntro from './GameIntro'
 import SetupCard, { TIMER_OPTION } from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
+import { t } from '../i18n'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -175,12 +176,12 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   if (!started) return (
     <GameIntro
       icon="🏙️"
-      title="Name All Capitals"
-      desc="Type every capital city in the world. Countries light up on the globe as you find them."
+      title={t('Name All Capitals')}
+      desc={t('Type every capital city in the world. Countries light up on the globe as you find them.')}
       rules={[
-        '⏱ Choose countdown or free play',
-        '💡 Countries light up when you name their capital',
-        '✅ Common spelling variants accepted',
+        t('⏱ Choose countdown or free play'),
+        t('💡 Countries light up when you name their capital'),
+        t('✅ Common spelling variants accepted'),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -190,12 +191,12 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
     <SetupCard
       mode="name-all-caps"
       icon="🏙️"
-      title="Name All Capitals"
-      desc={"Type every capital city in the world. Countries light up on the globe as you find them."}
+      title={t('Name All Capitals')}
+      desc={t('Type every capital city in the world. Countries light up on the globe as you find them.')}
       rules={[
-        '⏱ Choose countdown or free play',
-        '💡 Countries light up when you name their capital',
-        '✅ Common spelling variants accepted',
+        t('⏱ Choose countdown or free play'),
+        t('💡 Countries light up when you name their capital'),
+        t('✅ Common spelling variants accepted'),
       ]}
       options={[TIMER_OPTION]}
       typeToStart
@@ -206,9 +207,9 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   return (
     <>
       <div className="panel-header">
-        <h2>🏙️ Name All Capitals</h2>
+        <h2>{t('🏙️ Name All Capitals')}</h2>
         <p className="panel-subtitle">
-          Type every capital city. Countries light up as you find them.
+          {t('Type every capital city. Countries light up as you find them.')}
         </p>
       </div>
 
@@ -219,7 +220,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? '⏳ countdown' : '⏱ count up'}
+            {timerMode === 'countdown' ? t('⏳ countdown') : t('⏱ count up')}
           </span>
           <div className="na-timer-controls">
             {!gameOver && !expired && !allFound && (
@@ -233,7 +234,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       {/* Time's up */}
       {expired && (
         <div className="na-expired">
-          ⌛ Time's up! You found <strong>{found.length}</strong> / {total} capitals.
+          {t('⌛ Time\'s up! You found')} <strong>{found.length}</strong> / {total} {t('capitals.')}
         </div>
       )}
 
@@ -242,7 +243,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
         <span className="na-count-num">{found.length}</span>
         <span className="na-count-sep"> / </span>
         <span className="na-count-total">{total}</span>
-        <span className="na-count-label"> capitals found</span>
+        <span className="na-count-label"> {t('capitals found')}</span>
         <div className="na-progress-track">
           <div className="na-progress-fill" style={{ width: `${total ? (found.length / total) * 100 : 0}%` }} />
         </div>
@@ -253,11 +254,11 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
         <div className="win-banner">
           <span className="win-emoji">🎉</span>
           <div>
-            <strong>You got them all!</strong>
+            <strong>{t('You got them all!')}</strong>
             <p>
-              Every capital named
+              {t('Every capital named')}
               {timerMode === 'countup'    ? ` in ${formatTime(elapsed)}` : ''}
-              {timerMode === 'countdown'  ? ` with ${formatTime(remaining)} remaining` : ''}
+              {timerMode === 'countdown'  ? t(' with {v} remaining', { v: formatTime(remaining) }) : ''}
               !
             </p>
           </div>
@@ -272,7 +273,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder={!running ? 'Game paused' : 'Type a capital city…'}
+              placeholder={!running ? t('Game paused') : t('Type a capital city…')}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
@@ -280,7 +281,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
               spellCheck={false}
               disabled={!running}
             />
-            <button className="guess-btn" onClick={() => tryGuess(input)} disabled={!running}>Go</button>
+            <button className="guess-btn" onClick={() => tryGuess(input)} disabled={!running}>{t('Go')}</button>
           </div>
         </div>
       )}
@@ -288,9 +289,9 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       {/* End-of-game summary */}
       {(gameOver || allFound) && (
         <GameSummary
-          noun="capitals"
+          noun={t('capitals')}
           total={total}
-          timeLabel={timerMode === 'countdown' ? `${formatTime(COUNTDOWN_SECONDS - remaining)} used` : formatTime(elapsed)}
+          timeLabel={timerMode === 'countdown' ? t('{v} used', { v: formatTime(COUNTDOWN_SECONDS - remaining) }) : formatTime(elapsed)}
           found={found.map(f => ({ label: f.capital, sub: f.name, icon: countryInfo?.[f.name]?.flag }))}
           missed={eligiblePairs.filter(p => !foundSet.has(p.name)).map(p => ({ label: p.capitals[0], sub: p.name, icon: countryInfo?.[p.name]?.flag }))}
         />
@@ -299,7 +300,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       {/* Found list (live, during play) */}
       {!(gameOver || allFound) && found.length > 0 && (
         <div className="guesses-section">
-          <h3 className="guesses-title">Found <span className="guess-count">{found.length}</span></h3>
+          <h3 className="guesses-title">{t('Found')} <span className="guess-count">{found.length}</span></h3>
           <ul className="guess-list">
             {[...found].reverse().map(f => (
               <li key={f.name} className="guess-item">
@@ -315,11 +316,11 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       <div className="panel-footer">
         {(gameOver || expired || allFound) ? (
           <>
-            <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>▶ Play again</button>
-            <button className="new-game-btn" onClick={handleReset}>⚙ Settings</button>
+            <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>{t('▶ Play again')}</button>
+            <button className="new-game-btn" onClick={handleReset}>{t('⚙ Settings')}</button>
           </>
         ) : (
-          <button className="new-game-btn" onClick={handleReset}>🔄 Reset</button>
+          <button className="new-game-btn" onClick={handleReset}>{t('🔄 Reset')}</button>
         )}
       </div>
     </>

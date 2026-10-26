@@ -130,7 +130,7 @@ const PAD   = 6   // extra px padding around the bounding box
 const MIN_R = 8   // minimum radius
 
 // ─── Draw all countries + tiny-country markers onto an offscreen canvas ──────
-function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highlightedName, missedSet, locateMarker, hiddenSet, soloMode, locateCorrectMarker) {
+function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highlightedName, missedSet, locateMarker, hiddenSet, soloMode, locateCorrectMarker, overlay) {
   const ctx = canvas.getContext('2d')
   const proj = geoEquirectangular()
     .scale(CANVAS_W / (2 * Math.PI))
@@ -474,10 +474,62 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
   }
 
   // Correct-location pin removed — country stays highlighted green, no pin drawn
+
+  if (overlay) drawOverlay(ctx, overlay)
+}
+
+// ── Generic overlay: lines (great-circle arcs, parallels, meridians) + pins ──
+// overlay = { lines: [{ type: 'arc'|'parallel'|'meridian', from, to, lat, lon, color, width, dash }],
+//             pins:  [{ lon, lat, color, label, ring }] }
+function drawOverlay(ctx, { lines = [], pins = [] }) {
+  const proj = geoEquirectangular().scale(CANVAS_W / (2 * Math.PI)).translate([CANVAS_W / 2, CANVAS_H / 2])
+  const path = geoPath(proj, ctx)
+  ctx.save()
+  ctx.lineCap = 'round'
+  for (const l of lines) {
+    ctx.beginPath()
+    if (l.type === 'parallel') {
+      const y = proj([0, l.lat])[1]
+      ctx.moveTo(0, y); ctx.lineTo(CANVAS_W, y)
+    } else if (l.type === 'meridian') {
+      const x = proj([l.lon, 0])[0]
+      ctx.moveTo(x, 0); ctx.lineTo(x, CANVAS_H)
+    } else if (l.type === 'arc') {
+      path({ type: 'LineString', coordinates: [l.from, l.to] })
+    }
+    ctx.setLineDash(l.dash ?? [])
+    // dark halo first so the line reads on both land and sea
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)'
+    ctx.lineWidth = (l.width ?? 4) + 4
+    ctx.stroke()
+    ctx.strokeStyle = l.color ?? '#facc15'
+    ctx.lineWidth = l.width ?? 4
+    ctx.stroke()
+  }
+  ctx.setLineDash([])
+  for (const p of pins) {
+    const pt = proj([p.lon, p.lat])
+    if (!pt) continue
+    const [x, y] = pt
+    if (p.ring) {
+      ctx.beginPath(); ctx.arc(x, y, p.ring, 0, Math.PI * 2)
+      ctx.strokeStyle = p.color ?? '#fff'; ctx.lineWidth = 3; ctx.globalAlpha = 0.6; ctx.stroke(); ctx.globalAlpha = 1
+    }
+    ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2)
+    ctx.fillStyle = p.color ?? '#fff'; ctx.fill()
+    ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke()
+    if (p.label) {
+      ctx.font = 'bold 26px system-ui, sans-serif'
+      ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,0.75)'
+      ctx.strokeText(p.label, x + 14, y - 12)
+      ctx.fillStyle = '#ffffff'; ctx.fillText(p.label, x + 14, y - 12)
+    }
+  }
+  ctx.restore()
 }
 
 // ─── Globe Component ─────────────────────────────────────────────────────────
-export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, locateCorrectMarker, spinEnabled = true, hiddenCountries, soloMode, lightMode, flyToFeature }) {
+export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, locateCorrectMarker, spinEnabled = true, hiddenCountries, soloMode, lightMode, flyToFeature, overlay, flyToPoint }) {
   const mountRef  = useRef(null)
   const rendRef   = useRef(null)
   const sphereRef = useRef(null)
@@ -605,9 +657,22 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     const guessMap = {}
     for (const g of guesses) guessMap[g.name] = g.color
     const missedSet = missed?.length ? new Set(missed.map(f => f.properties.NAME)) : null
-    redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, locateMarker, hiddenCountries, soloMode, locateCorrectMarker)
+    redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, locateMarker, hiddenCountries, soloMode, locateCorrectMarker, overlay)
     texRef.current.needsUpdate = true
-  }, [guesses, mystery, gameWon, countries, highlighted, missed, locateMarker, locateCorrectMarker, hiddenCountries, soloMode])
+  }, [guesses, mystery, gameWon, countries, highlighted, missed, locateMarker, locateCorrectMarker, hiddenCountries, soloMode, overlay])
+
+  // ── Fly to an arbitrary point { lon, lat, zoom? } ───────────────────────
+  useEffect(() => {
+    if (!flyToPoint) { camTargetZ.current = 3.0; return }
+    flyTarget.current = {
+      y: -(Math.PI / 2) - flyToPoint.lon * (Math.PI / 180),
+      x:  flyToPoint.lat * (Math.PI / 180),
+    }
+    autoRotate.current = false
+    clearTimeout(autoTimer.current)
+    autoTimer.current = setTimeout(() => { autoRotate.current = true }, flyToPoint.hold ?? 6000)
+    if (flyToPoint.zoom) camTargetZ.current = flyToPoint.zoom
+  }, [flyToPoint])
 
   // ── Fly to feature when a guess is made ─────────────────────────────────
   useEffect(() => {

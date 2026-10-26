@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { dayKey } from '../../utils/profileData'
+import { t } from '../../i18n'
 
 const WEEKS = 26
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -48,8 +49,8 @@ export default function ActivityHeatmap({ heatmap }) {
   return (
     <div className="hm-wrap">
       <div className="hm-head">
-        <span className="hm-title">Activity</span>
-        <span className="hm-sub">{total} game{total === 1 ? '' : 's'} in the last 6 months</span>
+        <span className="hm-title">{t('Activity')}</span>
+        <span className="hm-sub">{total} {t('game')}{total === 1 ? '' : 's'} {t('in the last 6 months')}</span>
       </div>
       <div className="hm-scroll">
         <div className="hm-months" style={{ gridTemplateColumns: `repeat(${WEEKS}, 1fr)` }}>
@@ -64,7 +65,7 @@ export default function ActivityHeatmap({ heatmap }) {
                 <div
                   key={c.key}
                   className={`hm-cell hm-l${level(c.n)}${c.future ? ' hm-future' : ''}`}
-                  title={c.future ? '' : `${c.key} · ${c.n} game${c.n === 1 ? '' : 's'}`}
+                  title={c.future ? '' : t('{key} · {n} game{v}', { key: c.key, n: c.n, v: c.n === 1 ? '' : 's' })}
                 />
               ))}
             </div>
@@ -72,9 +73,9 @@ export default function ActivityHeatmap({ heatmap }) {
         </div>
       </div>
       <div className="hm-legend">
-        Less
+        {t('Less')}
         {[0, 1, 2, 3, 4].map(l => <span key={l} className={`hm-cell hm-l${l}`} />)}
-        More
+        {t('More')}
       </div>
     </div>
   )

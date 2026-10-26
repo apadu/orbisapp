@@ -4,6 +4,7 @@ import { distanceLabel } from '../utils/geoUtils'
 import { CAPITALS } from '../utils/capitals'
 import { COUNTRY_INFO } from '../utils/countryInfo'
 import { resolveAlias, findClosestMatch } from '../utils/aliases'
+import { t, cn } from '../i18n'
 
 export default function GamePanel({ countries, guesses, mystery, gameWon, onGuess, onNewGame, stats, dateLabel, practiceMode, onTogglePractice, gaveUp, onGiveUp }) {
   const [input,      setInput]      = useState('')
@@ -92,16 +93,16 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
       {/* Header + mode toggle */}
       <div className="panel-header">
         <div className="mystery-header-row">
-          <h2>{practiceMode ? '🎲 Practice' : '🌍 Daily Challenge'}</h2>
+          <h2>{practiceMode ? t('🎲 Practice') : t('🌍 Daily Challenge')}</h2>
           <div className="mode-pill-toggle">
             <button
               className={`mpt-btn ${!practiceMode ? 'active' : ''}`}
               onClick={() => onTogglePractice(false)}
-            >Daily</button>
+            >{t('Daily')}</button>
             <button
               className={`mpt-btn ${practiceMode ? 'active' : ''}`}
               onClick={() => onTogglePractice(true)}
-            >Practice</button>
+            >{t('Practice')}</button>
           </div>
         </div>
         {!practiceMode && <p className="panel-subtitle">{dateLabel}</p>}
@@ -112,19 +113,19 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
         <div className="stats-bar">
           <div className="stat-item">
             <span className="stat-num">{stats.played}</span>
-            <span className="stat-label">Played</span>
+            <span className="stat-label">{t('Played')}</span>
           </div>
           <div className="stat-item">
             <span className="stat-num">{stats.played ? Math.round((stats.won / stats.played) * 100) : 0}%</span>
-            <span className="stat-label">Win %</span>
+            <span className="stat-label">{t('Win %')}</span>
           </div>
           <div className="stat-item">
             <span className="stat-num">{stats.streak}</span>
-            <span className="stat-label">Streak</span>
+            <span className="stat-label">{t('Streak')}</span>
           </div>
           <div className="stat-item">
             <span className="stat-num">{stats.bestStreak}</span>
-            <span className="stat-label">Best</span>
+            <span className="stat-label">{t('Best')}</span>
           </div>
         </div>
       )}
@@ -135,17 +136,17 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
           <div className="win-top">
             <span className="win-emoji">🎉</span>
             <div>
-              <strong>You got it!</strong>
-              <p>{mysteryName} in {guesses.length} {guesses.length === 1 ? 'guess' : 'guesses'}</p>
+              <strong>{t('You got it!')}</strong>
+              <p>{cn(mysteryName)} {t('in')} {guesses.length} {guesses.length === 1 ? t('guess') : t('guesses')}</p>
             </div>
             <button className="share-btn" onClick={handleShare}>
-              {copied ? '✅ Copied!' : '📤 Share'}
+              {copied ? t('✅ Copied!') : t('📤 Share')}
             </button>
           </div>
           <div className="country-info-card">
             <span className="country-flag">{mysteryInfo?.flag ?? '🏳️'}</span>
             <div className="country-info-details">
-              <div className="country-info-name">{mysteryName}</div>
+              <div className="country-info-name">{cn(mysteryName)}</div>
               <div className="country-info-meta">
                 <span>🏛️ {mysteryCapital}</span>
                 {mysteryInfo?.continent && <span>🌐 {mysteryInfo.continent}</span>}
@@ -160,11 +161,11 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
         <div className="input-wrap">
           {didYouMean && (
             <div className="did-you-mean">
-              Did you mean{' '}
+              {t('Did you mean')}{' '}
               <button className="dym-btn" onClick={() => submit(didYouMean)}>
-                {didYouMean}
+                {cn(didYouMean)}
               </button>
-              ? Press Enter to confirm or keep typing.
+              {t('? Press Enter to confirm or keep typing.')}
             </div>
           )}
           <div className="input-row">
@@ -172,14 +173,14 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
               ref={inputRef}
               className="country-input"
               type="text"
-              placeholder="Type a country name…"
+              placeholder={t('Type a country name…')}
               value={input}
               onChange={onInputChange}
               onKeyDown={onKeyDown}
               autoComplete="off"
               spellCheck={false}
             />
-            <button className="guess-btn" onClick={trySubmit}>Guess</button>
+            <button className="guess-btn" onClick={trySubmit}>{t('Guess')}</button>
           </div>
         </div>
       )}
@@ -187,9 +188,9 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
       {/* Hint legend */}
       {!gameWon && guesses.length === 0 && (
         <div className="legend">
-          <span style={{ color: '#ef4444' }}>● Hot</span>
-          <span style={{ color: '#eab308' }}>● Warm</span>
-          <span style={{ color: '#3b82f6' }}>● Cold</span>
+          <span style={{ color: '#ef4444' }}>{t('● Hot')}</span>
+          <span style={{ color: '#eab308' }}>{t('● Warm')}</span>
+          <span style={{ color: '#3b82f6' }}>{t('● Cold')}</span>
         </div>
       )}
 
@@ -197,15 +198,15 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
       {guesses.length > 0 && (
         <div className="guesses-section">
           <h3 className="guesses-title">
-            Guesses <span className="guess-count">{guesses.length}</span>
+            {t('Guesses')} <span className="guess-count">{guesses.length}</span>
           </h3>
           <ul className="guess-list">
             {sortedGuesses.map((g) => (
               <li key={g.name} className="guess-item">
                 <span className="guess-swatch" style={{ background: g.color }} />
-                <span className="guess-name">{g.name}</span>
+                <span className="guess-name">{cn(g.name)}</span>
                 {g.isAdjacent ? (
-                  <span className="guess-adjacent" title="Shares a border with the mystery country">🔲 adjacent</span>
+                  <span className="guess-adjacent" title={t('Shares a border with the mystery country')}>{t('🔲 adjacent')}</span>
                 ) : (
                   <>
                     <span className="guess-dist">{distanceLabel(g.km)}</span>
@@ -213,7 +214,7 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
                       <span
                         className="guess-arrow"
                         style={{ transform: `rotate(${g.angle}deg)` }}
-                        title="Direction to mystery country"
+                        title={t('Direction to mystery country')}
                       >
                         ↑
                       </span>
@@ -230,13 +231,13 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
       <div className="panel-footer">
         {gaveUp ? (
           <>
-            <p className="give-up-reveal">The answer was <strong>{mysteryName}</strong>.</p>
-            <button className="new-game-btn" onClick={onNewGame}>🔄 New Game</button>
+            <p className="give-up-reveal">{t('The answer was')} <strong>{cn(mysteryName)}</strong>.</p>
+            <button className="new-game-btn" onClick={onNewGame}>{t('🔄 New Game')}</button>
           </>
         ) : (
           <>
             <button className="new-game-btn" onClick={onNewGame}>
-              {gameWon ? '🔄 Play Again' : '🔄 New Game'}
+              {gameWon ? t('🔄 Play Again') : t('🔄 New Game')}
             </button>
             {!gameWon && (
               <GiveUpButton compact onConfirm={onGiveUp} />
