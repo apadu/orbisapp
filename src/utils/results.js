@@ -19,6 +19,7 @@ const MAX_LOCAL  = 4000
 
 let currentUserId = null
 const sessions  = {}            // mode → open session
+const poolSizes = {}            // mode → how many items the current game has (Name-All style games)
 const listeners = new Set()
 const answerListeners = new Set()   // live per-answer events (globe feedback toasts)
 
@@ -88,6 +89,17 @@ export function markSession(mode, meta) {
   s.meta = { ...s.meta, ...meta }
 }
 
+/**
+ * For "name them all" games: how many items there are in total, so a game left
+ * unfinished is stored as e.g. 35/196 instead of 35/35.
+ */
+export function setPoolSize(mode, n) { if (n > 0) poolSizes[mode] = n }
+
+/** Is a game in progress (an open session with at least one answer)? Used to confirm before leaving. */
+export function hasActiveGame() {
+  return Object.values(sessions).some(s => s.total > 0)
+}
+
 export function startSession(mode) {
   if (sessions[mode]?.total > 0) finishGame(mode, { completed: false })
   sessions[mode] = newSession(mode)
@@ -136,7 +148,7 @@ export function finishGame(mode, overrides = {}) {
     mode,
     score:       Math.round(rest.score   ?? s.score),
     correct:     rest.correct ?? s.correct,
-    total:       rest.total   ?? s.total,
+    total:       rest.total   ?? Math.max(s.total, poolSizes[mode] ?? 0),
     duration_ms: Math.round(durationMs ?? (Date.now() - s.startedAt)),
     completed,
     details:     { answers: s.answers, ...s.meta, ...meta },

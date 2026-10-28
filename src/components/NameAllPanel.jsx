@@ -6,6 +6,7 @@ import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { playCorrect, playWin } from '../utils/sounds'
 import { t, cn } from '../i18n'
+import { setPoolSize } from '../utils/results'
 
 const normalize = normalizeInput
 const COUNTDOWN_SECONDS = 15 * 60
@@ -34,6 +35,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
   const tickRef  = useRef(null)
 
   const total        = countries.length
+  useEffect(() => { setPoolSize('name-all', total) }, [total])   // so an unfinished game is saved as found/total
   const countryNames = countries.map(f => f.properties.NAME)
   const activeNames  = new Set(countryNames)
   const activeFound  = found.filter(f => activeNames.has(f.name))

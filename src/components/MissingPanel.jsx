@@ -4,6 +4,7 @@ import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { resolveAlias } from '../utils/aliases'
 import { t, cn } from '../i18n'
+import { setPoolSize } from '../utils/results'
 
 const TOTAL = 20
 const SECS  = 240   // 4 minutes
@@ -45,6 +46,7 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
   const foundRef  = useRef([])
 
   targetRef.current = target
+  useEffect(() => { setPoolSize('missing', target.length) }, [target.length])
   foundRef.current  = found
 
   const stillHidden = target.filter(n => !found.includes(n))

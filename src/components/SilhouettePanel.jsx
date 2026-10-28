@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import SetupCard from './SetupCard'
+import GameHeader from './GameHeader'
 import { resolveAlias } from '../utils/aliases'
 import { COUNTRY_AREA } from '../utils/countryArea'
 import { shuffle } from '../quizzes/globeGames'
@@ -149,6 +150,7 @@ export default function SilhouettePanel({ gameCountries, onGlobe }) {
 
   return (
     <div className="gg">
+        <GameHeader icon="🌀" title={t('Silhouette Spin')} />
       <div className="gg-head">
         <span className="gg-score">✓ {score}</span>
         <span className="gg-lives">{'❤️'.repeat(lives)}{'🖤'.repeat(LIVES - lives)}</span>

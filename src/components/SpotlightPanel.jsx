@@ -4,6 +4,7 @@ import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { t, cn } from '../i18n'
+import { setPoolSize } from '../utils/results'
 
 const TIMERS = { standard: 20 * 60, hard: 30 * 60 }
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -48,6 +49,7 @@ export default function SpotlightPanel({
   modeRef.current  = gameMode
 
   const total   = queue.length
+  useEffect(() => { setPoolSize('spotlight', total) }, [total])   // so an unfinished game is saved as found/total
   const current = queue[idx] ?? null
 
   // ── Globe sync ────────────────────────────────────────────────────────────

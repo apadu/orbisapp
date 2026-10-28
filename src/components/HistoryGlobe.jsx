@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import * as THREE from 'three'
 import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
 import { geoEquirectangular, geoPath } from 'd3-geo'
+import GlobeControls from './GlobeControls'
 
 const CANVAS_W = 4096
 const CANVAS_H = 2048
@@ -220,14 +221,17 @@ export default function HistoryGlobe({ features, targetNames, foundNames, missed
   }, [])
 
   return (
-    <div
-      ref={mountRef}
-      style={{ width: '100%', height: '100%', cursor: 'grab' }}
-      onMouseDown={onMouseDown}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onWheel={onWheel}
-    />
+    <>
+      <div
+        ref={mountRef}
+        style={{ width: '100%', height: '100%', cursor: 'grab' }}
+        onMouseDown={onMouseDown}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onWheel={onWheel}
+      />
+      <GlobeControls camRef={camRef} sphereRef={sphereRef} spinRef={spinRef} />
+    </>
   )
 }

@@ -12,6 +12,8 @@
     <meta name="twitter:title" content="Orbis — Geography Games" />
     <meta name="twitter:description" content="Test your world geography with 20+ game modes." />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>" />
+    <!-- Start downloading the world map while the JS boots -->
+    <link rel="preload" href="/data/ne_50m_admin_0_countries.geojson" as="fetch" crossorigin="anonymous" />
   </head>
   <body>
     <div id="root"></div>

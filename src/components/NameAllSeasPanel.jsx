@@ -4,6 +4,7 @@ import SetupCard, { TIMER_OPTION } from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { t } from '../i18n'
+import { setPoolSize } from '../utils/results'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -54,6 +55,7 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
   }, [seas])
 
   const total    = seas.length
+  useEffect(() => { setPoolSize('name-all-seas', total) }, [total])   // so an unfinished game is saved as found/total
   const foundSet = useMemo(() => new Set(found.map(f => f.properties.NAME)), [found])
   const allFound = found.length === total && total > 0
 

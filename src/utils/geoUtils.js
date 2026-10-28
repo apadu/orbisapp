@@ -1,4 +1,5 @@
 import { geoCentroid, geoDistance } from 'd3-geo'
+import { t, locale } from '../i18n'
 
 /** Extract all [lon, lat] coordinate pairs from a GeoJSON geometry */
 function extractCoords(geometry) {
@@ -157,8 +158,8 @@ export function spherePointToLonLat(x, y, z) {
  * Label for the distance (e.g. "🔥 128 km" or "🧊 14,200 km")
  */
 export function distanceLabel(km) {
-  const formatted = km.toLocaleString()
-  if (km === 0) return '🎯 Correct!'
+  const formatted = km.toLocaleString(locale)
+  if (km === 0) return t('🎯 Correct!')
   if (km < 500)  return `🔥 ${formatted} km`
   if (km < 2000) return `♨️  ${formatted} km`
   if (km < 6000) return `🌤  ${formatted} km`

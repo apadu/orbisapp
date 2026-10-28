@@ -4,7 +4,7 @@ import { POPULATION } from '../utils/population'
 import { COUNTRY_AREA } from '../utils/countryArea'
 import { COUNTRY_CURRENCY } from '../utils/countryCurrency'
 import { COUNTRY_LANGUAGES } from '../utils/countryLanguages'
-import { t, cn } from '../i18n'
+import { t, cn, continentName } from '../i18n'
 
 function formatPop(millions) {
   if (!millions) return '—'
@@ -57,7 +57,7 @@ export default function LearnPanel({ selected, history }) {
             </div>
             <div className="learn-stat">
               <span className="learn-stat-label">{t('Continent')}</span>
-              <span className="learn-stat-value">{CONTINENT_EMOJI[continent] ?? '🌐'} {continent}</span>
+              <span className="learn-stat-value">{CONTINENT_EMOJI[continent] ?? '🌐'} {continentName(continent)}</span>
             </div>
             <div className="learn-stat">
               <span className="learn-stat-label">{t('Population')}</span>

@@ -1,35 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import Globe, { FIXED_ELLIPSE_CENTERS } from './components/Globe'
-import HydroGlobe from './components/HydroGlobe'
 import GamePanel from './components/GamePanel'
-import NameAllPanel from './components/NameAllPanel'
-import SeaPanel from './components/SeaPanel'
-import LocatePanel from './components/LocatePanel'
-import BorderChainPanel from './components/BorderChainPanel'
-import MissingPanel from './components/MissingPanel'
-import LearnPanel from './components/LearnPanel'
-import SpotlightPanel from './components/SpotlightPanel'
-import SilhouettePanel from './components/SilhouettePanel'
-import CapitalDropPanel from './components/CapitalDropPanel'
-import LineUpPanel from './components/LineUpPanel'
-import TimeZonesPanel from './components/TimeZonesPanel'
-import NameAllCapitalsPanel from './components/NameAllCapitalsPanel'
-import NameAllCurrenciesPanel from './components/NameAllCurrenciesPanel'
-import NameAllLanguagesPanel from './components/NameAllLanguagesPanel'
-import NameAllMountainsPanel from './components/NameAllMountainsPanel'
-import NameAllSeasPanel from './components/NameAllSeasPanel'
-import NameAllRiversPanel from './components/NameAllRiversPanel'
-import RiverGlobe from './components/RiverGlobe'
-import HistoryMapPanel from './components/HistoryMapPanel'
-import HistoryGlobe from './components/HistoryGlobe'
-import NeighborPanel from './components/NeighborPanel'
+import CommandPalette, { PALETTE_SHORTCUT } from './components/CommandPalette'
+import RailNav from './components/RailNav'
+import { GAME_GROUPS, gamesInGroup } from './utils/gameRegistry'
 import { setSoundEnabled, playCorrect, playWrong, playWin } from './utils/sounds'
 import StreakBadge from './components/StreakBadge'
-import ConnectionsPanel from './components/ConnectionsPanel'
 import QuizHub from './components/QuizHub'
 import { loadDailyProgress, markDailyComplete, incrementDailyCount, getDailyStreak } from './utils/dailyChallenges'
-import MountainGlobe from './components/MountainGlobe'
-import NameAllSeaGlobe from './components/NameAllSeaGlobe'
 import { getDistanceInfo, computeAdjacency } from './utils/geoUtils'
 import { resolveAlias } from './utils/aliases'
 import { geoDistance, geoCentroid, geoContains, geoBounds } from 'd3-geo'
@@ -40,18 +18,15 @@ import { WORLD_RIVERS } from './utils/rivers'
 import { COUNTRY_INFO } from './utils/countryInfo'
 import { pickDailyCountry, todayLabel } from './utils/daily'
 import { getStats, recordWin, recordGiveUp } from './utils/stats'
-import ProfilePage from './components/ProfilePage'
 import { useAuth } from './auth/AuthContext'
-import { startSession, trackAnswer, finishGame, flushSessions } from './utils/results'
+import { startSession, trackAnswer, finishGame, flushSessions, hasActiveGame } from './utils/results'
+import { routeFor, parseRoute } from './utils/router'
+import { GAME_CATALOG } from './utils/gameCatalog'
+import ConfirmLeave from './components/ConfirmLeave'
 import { useListTracking } from './utils/useListTracking'
 import GlobeFeedback from './components/GlobeFeedback'
 import UserMenu from './components/UserMenu'
 import RulesHint from './components/RulesHint'
-import TableQuiz from './components/TableQuiz'
-import DailyQuiz from './components/DailyQuiz'
-import HigherLower from './components/HigherLower'
-import TrueFalse from './components/TrueFalse'
-import CountryWordle from './components/CountryWordle'
 import { TABLE_QUIZ_IDS, TABLE_QUIZZES } from './quizzes/tableQuizzes'
 import { clearRules } from './utils/rulesStore'
 import HomePage from './components/HomePage'
@@ -61,6 +36,42 @@ import './App.css'
 import { Analytics } from "@vercel/analytics/react"
 import { fetchData } from './utils/fetchData'
 import { t } from './i18n'
+
+// Code-split: each game / page is loaded the first time it's opened
+const HydroGlobe = lazy(() => import('./components/HydroGlobe'))
+const NameAllPanel = lazy(() => import('./components/NameAllPanel'))
+const SeaPanel = lazy(() => import('./components/SeaPanel'))
+const LocatePanel = lazy(() => import('./components/LocatePanel'))
+const BorderChainPanel = lazy(() => import('./components/BorderChainPanel'))
+const MissingPanel = lazy(() => import('./components/MissingPanel'))
+const LearnPanel = lazy(() => import('./components/LearnPanel'))
+const SpotlightPanel = lazy(() => import('./components/SpotlightPanel'))
+const SilhouettePanel = lazy(() => import('./components/SilhouettePanel'))
+const CapitalDropPanel = lazy(() => import('./components/CapitalDropPanel'))
+const LandmarkDropPanel = lazy(() => import('./components/LandmarkDropPanel'))
+const AntipodePanel = lazy(() => import('./components/AntipodePanel'))
+const DistancePanel = lazy(() => import('./components/DistancePanel'))
+const LineUpPanel = lazy(() => import('./components/LineUpPanel'))
+const TimeZonesPanel = lazy(() => import('./components/TimeZonesPanel'))
+const NameAllCapitalsPanel = lazy(() => import('./components/NameAllCapitalsPanel'))
+const NameAllCurrenciesPanel = lazy(() => import('./components/NameAllCurrenciesPanel'))
+const NameAllLanguagesPanel = lazy(() => import('./components/NameAllLanguagesPanel'))
+const NameAllMountainsPanel = lazy(() => import('./components/NameAllMountainsPanel'))
+const NameAllSeasPanel = lazy(() => import('./components/NameAllSeasPanel'))
+const NameAllRiversPanel = lazy(() => import('./components/NameAllRiversPanel'))
+const RiverGlobe = lazy(() => import('./components/RiverGlobe'))
+const HistoryMapPanel = lazy(() => import('./components/HistoryMapPanel'))
+const HistoryGlobe = lazy(() => import('./components/HistoryGlobe'))
+const NeighborPanel = lazy(() => import('./components/NeighborPanel'))
+const ConnectionsPanel = lazy(() => import('./components/ConnectionsPanel'))
+const MountainGlobe = lazy(() => import('./components/MountainGlobe'))
+const NameAllSeaGlobe = lazy(() => import('./components/NameAllSeaGlobe'))
+const ProfilePage = lazy(() => import('./components/ProfilePage'))
+const TableQuiz = lazy(() => import('./components/TableQuiz'))
+const DailyQuiz = lazy(() => import('./components/DailyQuiz'))
+const HigherLower = lazy(() => import('./components/HigherLower'))
+const TrueFalse = lazy(() => import('./components/TrueFalse'))
+const CountryWordle = lazy(() => import('./components/CountryWordle'))
 
 // Map data: served from /data (see `npm run fetch-maps`), remote fallback in src/data/sources.js
 
@@ -125,7 +136,7 @@ const QUIZ_MODES = new Set([
 ])
 
 // Globe games that drive the globe through one generic "extras" object (see onGlobe)
-const EXTRA_GLOBE_MODES = new Set(['silhouette', 'capital-drop', 'line-up', 'time-zones'])
+const EXTRA_GLOBE_MODES = new Set(['silhouette', 'capital-drop', 'landmark-drop', 'antipodes', 'distance', 'line-up', 'time-zones'])
 const NO_EXTRAS = {}
 const EMPTY_LIST = []
 
@@ -150,48 +161,6 @@ const QUIZ_LABELS = {
   'country-wordle': '🟩 Country Wordle',
 }
 
-const NAV_ITEMS = [
-  { section: t('Guess') },
-  { id: 'mystery',             icon: '🔍', label: t('Mystery Country') },
-  { id: 'locate',              icon: '📍', label: t('Pinpoint Country') },
-  { id: 'neighbor',            icon: '📌', label: t('Neighbors') },
-  { id: 'missing',             icon: '🗺️', label: t('Blind Map') },
-  { id: 'spotlight',           icon: '🔦', label: t('Solo Map') },
-  { section: t('Globe challenges') },
-  { id: 'silhouette',          icon: '🌀', label: t('Silhouette Spin') },
-  { id: 'capital-drop',        icon: '📍', label: t('Capital Drop') },
-  { id: 'line-up',             icon: '📐', label: t('Line Up') },
-  { id: 'time-zones',          icon: '🕰️', label: t('Time Zones') },
-  { section: t('Name All') },
-  { id: 'name-all',            icon: '🌍', label: t('Countries') },
-  { id: 'name-all-caps',       icon: '🏙️', label: t('Capitals') },
-  { id: 'name-all-currencies', icon: '💰', label: t('Currencies') },
-  { id: 'name-all-languages',  icon: '🗣️', label: t('Languages') },
-  { id: 'mountains',           icon: '⛰️', label: t('Mountain Ranges') },
-  { id: 'name-all-seas',       icon: '🌊', label: t('Seas') },
-  { id: 'name-all-rivers',     icon: '🏞️', label: t('Rivers') },
-  // HIDDEN until ready — uncomment to bring History Maps back:
-  // { id: 'history-maps',        icon: '🏛️', label: 'History' },
-  { section: t('Quiz') },
-  { id: 'scramble',            icon: '🔤', label: t('Scramble') },
-  { id: 'capital',             icon: '🏛️', label: t('Capitals Quiz') },
-  { id: 'seas',                icon: '🌊', label: t('Seas') },
-  { id: 'cap-to-country',      icon: '🗺️', label: t('Cap to Country') },
-  { id: 'flag',                icon: '🚩', label: t('Flags') },
-  { id: 'border-chain',        icon: '🔗', label: t('Borders') },
-  { id: 'pop-order',           icon: '📊', label: t('Population') },
-  { id: 'area',                icon: '📏', label: t('Bigger or Smaller') },
-  { id: 'currency',            icon: '💰', label: t('Currency Quiz') },
-  { id: 'language',            icon: '🗣️', label: t('Language Quiz') },
-  { id: 'missing-vowels',      icon: '🔡', label: t('Missing Vowels') },
-  { id: 'flag-colors',         icon: '🎨', label: t('Flag Colors') },
-  { id: 'connections',         icon: '🔗', label: t('Connections') },
-  { id: 'emoji-quiz',          icon: '🌍', label: t('Country Emoji') },
-  { id: 'country-fact',        icon: '📖', label: t('Country by Fact') },
-  { id: 'endonyms',            icon: '🗺️', label: t('Endonyms') },
-  { section: t('Explore') },
-  { id: 'learn',               icon: '🎓', label: t('Learn') },
-]
 
 export default function App() {
   const [countries,      setCountries]      = useState([]) // all features (globe rendering)
@@ -259,6 +228,7 @@ export default function App() {
 
   // ── Shared game mode ─────────────────────────────────────────────────────
   const [mode, setMode] = useState('mystery')
+  const [gameKey, setGameKey] = useState(0)   // bumps every time a game is (re)opened
 
   // Close any open (endless) game session whenever the player switches game or page
   useEffect(() => () => flushSessions(), [mode, page])
@@ -271,6 +241,7 @@ export default function App() {
   const [practiceMode,   setPracticeMode]  = useState(false)
   const [gaveUp,         setGaveUp]        = useState(false)
   const [flyToFeature,   setFlyToFeature]  = useState(null)
+  const [paletteOpen,    setPaletteOpen]   = useState(false)
   const [globeExtra,     setGlobeExtra]    = useState(NO_EXTRAS) // { guesses, highlighted, missed, soloMode, overlay, flyTo, onClick }
   const onGlobe = useCallback((x) => setGlobeExtra(x ?? NO_EXTRAS), [])
 
@@ -618,6 +589,7 @@ export default function App() {
 
   const switchMode = useCallback((m) => {
     clearRules()
+    setGameKey(k => k + 1)          // remount the game panel → a brand-new instance
     setGlobeExtra(NO_EXTRAS)
     setMode(m)
     setMysteryGuesses([])
@@ -646,57 +618,39 @@ export default function App() {
     }
     if (m === 'flag') {
     }
-    if (m !== 'missing') {
-      setMissingHidden(new Set())
-      setMissingMissedNames([])
-    }
-    if (m !== 'spotlight') {
-      setSpotlightCurrentFeature(null)
-      setSpotlightFoundNames([])
-      setSpotlightMissedNames([])
-    }
-    if (m !== 'name-all-caps') {
-      setCapsFound([])
-      setCapsAllMissed([])
-    }
-    if (m !== 'name-all-currencies') {
-      setCurrenciesFound([])
-      setCurrenciesMissed([])
-    }
-    if (m !== 'name-all-languages') {
-      setLanguagesFound([])
-      setLanguagesMissed([])
-    }
-    if (m !== 'mountains') {
-      setMountainsFound([])
-      setMountainsMissed([])
-    }
-    if (m !== 'name-all-seas') {
-      setSeasAllFound([])
-      setSeasAllMissed([])
-    }
-    if (m !== 'name-all-rivers') {
-      setRiversFound([])
-      setRiversMissed([])
-    }
-    if (m !== 'history-maps') {
-      setHistFound([])
-      setHistMissed([])
-    }
-    if (m !== 'neighbor') {
-      setNeighborTarget(null)
-      setNeighborFound([])
-      setNeighborMissed([])
-      setNeighborDone(false)
-      setNeighborScore(0)
-      setNeighborHistory([])
-      setNeighborGameStarted(false)
-    }
-    if (m !== 'seas')    setSeaGameStarted(false)
-    if (m !== 'learn') {
-      setLearnSelected(null)
-      setLearnHistory([])
-    }
+    setMissingHidden(new Set())
+    setMissingMissedNames([])
+    setSpotlightCurrentFeature(null)
+    setSpotlightFoundNames([])
+    setSpotlightMissedNames([])
+    setCapsFound([])
+    setCapsAllMissed([])
+    setCurrenciesFound([])
+    setCurrenciesMissed([])
+    setLanguagesFound([])
+    setLanguagesMissed([])
+    setMountainsFound([])
+    setMountainsMissed([])
+    setSeasAllFound([])
+    setSeasAllMissed([])
+    setRiversFound([])
+    setRiversMissed([])
+    setHistFound([])
+    setHistMissed([])
+    setNeighborTarget(null)
+    setNeighborFound([])
+    setNeighborMissed([])
+    setNeighborDone(false)
+    setNeighborScore(0)
+    setNeighborHistory([])
+    setNeighborGameStarted(false)
+    setSeaGameStarted(false)
+    setSeaHistory([])
+    setSeaScore({ correct: 0, total: 0 })
+    setMissingFound([])
+    setMissingComplete(false)
+    setLearnSelected(null)
+    setLearnHistory([])
   }, [gameCountries])
 
   // ── Mystery: handle a guess ──────────────────────────────────────────────
@@ -1013,6 +967,92 @@ export default function App() {
   }, [neighborTarget, mode])
 
 
+  // ── Leaving a game in progress needs a confirmation ──────────────────────
+  const [pendingNav, setPendingNav] = useState(null)        // () => void, run on "Leave"
+  const guard = useCallback((fn) => {
+    if (hasActiveGame()) setPendingNav(() => fn)
+    else fn()
+  }, [])
+
+  // Show a route (no guard) — used by openGame and by the browser's Back/Forward
+  const applyRoute = useCallback((r) => {
+    if (r.page === 'home') { setPage('home'); return }
+    if (r.page === 'profile') { setPage('profile'); return }
+    if (r.mode === 'quiz-hub') { setMode('quiz-hub'); setPage('quiz'); return }
+    switchMode(r.mode)
+    setPage(r.page)
+  }, [switchMode])
+
+  // Open any game / page by id (used by the rail, the search palette, Home…)
+  const openGame = useCallback((id) => guard(() => {
+    applyRoute(id === 'quiz-hub' ? { page: 'quiz', mode: 'quiz-hub' } : { page: QUIZ_MODES.has(id) ? 'quiz' : 'game', mode: id })
+  }), [guard, applyRoute])
+  const goHome = useCallback(() => guard(() => setPage('home')), [guard])
+  // Back from the profile: reopen the previous screen as a fresh game
+  const backFromProfile = () => (prevPage === 'game' || prevPage === 'quiz') ? applyRoute({ page: prevPage, mode }) : setPage(prevPage)
+
+  // ── URL ⇄ screen (Back / Forward / refresh / shared links) ───────────────
+  const routeInit = useRef(false)
+  const fromPop   = useRef(false)
+  const here      = useRef({ page, mode })
+  here.current = { page, mode }
+  const routeOpts = useMemo(() => ({
+    quizModes: QUIZ_MODES,
+    globeModes: new Set([...Object.keys(GAME_CATALOG).filter(m => !QUIZ_MODES.has(m)), 'learn']),
+  }), [])
+
+  useEffect(() => {
+    if (loading) return
+    // First load: open whatever the address points to
+    if (!routeInit.current) {
+      routeInit.current = true
+      const r = parseRoute(window.location.pathname, routeOpts)
+      const want = r ? routeFor(r.page, r.mode, QUIZ_MODES) : '/'
+      if (want !== routeFor(page, mode, QUIZ_MODES)) {
+        fromPop.current = true
+        if (r) applyRoute(r); else window.history.replaceState(null, '', '/')
+        return
+      }
+    }
+    const path = routeFor(page, mode, QUIZ_MODES)
+    if (window.location.pathname !== path) {
+      if (fromPop.current) window.history.replaceState(null, '', path)
+      else window.history.pushState(null, '', path)
+    }
+    fromPop.current = false
+  }, [loading, page, mode, applyRoute, routeOpts])
+
+  // Browser Back / Forward
+  useEffect(() => {
+    const onPop = () => {
+      const r = parseRoute(window.location.pathname, routeOpts) ?? { page: 'home' }
+      const go = () => { fromPop.current = true; applyRoute(r) }
+      if (hasActiveGame()) {
+        // Put the current screen back in the address bar until the player decides
+        window.history.pushState(null, '', routeFor(here.current.page, here.current.mode, QUIZ_MODES))
+        setPendingNav(() => go)
+      } else go()
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [applyRoute, routeOpts])
+
+  // Closing / reloading the tab mid-game → the browser's own "Leave site?" prompt
+  useEffect(() => {
+    const onUnload = (e) => { if (hasActiveGame()) { e.preventDefault(); e.returnValue = '' } }
+    window.addEventListener('beforeunload', onUnload)
+    return () => window.removeEventListener('beforeunload', onUnload)
+  }, [])
+
+  // Ctrl/⌘ K → search palette
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPaletteOpen(o => !o) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const gameCountryNames = useMemo(() => gameCountries.map(f => f.properties.NAME), [gameCountries])
   const playQuizFromDaily = useCallback((id) => switchMode(id), [switchMode])
 
@@ -1134,21 +1174,24 @@ export default function App() {
           <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)} aria-label={t('Open menu')}>
             ☰
           </button>
-          <div className="topbar-brand" onClick={() => setPage('home')} style={{ cursor: 'pointer' }}>
+          <div className="topbar-brand" onClick={goHome} style={{ cursor: 'pointer' }}>
             <span className="topbar-logo">🌐</span>
             <span className="topbar-name">{t('Orbis')}</span>
             <span className="topbar-tagline">{t('Geography Games')}</span>
           </div>
         </div>
         <div className="topbar-auth">
+          <button className="topbar-search" onClick={() => setPaletteOpen(true)} title={t('Search games')}>
+            <span>🔎</span><span className="topbar-search-text">{t('Search games')}</span><kbd>{PALETTE_SHORTCUT}</kbd>
+          </button>
           <StreakBadge
             streak={dailyStreak}
             dailyProgress={dailyProgress}
-            onSelectMode={(id) => { switchMode(id); setPage('game') }}
+            onSelectMode={openGame}
           />
           <UserMenu
             displayName={displayName}
-            onProfile={() => page === 'profile' ? setPage(prevPage) : openProfile()}
+            onProfile={() => page === 'profile' ? backFromProfile() : guard(openProfile)}
             soundEnabled={soundEnabled}
             onToggleSound={() => setSoundEnabledState(x => !x)}
             lightMode={lightMode}
@@ -1158,18 +1201,18 @@ export default function App() {
       </header>
 
       {page === 'profile' && (
-        <ProfilePage
+        <Suspense fallback={null}><ProfilePage
           countries={countries}
-          onBack={() => setPage(prevPage)}
-          onPlay={(id) => { switchMode(id); setPage(QUIZ_MODES.has(id) ? 'quiz' : 'game') }}
+          onBack={backFromProfile}
+          onPlay={openGame}
           dailyProgress={dailyProgress}
           dailyStreak={dailyStreak}
-        />
+        /></Suspense>
       )}
 
       {page === 'home' && (
         <HomePage
-          onEnter={() => setPage('game')}
+          onEnter={() => openGame(mode === 'quiz-hub' || QUIZ_MODES.has(mode) ? 'mystery' : mode)}
           onSelectMode={(id) => {
             if (QUIZ_MODES.has(id)) {
               switchMode(id)
@@ -1192,11 +1235,11 @@ export default function App() {
       {page === 'quiz' && (
         <div className="quiz-shell">
           <div className="quiz-nav-bar">
-            <button className="quiz-nav-back" onClick={() => setPage('home')}>
+            <button className="quiz-nav-back" onClick={goHome}>
               {t('← Home')}
             </button>
             {QUIZ_MODES.has(mode) && (
-              <button className="quiz-nav-hub" onClick={() => setMode('quiz-hub')}>
+              <button className="quiz-nav-hub" onClick={() => guard(() => setMode('quiz-hub'))}>
                 {t('← All Quizzes')}
               </button>
             )}
@@ -1206,9 +1249,9 @@ export default function App() {
             {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && <RulesHint className="rules-hint-quiz" />}
           </div>
 
-          <div className="quiz-content">
+          <div className="quiz-content"><Suspense fallback={null}>
             {!QUIZ_MODES.has(mode) ? (
-              <QuizHub onSelect={(id) => switchMode(id)} countryNames={gameCountryNames} />
+              <QuizHub onSelect={openGame} countryNames={gameCountryNames} />
             ) : mode === 'daily-quiz' ? (
               <DailyQuiz countryNames={gameCountryNames} onPlayQuiz={playQuizFromDaily} />
             ) : mode === 'higher-lower' ? (
@@ -1243,7 +1286,7 @@ export default function App() {
                 </div>
               </div>
             )}
-          </div>
+          </Suspense></div>
         </div>
       )}
 
@@ -1256,29 +1299,24 @@ export default function App() {
               <button className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
             </div>
             <div className="drawer-scroll">
-              {NAV_ITEMS.map((item, i) =>
-                item.section ? (
-                  <div key={`sec-${i}`} className="sidebar-section">{item.section}</div>
-                ) : QUIZ_MODES.has(item.id) ? (
-                  <button
-                    key={item.id}
-                    className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
-                    onClick={() => { switchMode(item.id); setDrawerOpen(false); setPage('quiz') }}
-                  >
-                    <span className="sidebar-icon">{item.icon}</span>
-                    <span className="sidebar-label">{item.label}</span>
-                  </button>
-                ) : (
-                  <button
-                    key={item.id}
-                    className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
-                    onClick={() => { switchMode(item.id); setDrawerOpen(false); setPage('game') }}
-                  >
-                    <span className="sidebar-icon">{item.icon}</span>
-                    <span className="sidebar-label">{item.label}</span>
-                  </button>
-                )
-              )}
+              <button className="sidebar-btn" onClick={() => { setDrawerOpen(false); setPaletteOpen(true) }}>
+                <span className="sidebar-icon">🔎</span><span className="sidebar-label">{t('Search games')}</span>
+              </button>
+              {GAME_GROUPS.map(g => (
+                <div key={g.id}>
+                  <div className="sidebar-section">{g.icon} {g.label}</div>
+                  {gamesInGroup(g.id).map(item => (
+                    <button
+                      key={item.id}
+                      className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
+                      onClick={() => { setDrawerOpen(false); openGame(item.id) }}
+                    >
+                      <span className="sidebar-icon">{item.icon}</span>
+                      <span className="sidebar-label">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
             </div>
           </nav>
         </div>
@@ -1286,50 +1324,23 @@ export default function App() {
 
       <div className="layout" style={{ display: (page === 'profile' || page === 'quiz') ? 'none' : 'flex' }}>
 
-        {/* ── Left sidebar nav ── */}
-        <nav className="sidebar rail" style={{ display: (page === 'home' || page === 'quiz') ? 'none' : undefined }}>
-          {NAV_ITEMS.map((item, i) =>
-            item.section ? (
-              item.section === 'Quiz' ? (
-                <div key={`sec-${i}`} className="sidebar-section sidebar-quiz-section">
-                  {item.section}
-                  <button
-                    className="sidebar-quiz-hub-link"
-                    onClick={() => { setMode('quiz-hub'); setPage('quiz') }}
-                  >
-                    {t('Open Hub →')}
-                  </button>
-                </div>
-              ) : (
-                <div key={`sec-${i}`} className="sidebar-section">{item.section}</div>
-              )
-            ) : QUIZ_MODES.has(item.id) ? (
-              <button
-                key={item.id}
-                className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
-                onClick={() => { switchMode(item.id); setPage('quiz') }}
-                data-tip={item.label}
-              >
-                <span className="sidebar-icon">{item.icon}</span>
-                <span className="sidebar-label">{item.label}</span>
-              </button>
-            ) : (
-              <button
-                key={item.id}
-                className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
-                onClick={() => switchMode(item.id)}
-                data-tip={item.label}
-              >
-                <span className="sidebar-icon">{item.icon}</span>
-                <span className="sidebar-label">{item.label}</span>
-              </button>
-            )
-          )}
-        </nav>
+        {/* ── Left rail: categories + flyouts ── */}
+        {page === 'game' && (
+          <RailNav mode={mode} onOpen={openGame} onSearch={() => setPaletteOpen(true)} onHome={goHome} />
+        )}
 
         {/* ── Globe pane ── */}
-        <div className="globe-pane">
-          {mode === 'seas' ? (
+        <div className="globe-pane"><Suspense fallback={null}>
+          {page !== 'game' ? (
+            // Home / other pages: a clean decorative globe — no leftovers from the last game
+            <Globe
+              countries={countries}
+              guesses={EMPTY_LIST}
+              missed={EMPTY_LIST}
+              spinEnabled={globeSpin}
+              lightMode={lightMode}
+            />
+          ) : mode === 'seas' ? (
             <HydroGlobe
               countries={countries}
               highlightedSea={seaGameStarted ? seaCurrent : null}
@@ -1406,10 +1417,12 @@ export default function App() {
             )
           )}
           {page === 'game' && <GlobeFeedback />}
-        </div>
+        </Suspense></div>
 
       {page !== 'home' && <RulesHint className="rules-hint-floating" />}
-      <div key={mode} className="panel panel-float" style={{ display: page === 'home' ? 'none' : undefined }}>
+      <div key={`${mode}-${gameKey}`} className="panel panel-float" style={{ display: page === 'game' ? undefined : 'none' }}>
+        <Suspense fallback={<div className="panel-skeleton"><span /><span /><span /></div>}>
+        {page === 'game' && <>
         {mode === 'mystery' && (
           <GamePanel
             countries={gameCountries}
@@ -1563,6 +1576,9 @@ export default function App() {
         )}
         {mode === 'silhouette'   && <SilhouettePanel  gameCountries={gameCountries} onGlobe={onGlobe} />}
         {mode === 'capital-drop' && <CapitalDropPanel gameCountries={gameCountries} onGlobe={onGlobe} />}
+        {mode === 'landmark-drop' && <LandmarkDropPanel onGlobe={onGlobe} />}
+        {mode === 'antipodes'    && <AntipodePanel onGlobe={onGlobe} />}
+        {mode === 'distance'     && <DistancePanel onGlobe={onGlobe} />}
         {mode === 'line-up'      && <LineUpPanel      gameCountries={gameCountries} onGlobe={onGlobe} />}
         {mode === 'time-zones'   && <TimeZonesPanel   gameCountries={gameCountries} onGlobe={onGlobe} />}
         {mode === 'learn' && (
@@ -1581,11 +1597,15 @@ export default function App() {
             onComplete={() => { setMissingComplete(true); setTimeout(() => setMissingComplete(false), 4000) }}
           />
         )}
+      </>}
+        </Suspense>
       </div>
     </div>
     </div>
     <Confetti active={(mode === 'mystery' && gameWon) || missingComplete || !!completionStats} />
     <Analytics />
+    <ConfirmLeave open={!!pendingNav} onStay={() => setPendingNav(null)} onLeave={() => { const fn = pendingNav; setPendingNav(null); fn?.() }} />
+    <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onSelect={openGame} />
     {completionStats && (
       <CompletionModal
         stats={completionStats}

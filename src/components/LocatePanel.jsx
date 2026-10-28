@@ -4,7 +4,7 @@ import SetupCard from './SetupCard'
 import { t, cn } from '../i18n'
 
 function scoreLabel(pts) {
-  if (pts >= 1000) return { text: t('Perfect!'), color: '#39ff14' }
+  if (pts >= 1000) return { text: t('Perfect!'), color: 'var(--green)' }
   if (pts >= 700)  return { text: t('Great!'),   color: '#a3e635' }
   if (pts >= 400)  return { text: t('Good'),     color: '#eab308' }
   if (pts >= 1)    return { text: t('Close'),    color: '#f97316' }

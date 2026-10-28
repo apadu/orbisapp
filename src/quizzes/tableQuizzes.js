@@ -27,6 +27,7 @@ import { COUNTRY_FACTS } from '../utils/countryFacts'
 import { FLAG_COLORS } from '../utils/flagColors'
 import { ALIASES, roAnswers } from '../utils/aliases'
 import { LIST_QUIZZES } from './listQuizzes'
+import { WAR_QUIZZES } from './warQuizzes'
 import { t, cn, isRo, locale } from '../i18n'
 
 export const REGIONS = ['World', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania']
@@ -222,7 +223,7 @@ export const TABLE_QUIZZES = {
 }
 
 // Merge in the list / smaller-target quizzes (they get the shared helpers via ctx)
-for (const [id, q] of Object.entries(LIST_QUIZZES)) {
+for (const [id, q] of Object.entries({ ...LIST_QUIZZES, ...WAR_QUIZZES })) {
   TABLE_QUIZZES[id] = { ...q, build: (ctx) => q.build({ ...ctx, countryAnswers, inRegion, currency: COUNTRY_CURRENCY, languages: COUNTRY_LANGUAGES, area: COUNTRY_AREA, population: POPULATION, capitals: CAPITALS }) }
 }
 

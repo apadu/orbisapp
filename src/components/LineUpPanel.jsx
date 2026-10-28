@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SetupCard from './SetupCard'
+import GameHeader from './GameHeader'
 import GiveUpButton from './GiveUpButton'
 import { resolveAlias } from '../utils/aliases'
 import { COUNTRY_INFO } from '../utils/countryInfo'
@@ -95,6 +96,7 @@ export default function LineUpPanel({ gameCountries, onGlobe }) {
   const total = line.names.length
   return (
     <div className="gg">
+        <GameHeader icon="📐" title={t('Line Up')} />
       <div className="gg-prompt">
         <span className="gg-prompt-label">{line.type === 'parallel' ? t('Parallel') : t('Meridian')}</span>
         <span className="gg-prompt-big">{lineLabel(line)}</span>

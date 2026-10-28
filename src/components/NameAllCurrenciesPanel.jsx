@@ -5,6 +5,7 @@ import SetupCard, { TIMER_OPTION } from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { t } from '../i18n'
+import { setPoolSize } from '../utils/results'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -63,6 +64,7 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
   }, [gameCountries])
 
   const total    = allCurrencies.length
+  useEffect(() => { setPoolSize('name-all-currencies', total) }, [total])   // so an unfinished game is saved as found/total
   const foundSet = useMemo(() => new Set(found.map(f => f.currencyName)), [found])
   const allFound = found.length === total && total > 0
 

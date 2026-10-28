@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import SetupCard from './SetupCard'
+import GameHeader from './GameHeader'
 import { CAPITAL_COORDS, distanceKm } from '../utils/capitalCoords'
 import { CAPITALS } from '../utils/capitals'
 import { COUNTRY_INFO } from '../utils/countryInfo'
@@ -120,9 +121,10 @@ export default function CapitalDropPanel({ gameCountries, onGlobe }) {
     const bestScore = loadResults().filter(r => r.mode === MODE && r.details?.region === setup.region).reduce((m, r) => Math.max(m, r.score), 0)
     return (
       <div className="gg">
+        <GameHeader icon="📍" title={t('Capital Drop')} />
         <div className="gg-over">
           <div className="gg-over-big">{total.toLocaleString(locale)}<small> / {(log.length * 1000).toLocaleString(locale)}</small></div>
-          <div className="gg-sub">{t('avg')} {fmtKm(avg)} {t('off ·')} {total >= bestScore ? t('🎉 Personal best') : t('best {v}', { v: bestScore.toLocaleString(locale) })} · {setup.region}</div>
+          <div className="gg-sub">{t('avg')} {fmtKm(avg)} {t('off ·')} {total >= bestScore ? t('🎉 Personal best') : t('best {v}', { v: bestScore.toLocaleString(locale) })} · {continentName(setup.region)}</div>
           <div className="gg-list">
             {log.map((l, i) => (
               <div key={i} className="gg-list-row">
@@ -143,6 +145,7 @@ export default function CapitalDropPanel({ gameCountries, onGlobe }) {
 
   return (
     <div className="gg">
+        <GameHeader icon="📍" title={t('Capital Drop')} />
       <div className="gg-head">
         <span className="gg-round">{t('Round')} {round + 1}/{queue.length}</span>
         <span className="gg-score">{total.toLocaleString(locale)} {t('pts')}</span>

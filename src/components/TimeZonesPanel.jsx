@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import SetupCard from './SetupCard'
+import GameHeader from './GameHeader'
 import { COUNTRY_TZ, zoneOffsetMin, countryOffsets } from '../utils/countryTimezones'
 import { CAPITAL_COORDS } from '../utils/capitalCoords'
 import { CAPITALS } from '../utils/capitals'
@@ -131,6 +132,7 @@ export default function TimeZonesPanel({ gameCountries, onGlobe }) {
     const best = loadResults().filter(r => r.mode === MODE && r.details?.level === setup.level).reduce((m, r) => Math.max(m, r.correct), 0)
     return (
       <div className="gg">
+        <GameHeader icon="🕰️" title={t('Time Zones')} />
         <div className="gg-over">
           <div className="gg-over-big">{score}<small> / {log.length}</small></div>
           <div className="gg-sub">{score >= best ? t('🎉 Personal best') : t('best {best}/{ROUNDS}', { best: best, ROUNDS: ROUNDS })} · {setup.level === 'easy' ? t('Easy') : t('Hard')}</div>
@@ -148,6 +150,7 @@ export default function TimeZonesPanel({ gameCountries, onGlobe }) {
   const diff = round.tgtOff - round.refOff
   return (
     <div className="gg">
+        <GameHeader icon="🕰️" title={t('Time Zones')} />
       <div className="gg-head">
         <span className="gg-round">{t('Round')} {idx + 1}/{rounds.length}</span>
         <span className="gg-score">✓ {score}</span>

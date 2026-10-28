@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import * as THREE from 'three'
 import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
 import { geoEquirectangular, geoPath, geoCentroid, geoBounds } from 'd3-geo'
+import GlobeControls from './GlobeControls'
 
 const CANVAS_W = 4096
 const CANVAS_H = 2048
@@ -129,13 +130,28 @@ const FIXED_ELLIPSE = {
 const PAD   = 6   // extra px padding around the bounding box
 const MIN_R = 8   // minimum radius
 
+const PATH_CACHE = new WeakMap()   // feature → Path2D in canvas pixels
+function projectedPath(feature, proj) {
+  let p = PATH_CACHE.get(feature)
+  if (!p) {
+    p = new Path2D()
+    geoPath(proj, p)(feature)
+    PATH_CACHE.set(feature, p)
+  }
+  return p
+}
+
 // ─── Draw all countries + tiny-country markers onto an offscreen canvas ──────
 function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highlightedName, missedSet, locateMarker, hiddenSet, soloMode, locateCorrectMarker, overlay) {
   const ctx = canvas.getContext('2d')
   const proj = geoEquirectangular()
     .scale(CANVAS_W / (2 * Math.PI))
     .translate([CANVAS_W / 2, CANVAS_H / 2])
-  const path = geoPath().projection(proj).context(ctx)
+  // Projected country outlines are cached as Path2D objects (the projection never
+  // changes), so a redraw only fills/strokes — no re-projecting thousands of vertices.
+  let cur = new Path2D()
+  const begin = () => { cur = new Path2D() }
+  const path = (f) => cur.addPath(projectedPath(f, proj))
 
   // Ocean — vertical gradient (deep at the poles). Hidden countries are filled
   // with this same gradient object, so they stay pixel-identical to the sea.
@@ -181,9 +197,9 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     for (const feature of countries) {
       const name = feature.properties.NAME
       if (isHiddenName(name) || ELLIPSE_COUNTRIES.has(name)) continue
-      ctx.beginPath()
+      begin()
       path(feature)
-      ctx.stroke()
+      ctx.stroke(cur)
     }
   }
 
@@ -204,13 +220,13 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     // Antarctica: solid white landmass, no game logic — not drawn at all on the empty globe
     if (name === 'Antarctica') {
       if (soloMode) continue
-      ctx.beginPath()
+      begin()
       path(feature)
       ctx.fillStyle = '#ffffff'
-      ctx.fill()
+      ctx.fill(cur)
       ctx.strokeStyle = '#ccddee'
       ctx.lineWidth = 0.7
-      ctx.stroke()
+      ctx.stroke(cur)
       continue
     }
 
@@ -239,22 +255,22 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     }
 
     // Fill: combined path includes merged territories (no internal border visible)
-    ctx.beginPath()
+    begin()
     path(feature)
     if (mergedFeatures[name]) {
       for (const mf of mergedFeatures[name]) path(mf)
       hostFillColors[name] = fillStyle
     }
     ctx.fillStyle = fillStyle
-    ctx.fill()
+    ctx.fill(cur)
 
     // Stroke: host polygon ONLY — avoids drawing the shared edge with merged territory
     // Ocean-colored countries get an ocean stroke so borders are invisible too
-    ctx.beginPath()
+    begin()
     path(feature)
     ctx.strokeStyle = fillStyle === OCEAN ? OCEAN : '#071a42'
     ctx.lineWidth = 0.7
-    ctx.stroke()
+    ctx.stroke(cur)
   }
 
   // ── Pass 1b: erase internal borders + restore exterior edges for merged territories
@@ -277,37 +293,37 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
 
     // Step 1: paint over every edge of the merged territory with fill color
     for (const mf of mfs) {
-      ctx.beginPath()
+      begin()
       path(mf)
       ctx.strokeStyle = fillColor
       ctx.lineWidth = 2.0   // 1px on each side — fully covers 0.35px host stroke
-      ctx.stroke()
+      ctx.stroke(cur)
     }
 
     // Step 2: re-fill merged territory (clean fill over any bleed)
     for (const mf of mfs) {
-      ctx.beginPath()
+      begin()
       path(mf)
       ctx.fillStyle = fillColor
-      ctx.fill()
+      ctx.fill(cur)
     }
 
     // Step 3: restore exterior borders with clip to complement of (host + merged).
     // Stroking at 1.4px means 0.7px goes into the neighboring country (drawn) and
     // 0.7px into the merged area (clipped) → net visible width = normal 0.7px.
     ctx.save()
-    ctx.beginPath()
-    ctx.rect(0, 0, CANVAS_W, CANVAS_H)
+    begin()
+    cur.rect(0, 0, CANVAS_W, CANVAS_H)
     path(hostFeature)           // Mauritania
     for (const mf of mfs) path(mf)  // W. Sahara
-    ctx.clip('evenodd')         // clip = everything OUTSIDE (Mauritania ∪ W. Sahara)
+    ctx.clip(cur, 'evenodd')         // clip = everything OUTSIDE (Mauritania ∪ W. Sahara)
 
     for (const mf of mfs) {
-      ctx.beginPath()
+      begin()
       path(mf)
       ctx.strokeStyle = hostFillColors[hostName] === OCEAN ? OCEAN : '#071a42'
       ctx.lineWidth = 1.4       // doubled so only external half → 0.7px apparent width
-      ctx.stroke()
+      ctx.stroke(cur)
     }
     ctx.restore()
   }
@@ -657,8 +673,13 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     const guessMap = {}
     for (const g of guesses) guessMap[g.name] = g.color
     const missedSet = missed?.length ? new Set(missed.map(f => f.properties.NAME)) : null
-    redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, locateMarker, hiddenCountries, soloMode, locateCorrectMarker, overlay)
-    texRef.current.needsUpdate = true
+    // Coalesce bursts of state changes (e.g. several answers in one tick) into one redraw per frame
+    const raf = requestAnimationFrame(() => {
+      if (!canvasRef.current || !texRef.current) return
+      redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, locateMarker, hiddenCountries, soloMode, locateCorrectMarker, overlay)
+      texRef.current.needsUpdate = true
+    })
+    return () => cancelAnimationFrame(raf)
   }, [guesses, mystery, gameWon, countries, highlighted, missed, locateMarker, locateCorrectMarker, hiddenCountries, soloMode, overlay])
 
   // ── Fly to an arbitrary point { lon, lat, zoom? } ───────────────────────
@@ -794,14 +815,17 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
   }, [])
 
   return (
-    <div
-      ref={mountRef}
-      style={{ width: '100%', height: '100%', cursor: onGlobeClick ? 'crosshair' : 'grab' }}
-      onMouseDown={onMouseDown}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onWheel={onWheel}
-    />
+    <>
+      <div
+        ref={mountRef}
+        style={{ width: '100%', height: '100%', cursor: onGlobeClick ? 'crosshair' : 'grab' }}
+        onMouseDown={onMouseDown}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onWheel={onWheel}
+      />
+      <GlobeControls camRef={camRef} sphereRef={sphereRef} spinRef={spinRef} />
+    </>
   )
 }

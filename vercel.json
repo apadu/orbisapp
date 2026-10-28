@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/((?!data/|flags/|assets/).*)", "destination": "/index.html" }
+  ]
+}

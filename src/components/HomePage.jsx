@@ -8,42 +8,7 @@ import { DAILY_CHALLENGES, getChallengeProgress } from '../utils/dailyChallenges
 import DailyBanner from './DailyBanner'
 import { t } from '../i18n'
 
-// Globe-based games, grouped into rows
-const ROWS = [
-  {
-    id: 'guess', label: t('Guess on the globe'), icon: '🔍', color: '#c77dff',
-    items: [
-      { id: 'mystery',   icon: '🔍', label: t('Mystery Country'), tag: t('Daily'),     desc: t('Guess the hidden country — distance and direction are your clues') },
-      { id: 'locate',    icon: '📍', label: t('Pinpoint'),        tag: t('Click'),     desc: t('Drop the pin on the given country') },
-      { id: 'neighbor',  icon: '📌', label: t('Neighbors'),       tag: t('Type'),      desc: t('Name every country sharing a border') },
-      { id: 'missing',   icon: '🗺️', label: t('Blind Map'),       tag: t('Timed'),     desc: t('20 countries vanish — name them before time runs out') },
-      { id: 'spotlight', icon: '🔦', label: t('Solo Map'),        tag: t('Relaxed'),   desc: t('Fill in a blank map at your own pace') },
-    ],
-  },
-  {
-    id: 'challenges', label: t('Globe challenges'), icon: '🎯', color: '#f97316',
-    items: [
-      { id: 'silhouette',   icon: '🌀', label: t('Silhouette Spin'), tag: t('Arcade'), desc: t('One country glows — name it before the clock runs out') },
-      { id: 'capital-drop', icon: '📍', label: t('Capital Drop'),    tag: t('Click'),  desc: t('Drop a pin on each capital — scored by real distance') },
-      { id: 'line-up',      icon: '📐', label: t('Line Up'),         tag: t('Type'),   desc: t('Name every country a parallel or meridian crosses') },
-      { id: 'time-zones',   icon: '🕰️', label: t('Time Zones'),      tag: t('Click'),  desc: t('Find where it\'s that time right now') },
-    ],
-  },
-  {
-    id: 'nameall', label: t('Name them all'), icon: '📝', color: '#39ff14',
-    items: [
-      { id: 'name-all',            icon: '🌍', label: t('Countries'),    tag: '197',  desc: t('Name every country in the world') },
-      { id: 'name-all-caps',       icon: '🏙️', label: t('Capitals'),     tag: '197',  desc: t('Name every capital city') },
-      { id: 'name-all-currencies', icon: '💰', label: t('Currencies'),   tag: t('All'),  desc: t('Name every currency') },
-      { id: 'name-all-languages',  icon: '🗣️', label: t('Languages'),    tag: t('All'),  desc: t('Name the official languages') },
-      { id: 'mountains',           icon: '⛰️', label: t('Mountains'),    tag: t('Ranges'), desc: t('Name every major mountain range') },
-      { id: 'name-all-seas',       icon: '🌊', label: t('Seas'),         tag: t('Water'), desc: t('Name every sea') },
-      { id: 'name-all-rivers',     icon: '🏞️', label: t('Rivers'),       tag: t('Water'), desc: t('Name every major river worldwide') },
-  // HIDDEN until ready — uncomment to bring History Maps back:
-  // { id: 'history-maps',        icon: '🏛️', label: 'History Maps', tag: 'Eras', desc: 'Name countries across historical eras' },
-    ],
-  },
-]
+import { GLOBE_ROWS as ROWS } from '../utils/gameRegistry'
 
 const ALL_PLAYABLE = [...ROWS.flatMap(r => r.items.map(i => i.id)), ...QUIZ_ITEMS.map(q => q.id)]
 
@@ -65,6 +30,11 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile
   const isNew = results.length === 0
 
   const last = results[0] ? { result: results[0], meta: gameMeta(results[0].mode) } : null
+  const recent = useMemo(() => {
+    const out = []
+    for (const r of results) { if (!out.includes(r.mode) && r.mode !== 'daily-quiz') out.push(r.mode); if (out.length >= 4) break }
+    return out
+  }, [results])
 
   const daily = DAILY_CHALLENGES.map(ch => ({ ...ch, ...getChallengeProgress(ch.id, dailyProgress) }))
   const dailyDone = daily.filter(d => d.done).length
@@ -111,13 +81,23 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile
             <span className="hp-card-sub">{t('Guess a country, get a distance hint, narrow it down. Takes a minute.')}</span>
           </button>
         ) : (
-          <button className="hp-card" onClick={() => onSelectMode(last.result.mode)}>
-            <span className="hp-card-kicker">{t('Jump back in')}</span>
-            <span className="hp-card-title">{last.meta.icon} {last.meta.label}</span>
-            <span className="hp-card-sub">
-              {last.result.correct}/{last.result.total} {t('correct ·')} {timeAgo(last.result.played_at)}
-            </span>
-          </button>
+          <div className="hp-card hp-continue">
+            <button className="hp-continue-main" onClick={() => onSelectMode(last.result.mode)}>
+              <span className="hp-card-kicker">{t('Jump back in')}</span>
+              <span className="hp-card-title">{last.meta.icon} {last.meta.label}</span>
+              <span className="hp-card-sub">
+                {last.result.correct}/{last.result.total} {t('correct ·')} {timeAgo(last.result.played_at)}
+              </span>
+            </button>
+            {recent.length > 1 && (
+              <div className="hp-continue-more">
+                {recent.slice(1).map(m => {
+                  const meta = gameMeta(m)
+                  return <button key={m} className="hp-continue-chip" onClick={() => onSelectMode(m)} title={meta.label}>{meta.icon} {meta.label}</button>
+                })}
+              </div>
+            )}
+          </div>
         )}
 
         <div className={`hp-card hp-daily${dailyOpen ? ' open' : ''}${dailyDone === daily.length ? ' all-done' : ''}`}>
