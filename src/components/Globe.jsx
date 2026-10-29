@@ -545,7 +545,7 @@ function drawOverlay(ctx, { lines = [], pins = [] }) {
 }
 
 // ─── Globe Component ─────────────────────────────────────────────────────────
-export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, locateCorrectMarker, spinEnabled = true, hiddenCountries, soloMode, lightMode, flyToFeature, overlay, flyToPoint }) {
+export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, locateCorrectMarker, spinEnabled = true, hiddenCountries, soloMode, flyToFeature, overlay, flyToPoint }) {
   const mountRef  = useRef(null)
   const rendRef   = useRef(null)
   const sphereRef = useRef(null)

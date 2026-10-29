@@ -121,3 +121,56 @@ as $$
 $$;
 
 grant execute on function public.get_leaderboard(text, timestamptz, integer) to anon, authenticated;
+
+-- ── Sign in with username ───────────────────────────────────────────────────
+-- Supabase Auth only knows emails. This function turns a username into the account's
+-- email — but ONLY when the password is correct, so nobody can look up other people's
+-- emails. Failed attempts are throttled (8 per 15 minutes per username) because calls
+-- to this function don't go through Supabase Auth's own rate limiting.
+create extension if not exists pgcrypto with schema extensions;
+
+create table if not exists public.login_attempts (
+  login        text primary key,
+  fails        integer not null default 0,
+  window_start timestamptz not null default now()
+);
+alter table public.login_attempts enable row level security;   -- no policies: not readable by anyone
+
+create or replace function public.email_for_login(p_login text, p_password text)
+returns text
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  k       text := lower(trim(p_login));
+  v_email text;
+  v_hash  text;
+  att     public.login_attempts%rowtype;
+begin
+  select * into att from public.login_attempts where login = k;
+  if found and att.window_start > now() - interval '15 minutes' and att.fails >= 8 then
+    raise exception 'too_many_attempts';
+  end if;
+
+  select u.email, u.encrypted_password into v_email, v_hash
+  from public.profiles p
+  join auth.users u on u.id = p.id
+  where lower(p.username) = k
+  limit 1;
+
+  if v_hash is not null and extensions.crypt(p_password, v_hash) = v_hash then
+    delete from public.login_attempts where login = k;
+    return v_email;
+  end if;
+
+  insert into public.login_attempts (login, fails, window_start) values (k, 1, now())
+  on conflict (login) do update set
+    fails        = case when public.login_attempts.window_start < now() - interval '15 minutes' then 1 else public.login_attempts.fails + 1 end,
+    window_start = case when public.login_attempts.window_start < now() - interval '15 minutes' then now() else public.login_attempts.window_start end;
+  return null;
+end;
+$$;
+
+revoke all on function public.email_for_login(text, text) from public;
+grant execute on function public.email_for_login(text, text) to anon, authenticated;

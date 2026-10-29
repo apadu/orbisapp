@@ -197,12 +197,8 @@ export default function App() {
   }, [])
 
   // ── Theme ────────────────────────────────────────────────────────────────
-  const [lightMode, setLightMode] = useState(() => localStorage.getItem('orbis-theme') === 'light')
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', lightMode ? 'light' : 'dark')
-    localStorage.setItem('orbis-theme', lightMode ? 'light' : 'dark')
-  }, [lightMode])
+  // Dark theme only
+  useEffect(() => { document.documentElement.setAttribute('data-theme', 'dark'); try { localStorage.removeItem('orbis-theme') } catch {} }, [])
 
   // ── Sound ────────────────────────────────────────────────────────────────
   const [soundEnabled, setSoundEnabledState] = useState(() => localStorage.getItem('orbis-sound') !== 'off')
@@ -1194,8 +1190,6 @@ export default function App() {
             onProfile={() => page === 'profile' ? backFromProfile() : guard(openProfile)}
             soundEnabled={soundEnabled}
             onToggleSound={() => setSoundEnabledState(x => !x)}
-            lightMode={lightMode}
-            onToggleTheme={() => setLightMode(m => !m)}
           />
         </div>
       </header>
@@ -1338,7 +1332,6 @@ export default function App() {
               guesses={EMPTY_LIST}
               missed={EMPTY_LIST}
               spinEnabled={globeSpin}
-              lightMode={lightMode}
             />
           ) : mode === 'seas' ? (
             <HydroGlobe
@@ -1391,7 +1384,6 @@ export default function App() {
                 overlay={globeExtra.overlay ?? null}
                 flyToPoint={extraFlyTo}
                 spinEnabled={false}
-                lightMode={lightMode}
               />
             ) : (
             <Globe
@@ -1411,7 +1403,6 @@ export default function App() {
                     : null
                 }
                 spinEnabled={globeSpin}
-                lightMode={lightMode}
                 flyToFeature={flyToFeature}
               />
             )

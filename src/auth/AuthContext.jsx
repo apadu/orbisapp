@@ -47,11 +47,27 @@ export function AuthProvider({ children }) {
   }, [loadProfile])
 
   // ── actions ──────────────────────────────────────────────────────────────
-  const signInWithGoogle = () =>
-    supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
 
-  const signInWithEmail = (email, password) =>
-    supabase.auth.signInWithPassword({ email, password })
+  // Sign in with an email OR a username. Usernames are turned into the account's email by a
+  // database function that only answers when the password is right (so emails can't be looked up).
+  const signInWithEmail = async (login, password) => {
+    const id = login.trim()
+    if (id.includes('@')) return supabase.auth.signInWithPassword({ email: id, password })
+    const { data: email, error } = await supabase.rpc('email_for_login', { p_login: id, p_password: password })
+    if (error) {
+      if (/too_many_attempts/.test(error.message)) return { error: { message: 'too_many_attempts' } }
+      if (/email_for_login|function|schema cache/i.test(error.message)) return { error: { message: 'username_login_unavailable' } }
+      return { error }
+    }
+    if (!email) return { error: { message: 'Invalid login credentials' } }
+    return supabase.auth.signInWithPassword({ email, password })
+  }
+
+  /** Is this username free? (profiles are publicly readable) */
+  const isUsernameTaken = async (username) => {
+    const { data } = await supabase.from('profiles').select('id').ilike('username', username.trim().replace(/[\\%_]/g, '\\$&')).limit(1)
+    return !!data?.length
+  }
 
   const signUpWithEmail = (email, password, username) =>
     supabase.auth.signUp({
@@ -90,7 +106,7 @@ export function AuthProvider({ children }) {
     ready, user, profile,
     authModalOpen, openAuth: () => setAuthModalOpen(true), closeAuth: () => setAuthModalOpen(false),
     recovery, setNewPassword,
-    signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, signOut, updateUsername,
+    signInWithEmail, signUpWithEmail, resetPassword, signOut, updateUsername, isUsernameTaken,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

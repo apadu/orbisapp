@@ -17,7 +17,7 @@ function useLevel() {
  * Top-right cluster: level chip + avatar with a dropdown
  * (profile, sound, theme, bug report, sign in/out).
  */
-export default function UserMenu({ displayName, onProfile, soundEnabled, onToggleSound, lightMode, onToggleTheme }) {
+export default function UserMenu({ displayName, onProfile, soundEnabled, onToggleSound }) {
   const auth = useAuth()
   const level = useLevel()
   const [open, setOpen] = useState(false)
@@ -61,7 +61,6 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
           </div>
           <button role="menuitem" onClick={item(onProfile)}>{t('👤 Profile & stats')}</button>
           <button role="menuitem" onClick={item(onToggleSound)}>{soundEnabled ? t('🔊 Sound on') : t('🔇 Sound off')}</button>
-          <button role="menuitem" onClick={item(onToggleTheme)}>{lightMode ? t('🌙 Dark mode') : t('☀️ Light mode')}</button>
           <div className="um-lang" role="group" aria-label={t('Language')}>
             {LANGS.map(l => (
               <button key={l.id} className={lang === l.id ? 'active' : ''} onClick={() => { if (lang !== l.id) setLang(l.id) }}>
