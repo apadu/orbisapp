@@ -6388,3 +6388,13 @@ button.hp-card:hover, .hp-daily-head:hover { transform: translateY(-2px); border
 .dist-row .missing-input { flex: 1; min-width: 0; }
 .dist-cities { font-size: 1.25rem; }
 .auth-input-bad { border-color: #ef4444 !important; }
+
+/* Profile: delete account */
+.pp-danger { margin-top: 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(239,68,68,0.35); background: rgba(239,68,68,0.06); }
+.pp-danger h3 { font-size: 0.95rem; font-weight: 800; color: #fca5a5; margin-bottom: 2px; }
+.pp-danger p { font-size: 0.8rem; color: var(--text-dim); max-width: 520px; }
+.pp-danger-btn { padding: 10px 16px; border-radius: 12px; border: 1px solid rgba(239,68,68,0.6); background: rgba(239,68,68,0.14); color: #fecaca; font-weight: 800; cursor: pointer; }
+.pp-danger-btn:hover:not(:disabled) { background: #dc2626; color: #fff; }
+.pp-danger-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.pp-danger-type { margin-top: 10px; }
+.cl .auth-input { margin-top: 8px; width: 100%; }

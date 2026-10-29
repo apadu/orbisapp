@@ -17,7 +17,7 @@ alter table public.profiles enable row level security;
 drop policy if exists "profiles are public"      on public.profiles;
 drop policy if exists "users update own profile" on public.profiles;
 create policy "profiles are public"      on public.profiles for select using (true);
-create policy "users update own profile" on public.profiles for update using (auth.uid() = id);
+-- Usernames are permanent: no update policy (profiles are only written by the signup trigger).
 
 -- Auto-create a profile when a user signs up (Google or email)
 create or replace function public.handle_new_user()
@@ -174,3 +174,28 @@ $$;
 
 revoke all on function public.email_for_login(text, text) from public;
 grant execute on function public.email_for_login(text, text) to anon, authenticated;
+
+
+-- ── Delete my account ───────────────────────────────────────────────────────
+-- Deletes the signed-in user. profiles and game_results go with it (ON DELETE CASCADE).
+create or replace function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid   uuid := auth.uid();
+  uname text;
+begin
+  if uid is null then
+    raise exception 'not_signed_in';
+  end if;
+  select lower(username) into uname from public.profiles where id = uid;
+  delete from public.login_attempts where login = uname;
+  delete from auth.users where id = uid;
+end;
+$$;
+
+revoke all on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;

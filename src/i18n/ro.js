@@ -1112,4 +1112,11 @@ export const RO = {
   "That username is taken — try another one": "Numele de utilizator e luat — încearcă altul",
   "Email or username": "Email sau nume de utilizator",
   "Confirm password": "Confirmă parola",
+  "Delete account": "Șterge contul",
+  "Permanently deletes your account, username and all your saved games. This can't be undone.": "Șterge definitiv contul, numele de utilizator și toate jocurile salvate. Acțiunea nu poate fi anulată.",
+  "Account deletion isn't set up on the server yet.": "Ștergerea contului nu e încă configurată pe server.",
+  "Delete your account?": "Ștergi contul?",
+  "Your profile, username, XP, achievements and every saved game will be deleted for good. Leaderboard entries disappear too.": "Profilul, numele de utilizator, XP-ul, realizările și toate jocurile salvate vor fi șterse definitiv. Dispari și din clasamente.",
+  "Type your username to confirm:": "Scrie numele de utilizator ca să confirmi:",
+  "Delete forever": "Șterge definitiv",
 }

@@ -28,6 +28,8 @@ export default function AuthModal() {
 
   useEffect(() => {
     if (!authModalOpen) return
+    // Every time the window opens it starts fresh, on "Sign in"
+    if (!recovery) { setTab('signin'); setPassword(''); setConfirm(''); setUsername('') }
     setError(null); setInfo(null)
     const onKey = e => { if (e.key === 'Escape') closeAuth() }
     window.addEventListener('keydown', onKey)

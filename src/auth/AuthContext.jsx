@@ -91,22 +91,24 @@ export function AuthProvider({ children }) {
     setResultsUser(null)
   }
 
-  const updateUsername = async (username) => {
+  // Permanently delete the signed-in account (profile + all results go with it — ON DELETE CASCADE)
+  const deleteAccount = async () => {
     if (!user) return { error: { message: 'Not signed in' } }
-    const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
-    if (clean.length < 3) return { error: { message: 'Use at least 3 letters, numbers or _' } }
-    const { data, error } = await supabase.from('profiles').update({ username: clean }).eq('id', user.id).select().single()
-    if (error) return { error: error.code === '23505' ? { message: 'That username is taken' } : error }
-    setProfile(data)
-    return { data }
+    const uid = user.id
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) return { error }
+    try { localStorage.removeItem(`orbis_results_${uid}`) } catch {}
+    await signOut()
+    return {}
   }
+
 
   const value = {
     backendEnabled: isBackendEnabled,
     ready, user, profile,
     authModalOpen, openAuth: () => setAuthModalOpen(true), closeAuth: () => setAuthModalOpen(false),
     recovery, setNewPassword,
-    signInWithEmail, signUpWithEmail, resetPassword, signOut, updateUsername, isUsernameTaken,
+    signInWithEmail, signUpWithEmail, resetPassword, signOut, deleteAccount, isUsernameTaken,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

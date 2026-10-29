@@ -66,19 +66,12 @@ export default function ProfilePage({ countries = [], onBack, onPlay, dailyProgr
   const results = useResults()
   const p = useMemo(() => computeProfile(results), [results])
   const [tab, setTab] = useState('overview')
-  const [editing, setEditing] = useState(false)
-  const [nameInput, setNameInput] = useState('')
-  const [nameError, setNameError] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const username = auth.profile?.username ?? t('Guest')
   const joined = auth.profile?.created_at ?? results[results.length - 1]?.played_at
   const unlocked = p.achievements.filter(a => a.unlocked)
 
-  const saveName = async () => {
-    const { error } = await auth.updateUsername(nameInput)
-    if (error) { setNameError(error.message); return }
-    setEditing(false); setNameError(null)
-  }
 
   return (
     <div className="profile-page pp">
@@ -102,25 +95,9 @@ export default function ProfilePage({ countries = [], onBack, onPlay, dailyProgr
         </div>
 
         <div className="pp-hero-main">
-          {editing ? (
-            <div className="pp-name-edit">
-              <input
-                value={nameInput} autoFocus maxLength={24}
-                onChange={e => { setNameInput(e.target.value); setNameError(null) }}
-                onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditing(false) }}
-              />
-              <button onClick={saveName}>{t('Save')}</button>
-              <button className="pp-ghost" onClick={() => setEditing(false)}>{t('Cancel')}</button>
-              {nameError && <span className="pp-name-error">{nameError}</span>}
-            </div>
-          ) : (
-            <div className="pp-name-row">
-              <h1>{username}</h1>
-              {auth.user && (
-                <button className="pp-icon-btn" title={t('Change username')} onClick={() => { setNameInput(username); setEditing(true) }}>✏️</button>
-              )}
-            </div>
-          )}
+          <div className="pp-name-row">
+            <h1>{username}</h1>
+          </div>
           <div className="pp-meta">
             <span className="pp-title-chip">{levelTitle(p.level.level)}</span>
             {joined && <span>{t('Joined')} {new Date(joined).toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</span>}
@@ -158,6 +135,61 @@ export default function ProfilePage({ countries = [], onBack, onPlay, dailyProgr
       {tab === 'map'          && <MapTab p={p} countries={countries} />}
       {tab === 'achievements' && <AchievementsTab p={p} />}
       {tab === 'leaderboards' && <Leaderboard initialMode={mostPlayed(p) ?? 'flag'} />}
+
+      {/* ── Account: danger zone ── */}
+      {auth.user && (
+        <section className="pp-danger">
+          <div>
+            <h3>{t('Delete account')}</h3>
+            <p>{t('Permanently deletes your account, username and all your saved games. This can\'t be undone.')}</p>
+          </div>
+          <button className="pp-danger-btn" onClick={() => setDeleting(true)}>{t('Delete account')}</button>
+        </section>
+      )}
+      {deleting && <DeleteAccountDialog username={username} onCancel={() => setDeleting(false)} onDelete={auth.deleteAccount} onDone={() => { setDeleting(false); onBack() }} />}
+    </div>
+  )
+}
+
+function DeleteAccountDialog({ username, onCancel, onDelete, onDone }) {
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const ok = typed.trim().toLowerCase() === username.toLowerCase()
+
+  useEffect(() => {
+    const esc = (e) => { if (e.key === 'Escape' && !busy) onCancel() }
+    window.addEventListener('keydown', esc)
+    return () => window.removeEventListener('keydown', esc)
+  }, [busy, onCancel])
+
+  const run = async () => {
+    if (!ok || busy) return
+    setBusy(true); setError(null)
+    const { error: err } = await onDelete()
+    setBusy(false)
+    if (err) { setError(/delete_my_account|function|schema cache/i.test(err.message) ? t('Account deletion isn\'t set up on the server yet.') : err.message); return }
+    onDone()
+  }
+
+  return (
+    <div className="cl-backdrop" onMouseDown={() => !busy && onCancel()}>
+      <div className="cl" role="alertdialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
+        <div className="cl-icon">⚠️</div>
+        <h3>{t('Delete your account?')}</h3>
+        <p>{t('Your profile, username, XP, achievements and every saved game will be deleted for good. Leaderboard entries disappear too.')}</p>
+        <p className="pp-danger-type">{t('Type your username to confirm:')} <b>{username}</b></p>
+        <input
+          className="auth-input" value={typed} autoFocus autoComplete="off" spellCheck={false}
+          onChange={e => setTyped(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') run() }}
+          placeholder={username}
+        />
+        {error && <div className="auth-error">{error}</div>}
+        <div className="cl-btns">
+          <button className="arc-secondary" onClick={onCancel} disabled={busy}>{t('Cancel')}</button>
+          <button className="pp-danger-btn" onClick={run} disabled={!ok || busy}>{busy ? '…' : t('Delete forever')}</button>
+        </div>
+      </div>
     </div>
   )
 }
