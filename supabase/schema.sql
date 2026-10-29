@@ -79,6 +79,65 @@ drop policy if exists "insert own results" on public.game_results;
 create policy "read own results"   on public.game_results for select using (auth.uid() = user_id);
 create policy "insert own results" on public.game_results for insert with check (auth.uid() = user_id);
 
+-- ── Fair play: flag implausible results so they never reach the leaderboards ──
+-- Scores are sent from the browser, so a determined player could send anything.
+-- Instead of rejecting (which would make the app retry forever), suspicious rows are
+-- stored with flagged = true and simply ignored by get_leaderboard().
+alter table public.game_results add column if not exists flagged boolean not null default false;
+
+create or replace function public.check_game_result()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  max_score integer := case new.mode
+    when 'capital-drop'   then 10000
+    when 'landmark-drop'  then 10000
+    when 'antipodes'      then 8000
+    when 'distance'       then 8000
+    when 'silhouette'     then 300
+    when 'higher-lower'   then 1000
+    when 'true-false'     then 300
+    when 'country-wordle' then 6
+    when 'time-zones'     then 10
+    when 'line-up'        then 60
+    else 100000
+  end;
+  recent integer;
+begin
+  new.flagged := false;
+  if new.user_id is distinct from auth.uid() then
+    raise exception 'not_your_result';
+  end if;
+  -- impossible numbers
+  if new.correct < 0 or new.total < 0 or new.correct > new.total or new.total > 2000
+     or new.score < 0 or new.score > max_score then
+    new.flagged := true;
+  end if;
+  -- inhumanly fast: more than ~4 correct answers per second
+  if new.duration_ms is not null and new.correct >= 5 and new.duration_ms < new.correct * 250 then
+    new.flagged := true;
+  end if;
+  -- from the future
+  if new.played_at > now() + interval '10 minutes' then
+    new.flagged := true;
+  end if;
+  -- flood: more than 20 freshly played games in one minute (old guest games merged at sign-in don't count)
+  if new.played_at > now() - interval '1 minute' then
+    select count(*) into recent from public.game_results
+    where user_id = new.user_id and played_at > now() - interval '1 minute';
+    if recent >= 20 then new.flagged := true; end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists game_results_check on public.game_results;
+create trigger game_results_check
+  before insert on public.game_results
+  for each row execute function public.check_game_result();
+
 -- ── Leaderboard: best score per user for a mode, optionally since a date ────
 create or replace function public.get_leaderboard(
   p_mode  text,
@@ -107,6 +166,7 @@ as $$
     where r.mode = p_mode
       and r.total > 0
       and coalesce((r.details->>'untimed')::boolean, false) = false   -- untimed games don't rank
+      and r.flagged = false                                             -- implausible results don't rank
       and (p_since is null or r.played_at >= p_since)
     order by r.user_id, r.score desc, r.duration_ms asc nulls last, r.played_at asc
   )

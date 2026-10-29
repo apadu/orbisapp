@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { subscribeAnswers } from '../utils/results'
 import { t, cn } from '../i18n'
+import { XP_PER_NEW } from '../utils/profileData'
 
 const TOAST_MS = 1500
 const MAX_TOASTS = 3
@@ -37,7 +38,7 @@ export default function GlobeFeedback() {
               {label && <span className="gf-label">{label}</span>}
               {x.ok && x.streak >= 3 && <span className="gf-streak">🔥 ×{x.streak}</span>}
               {x.ok && (x.firstTime
-                ? <span className="gf-xp">{t('+10 XP')}</span>
+                ? <span className="gf-xp">{t('+{n} XP', { n: XP_PER_NEW })}</span>
                 : <span className="gf-known" title={t('Already answered in a previous game — no XP')}>{t('known')}</span>)}
             </div>
           )

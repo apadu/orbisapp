@@ -8,10 +8,14 @@
  *   /quiz/<mode>       a quiz (capital, ww2, country-wordle…)
  *   /daily             Quiz of the day
  *   /profile           Profile
+ *   /privacy /terms /credits   info pages
  */
+export const INFO_PAGES = new Set(['privacy', 'terms', 'credits'])
+
 export function routeFor(page, mode, quizModes) {
   if (page === 'home') return '/'
   if (page === 'profile') return '/profile'
+  if (INFO_PAGES.has(page)) return `/${page}`
   if (page === 'quiz') {
     if (mode === 'daily-quiz') return '/daily'
     return quizModes.has(mode) ? `/quiz/${mode}` : '/quiz'
@@ -25,6 +29,7 @@ export function parseRoute(pathname, { quizModes, globeModes }) {
   if (parts.length === 0) return { page: 'home' }
   const [head, id] = parts
   if (head === 'profile' && !id) return { page: 'profile' }
+  if (INFO_PAGES.has(head) && !id) return { page: head }
   if (head === 'daily' && !id) return { page: 'quiz', mode: 'daily-quiz' }
   if (head === 'quiz') {
     if (!id) return { page: 'quiz', mode: 'quiz-hub' }

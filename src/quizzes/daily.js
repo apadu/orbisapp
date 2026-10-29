@@ -1,18 +1,15 @@
 /**
  * Quiz of the day — the same quiz for every player on a given UTC day.
  *
- * The pool is every (quiz, region) combination of a playable size. Each "cycle"
- * through the pool is shuffled with a fixed seed, so nothing repeats until the
- * whole pool has been used, and every client computes the same schedule.
+ * The schedule is a fixed list (dailySchedule.js): every client shows the same quiz
+ * on the same day, and adding new quizzes to the app never changes past days.
  */
-import { TABLE_QUIZZES, REGIONS } from './tableQuizzes'
+import { TABLE_QUIZZES } from './tableQuizzes'
+import { DAILY_SCHEDULE } from './dailySchedule'
 import { continentName } from '../i18n'
 
 export const DAILY_EPOCH = Date.UTC(2026, 9, 26)   // 26 Oct 2026 = Daily #1
 const DAY_MS = 86_400_000
-const MIN_ROWS = 8
-const MAX_ROWS = 60
-const SAMPLE_SIZE = 20
 
 export function dailyNumber(now = Date.now()) {
   return Math.floor((now - DAILY_EPOCH) / DAY_MS) + 1
@@ -27,51 +24,19 @@ export function utcDayStartISO(now = Date.now()) {
   return new Date(DAILY_EPOCH + (dailyNumber(now) - 1) * DAY_MS).toISOString()
 }
 
-function seeded(seed) {
-  let t = seed >>> 0
-  return () => {
-    t += 0x6D2B79F5
-    let r = Math.imul(t ^ (t >>> 15), 1 | t)
-    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
-    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+/** The quiz for daily #n: { day, quizId, region, size, seed, title, icon }
+ *  Comes from the frozen list in dailySchedule.js, so a past day's quiz never changes. */
+export function dailyQuizFor(n) {
+  const len = DAILY_SCHEDULE.length
+  if (!len || n < 1) return null
+  // Skip entries whose quiz no longer exists (shouldn't happen — just in case)
+  for (let k = 0; k < len; k++) {
+    const [quizId, region, size] = DAILY_SCHEDULE[(n - 1 + k) % len]
+    const q = TABLE_QUIZZES[quizId]
+    if (!q) continue
+    return { day: n, quizId, region, size, seed: n * 2654435761, title: q.title, icon: q.icon, prompt: q.prompt }
   }
-}
-
-let poolCache = null
-function buildPool(countries) {
-  const key = countries.length
-  if (poolCache?.key === key) return poolCache.pool
-  const pool = []
-  for (const id of Object.keys(TABLE_QUIZZES).sort()) {
-    const q = TABLE_QUIZZES[id]
-    const regions = q.regions === false ? ['World'] : REGIONS
-    for (const region of regions) {
-      const n = q.build({ countries, region }).length
-      if (q.sample) {
-        if (n >= SAMPLE_SIZE) pool.push({ quizId: id, region, size: SAMPLE_SIZE })
-      } else if (n >= MIN_ROWS && n <= MAX_ROWS) {
-        pool.push({ quizId: id, region, size: n })
-      }
-    }
-  }
-  poolCache = { key, pool }
-  return pool
-}
-
-/** The quiz for daily #n: { day, quizId, region, size, seed, title, icon } */
-export function dailyQuizFor(n, countries) {
-  const pool = buildPool(countries)
-  if (!pool.length) return null
-  const cycle = Math.floor((n - 1) / pool.length)
-  const order = [...pool]
-  const rnd = seeded(1000 + cycle * 7919)
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]]
-  }
-  const pick = order[(n - 1) % pool.length]
-  const q = TABLE_QUIZZES[pick.quizId]
-  return { day: n, ...pick, seed: n * 2654435761, title: q.title, icon: q.icon, prompt: q.prompt }
+  return null
 }
 
 /** Wordle-style share text. */

@@ -7,7 +7,6 @@ import { GAME_GROUPS, gamesInGroup } from './utils/gameRegistry'
 import { setSoundEnabled, playCorrect, playWrong, playWin } from './utils/sounds'
 import StreakBadge from './components/StreakBadge'
 import QuizHub from './components/QuizHub'
-import { loadDailyProgress, markDailyComplete, incrementDailyCount, getDailyStreak } from './utils/dailyChallenges'
 import { getDistanceInfo, computeAdjacency } from './utils/geoUtils'
 import { resolveAlias } from './utils/aliases'
 import { geoDistance, geoCentroid, geoContains, geoBounds } from 'd3-geo'
@@ -20,7 +19,7 @@ import { pickDailyCountry, todayLabel } from './utils/daily'
 import { getStats, recordWin, recordGiveUp } from './utils/stats'
 import { useAuth } from './auth/AuthContext'
 import { startSession, trackAnswer, finishGame, flushSessions, hasActiveGame } from './utils/results'
-import { routeFor, parseRoute } from './utils/router'
+import { routeFor, parseRoute, INFO_PAGES } from './utils/router'
 import { GAME_CATALOG } from './utils/gameCatalog'
 import ConfirmLeave from './components/ConfirmLeave'
 import { useListTracking } from './utils/useListTracking'
@@ -67,6 +66,7 @@ const ConnectionsPanel = lazy(() => import('./components/ConnectionsPanel'))
 const MountainGlobe = lazy(() => import('./components/MountainGlobe'))
 const NameAllSeaGlobe = lazy(() => import('./components/NameAllSeaGlobe'))
 const ProfilePage = lazy(() => import('./components/ProfilePage'))
+const InfoPage = lazy(() => import('./components/InfoPage'))
 const TableQuiz = lazy(() => import('./components/TableQuiz'))
 const DailyQuiz = lazy(() => import('./components/DailyQuiz'))
 const HigherLower = lazy(() => import('./components/HigherLower'))
@@ -209,9 +209,6 @@ export default function App() {
   }, [soundEnabled])
 
   // ── Daily challenges ─────────────────────────────────────────────────────
-  const [dailyProgress, setDailyProgress] = useState(() => loadDailyProgress())
-  const dailyStreak = getDailyStreak()
-  const refreshDaily = () => setDailyProgress(loadDailyProgress())
 
   // ── App page & profile ───────────────────────────────────────────────────
   const [page,        setPage]        = useState('home') // 'home' | 'game' | 'quiz' | 'profile'
@@ -663,8 +660,6 @@ export default function App() {
       playWin()
       if (!practiceMode) {
         setStats(recordWin())
-        markDailyComplete('mystery')
-        refreshDaily()
       }
       const guesses = mysteryGuesses.length + 1
       startSession('mystery')
@@ -698,8 +693,6 @@ export default function App() {
     const name = feature.properties.NAME
     if (found.some(f => f.name === name)) return
     setFound(prev => [...prev, { name, feature }])
-    incrementDailyCount('countries')
-    refreshDaily()
   }, [found])
 
   const [nameAllMissed, setNameAllMissed] = useState([])
@@ -974,6 +967,7 @@ export default function App() {
   const applyRoute = useCallback((r) => {
     if (r.page === 'home') { setPage('home'); return }
     if (r.page === 'profile') { setPage('profile'); return }
+    if (INFO_PAGES.has(r.page)) { setPage(r.page); return }
     if (r.mode === 'quiz-hub') { setMode('quiz-hub'); setPage('quiz'); return }
     switchMode(r.mode)
     setPage(r.page)
@@ -984,6 +978,7 @@ export default function App() {
     applyRoute(id === 'quiz-hub' ? { page: 'quiz', mode: 'quiz-hub' } : { page: QUIZ_MODES.has(id) ? 'quiz' : 'game', mode: id })
   }), [guard, applyRoute])
   const goHome = useCallback(() => guard(() => setPage('home')), [guard])
+  const openInfo = useCallback((doc) => guard(() => setPage(doc)), [guard])
   // Back from the profile: reopen the previous screen as a fresh game
   const backFromProfile = () => (prevPage === 'game' || prevPage === 'quiz') ? applyRoute({ page: prevPage, mode }) : setPage(prevPage)
 
@@ -1011,6 +1006,13 @@ export default function App() {
       }
     }
     const path = routeFor(page, mode, QUIZ_MODES)
+    // Tab title per screen: "Capitals · Orbis"
+    const name = page === 'home' ? null
+      : page === 'profile' ? t('Profile')
+      : page === 'privacy' ? t('Privacy Policy') : page === 'terms' ? t('Terms of Use') : page === 'credits' ? t('Credits')
+      : mode === 'quiz-hub' ? t('Quiz Hub') : mode === 'learn' ? t('Learn')
+      : GAME_CATALOG[mode]?.label ?? null
+    document.title = name ? `${name} · Orbis` : t('Orbis — Geography Games on a 3D Globe')
     if (window.location.pathname !== path) {
       if (fromPop.current) window.history.replaceState(null, '', path)
       else window.history.pushState(null, '', path)
@@ -1181,12 +1183,11 @@ export default function App() {
             <span>🔎</span><span className="topbar-search-text">{t('Search games')}</span><kbd>{PALETTE_SHORTCUT}</kbd>
           </button>
           <StreakBadge
-            streak={dailyStreak}
-            dailyProgress={dailyProgress}
             onSelectMode={openGame}
           />
           <UserMenu
             displayName={displayName}
+            onOpenInfo={openInfo}
             onProfile={() => page === 'profile' ? backFromProfile() : guard(openProfile)}
             soundEnabled={soundEnabled}
             onToggleSound={() => setSoundEnabledState(x => !x)}
@@ -1194,34 +1195,27 @@ export default function App() {
         </div>
       </header>
 
+      {INFO_PAGES.has(page) && (
+        <Suspense fallback={null}><InfoPage doc={page} onBack={() => setPage('home')} onOpen={openInfo} /></Suspense>
+      )}
+
       {page === 'profile' && (
         <Suspense fallback={null}><ProfilePage
           countries={countries}
           onBack={backFromProfile}
           onPlay={openGame}
-          dailyProgress={dailyProgress}
-          dailyStreak={dailyStreak}
         /></Suspense>
       )}
 
       {page === 'home' && (
         <HomePage
           onEnter={() => openGame(mode === 'quiz-hub' || QUIZ_MODES.has(mode) ? 'mystery' : mode)}
-          onSelectMode={(id) => {
-            if (QUIZ_MODES.has(id)) {
-              switchMode(id)
-              setPage('quiz')
-            } else {
-              switchMode(id)
-              setPage('game')
-            }
-          }}
+          onSelectMode={openGame}
           onEnterQuiz={() => { setMode('quiz-hub'); setPage('quiz') }}
           onProfile={openProfile}
           countryNames={gameCountryNames}
           onDailyQuiz={() => { switchMode('daily-quiz'); setPage('quiz') }}
-          dailyProgress={dailyProgress}
-          dailyStreak={dailyStreak}
+          onOpenInfo={openInfo}
         />
       )}
 
@@ -1255,7 +1249,7 @@ export default function App() {
             ) : mode === 'country-wordle' ? (
               <CountryWordle key={mode} countryNames={gameCountryNames} />
             ) : TABLE_QUIZ_IDS.has(mode) ? (
-              <TableQuiz key={mode} quizId={mode} countryNames={gameCountryNames} onDaily={refreshDaily} />
+              <TableQuiz key={mode} quizId={mode} countryNames={gameCountryNames} />
             ) : (
               <div className="quiz-panel-wrap">
                 <div className="panel quiz-panel-inner">
@@ -1316,7 +1310,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="layout" style={{ display: (page === 'profile' || page === 'quiz') ? 'none' : 'flex' }}>
+      <div className="layout" style={{ display: (page === 'game' || page === 'home') ? 'flex' : 'none' }}>
 
         {/* ── Left rail: categories + flyouts ── */}
         {page === 'game' && (

@@ -4,12 +4,19 @@
  */
 import { GAME_CATALOG } from './gameCatalog'
 import { t } from '../i18n'
+import { challengeHistory } from './dailyChallenges'
 
 // ── XP & levels ────────────────────────────────────────────────────────────
-// XP: 10 per correct answer — but only the FIRST time you get a given item right
-// in a given game (naming France in Name All twice gives XP once) — plus 25 per completed game.
-export const XP_PER_NEW = 10
-export const XP_PER_GAME = 25
+// XP sources:
+//   • 2 XP per correct answer — only the FIRST time you get a given item right in a
+//     given game (naming France in Name All twice gives XP once)
+//   • 15 XP per finished game
+//   • 30 XP per daily challenge completed, +40 bonus when all three are done that day
+// Untimed games earn nothing. Everything is recomputed from the saved results.
+export const XP_PER_NEW = 2
+export const XP_PER_GAME = 15
+export const XP_PER_CHALLENGE = 30
+export const XP_ALL_CHALLENGES = 40
 
 export function itemKey(mode, a) {
   const id = a.c ?? a.k
@@ -35,13 +42,18 @@ export function computeXp(results) {
     // Correct answers that weren't itemized (older data) still count
     xp += Math.max(0, r.correct - itemizedOk) * XP_PER_NEW
   }
+  for (const done of Object.values(challengeHistory(results))) {
+    xp += done * XP_PER_CHALLENGE + (done === 3 ? XP_ALL_CHALLENGES : 0)
+  }
   return xp
 }
-// Level L requires 60·(L−1)² XP  → L2=60, L5=960, L10=4860, L20=21660
+
+// Level L needs 50·L·(L−1) XP in total → L2 = 100, L5 = 1 000, L10 = 4 500, L20 = 19 000, L40 = 78 000
+const xpForLevel = (L) => 50 * L * (L - 1)
 export function levelForXp(xp) {
-  const level = Math.floor(Math.sqrt(xp / 60)) + 1
-  const cur   = 60 * (level - 1) ** 2
-  const next  = 60 * level ** 2
+  const level = Math.max(1, Math.floor((1 + Math.sqrt(1 + (4 * xp) / 50)) / 2))
+  const cur   = xpForLevel(level)
+  const next  = xpForLevel(level + 1)
   return { level, cur, next, pct: Math.min(100, ((xp - cur) / (next - cur)) * 100) }
 }
 

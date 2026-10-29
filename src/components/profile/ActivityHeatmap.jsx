@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
 import { dayKey } from '../../utils/profileData'
-import { t } from '../../i18n'
+import { t, locale } from '../../i18n'
 
 const WEEKS = 26
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function level(n) {
   if (!n) return 0
@@ -37,7 +36,7 @@ export default function ActivityHeatmap({ heatmap }) {
         total += n
         col.push({ key, n, future })
         if (d === 0 && date.getMonth() !== lastMonth) {
-          labels.push({ w, label: MONTHS[date.getMonth()] })
+          labels.push({ w, label: date.toLocaleDateString(locale, { month: 'short' }).replace('.', '') })
           lastMonth = date.getMonth()
         }
       }
@@ -50,7 +49,7 @@ export default function ActivityHeatmap({ heatmap }) {
     <div className="hm-wrap">
       <div className="hm-head">
         <span className="hm-title">{t('Activity')}</span>
-        <span className="hm-sub">{total} {t('game')}{total === 1 ? '' : 's'} {t('in the last 6 months')}</span>
+        <span className="hm-sub">{t(total === 1 ? '{n} game in the last 6 months' : '{n} games in the last 6 months', { n: total })}</span>
       </div>
       <div className="hm-scroll">
         <div className="hm-months" style={{ gridTemplateColumns: `repeat(${WEEKS}, 1fr)` }}>

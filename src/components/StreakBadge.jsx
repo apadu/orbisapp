@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { DAILY_CHALLENGES, getChallengeProgress } from '../utils/dailyChallenges'
+import { useDailyChallenges } from '../utils/useDailyChallenges'
 import { t, locale } from '../i18n'
 
-export default function StreakBadge({ streak, dailyProgress, onSelectMode }) {
+export default function StreakBadge({ onSelectMode }) {
+  const { list, allDone, streak } = useDailyChallenges()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -14,7 +15,6 @@ export default function StreakBadge({ streak, dailyProgress, onSelectMode }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const allDone = DAILY_CHALLENGES.every(c => getChallengeProgress(c.id, dailyProgress).done)
 
   const todayLabel = new Date().toLocaleDateString(locale, { weekday: 'long', month: 'short', day: 'numeric' })
 
@@ -36,8 +36,8 @@ export default function StreakBadge({ streak, dailyProgress, onSelectMode }) {
           </div>
 
           <div className="streak-pop-challenges">
-            {DAILY_CHALLENGES.map(ch => {
-              const { done, value, target } = getChallengeProgress(ch.id, dailyProgress)
+            {list.map(ch => {
+              const { done, value, target } = ch
               const pct = Math.min((value / target) * 100, 100)
               return (
                 <button

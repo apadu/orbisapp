@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TABLE_QUIZZES, REGIONS, norm, timeLimitFor } from '../quizzes/tableQuizzes'
 import { startSession, trackAnswer, finishGame, markSession } from '../utils/results'
-import { incrementDailyCount } from '../utils/dailyChallenges'
 import { playCorrect, playWin, playWrong } from '../utils/sounds'
 import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
@@ -202,7 +201,6 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
       const country = row.country ?? (typeof lab === 'object' && lab ? lab.country : lab)
       if (lab) newLabels[id] = typeof lab === 'object' ? lab.show : lab
       trackAnswer(mode, country, true, 10, country ? null : row.id)
-      if (quizId === 'flag') { incrementDailyCount('flags'); onDaily?.() }
     }
     filledRef.current = next
     if (Object.keys(newLabels).length) setLabels(l => ({ ...l, ...newLabels }))

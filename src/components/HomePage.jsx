@@ -4,8 +4,9 @@ import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
 import { levelForXp, levelTitle, computeXp } from '../utils/profileData'
 import { gameMeta } from '../utils/gameCatalog'
-import { DAILY_CHALLENGES, getChallengeProgress } from '../utils/dailyChallenges'
+import { useDailyChallenges } from '../utils/useDailyChallenges'
 import DailyBanner from './DailyBanner'
+import { InfoLinks } from './InfoPage'
 import { t } from '../i18n'
 
 import { GLOBE_ROWS as ROWS } from '../utils/gameRegistry'
@@ -18,7 +19,8 @@ function useResults() {
   return results
 }
 
-export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile, onDailyQuiz, countryNames = [], dailyProgress = {}, dailyStreak = 0 }) {
+export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile, onDailyQuiz, onOpenInfo, countryNames = [] }) {
+  const { list: daily, streak: dailyStreak } = useDailyChallenges()
   const auth = useAuth()
   const results = useResults()
   const stats = useMemo(() => summarize(results), [results])
@@ -36,9 +38,11 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile
     return out
   }, [results])
 
-  const daily = DAILY_CHALLENGES.map(ch => ({ ...ch, ...getChallengeProgress(ch.id, dailyProgress) }))
   const dailyDone = daily.filter(d => d.done).length
-  const mysteryDone = daily.find(d => d.id === 'mystery')?.done
+  const mysteryDone = useMemo(() => {
+    const today = new Date().toDateString()
+    return results.some(r => r.mode === 'mystery' && r.correct > 0 && !r.details?.practice && new Date(r.played_at).toDateString() === today)
+  }, [results])
 
   const quizPlayed = QUIZ_ITEMS.filter(q => stats[q.id]).length
 
@@ -170,6 +174,8 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile
           <span className="hp-banner-cta">{t('Explore ▸')}</span>
         </button>
       </section>
+
+      {onOpenInfo && <InfoLinks onOpen={onOpenInfo} />}
     </div>
   )
 }

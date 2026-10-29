@@ -2,20 +2,40 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Orbis — Geography Games</title>
-    <meta name="description" content="Test your world geography with 20+ game modes. Daily challenges, flags, capitals, borders and more." />
-    <meta property="og:title" content="Orbis — Geography Games" />
-    <meta property="og:description" content="Test your world geography with 20+ game modes. Daily challenges, flags, capitals, and more." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- ⚠️ When you move to your own domain, replace https://orbisapp.vercel.app below (and in public/robots.txt, public/sitemap.xml) -->
+    <title>Orbis — Geography Games on a 3D Globe</title>
+    <meta name="description" content="70+ free geography games on a living 3D globe: flags, capitals, borders, landmarks, time zones and more. Daily quiz, Country Wordle, leaderboards. In English and Romanian." />
+    <meta name="theme-color" content="#08050f" />
+    <link rel="canonical" href="https://orbisapp.vercel.app/" />
+
+    <!-- Sharing cards (WhatsApp, Facebook, X, Discord…) -->
     <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Orbis — Geography Games" />
-    <meta name="twitter:description" content="Test your world geography with 20+ game modes." />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>" />
+    <meta property="og:site_name" content="Orbis" />
+    <meta property="og:url" content="https://orbisapp.vercel.app/" />
+    <meta property="og:title" content="Orbis — Geography Games on a 3D Globe" />
+    <meta property="og:description" content="70+ free geography games: flags, capitals, borders, landmarks, a daily quiz and Country Wordle." />
+    <meta property="og:image" content="https://orbisapp.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Orbis — geography games on a living 3D globe" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Orbis — Geography Games on a 3D Globe" />
+    <meta name="twitter:description" content="70+ free geography games: flags, capitals, borders, landmarks, a daily quiz and Country Wordle." />
+    <meta name="twitter:image" content="https://orbisapp.vercel.app/og-image.png" />
+
+    <!-- Icons & installable app -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-title" content="Orbis" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
     <!-- Start downloading the world map while the JS boots -->
     <link rel="preload" href="/data/ne_50m_admin_0_countries.geojson" as="fetch" crossorigin="anonymous" />
   </head>
   <body>
+    <noscript>Orbis needs JavaScript to run its 3D globe.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

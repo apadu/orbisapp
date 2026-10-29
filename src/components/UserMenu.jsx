@@ -17,7 +17,7 @@ function useLevel() {
  * Top-right cluster: level chip + avatar with a dropdown
  * (profile, sound, theme, bug report, sign in/out).
  */
-export default function UserMenu({ displayName, onProfile, soundEnabled, onToggleSound }) {
+export default function UserMenu({ displayName, onProfile, soundEnabled, onToggleSound, onOpenInfo }) {
   const auth = useAuth()
   const level = useLevel()
   const [open, setOpen] = useState(false)
@@ -68,6 +68,7 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
               </button>
             ))}
           </div>
+          {onOpenInfo && <button role="menuitem" onClick={item(() => onOpenInfo('privacy'))}>{t('🔒 Privacy & terms')}</button>}
           <a role="menuitem" href="https://forms.gle/hDpMyhns9PD7ghdBA" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>{t('🐛 Report a bug')}</a>
           <div className="um-sep" />
           {auth.user
