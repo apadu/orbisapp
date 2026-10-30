@@ -1,8 +1,9 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 import * as THREE from 'three'
 import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
 import { geoEquirectangular, geoPath, geoCentroid, geoBounds } from 'd3-geo'
 import GlobeControls from './GlobeControls'
+import { t } from '../i18n'
 
 const CANVAS_W = 4096
 const CANVAS_H = 2048
@@ -545,7 +546,7 @@ function drawOverlay(ctx, { lines = [], pins = [] }) {
 }
 
 // ─── Globe Component ─────────────────────────────────────────────────────────
-export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, locateCorrectMarker, spinEnabled = true, hiddenCountries, soloMode, flyToFeature, overlay, flyToPoint }) {
+export default function Globe({ countries, guesses, mystery, gameWon, highlighted, missed, onGlobeClick, locateMarker, locateCorrectMarker, spinEnabled = true, hiddenCountries, soloMode, flyToFeature, overlay, flyToPoint, confirmTap = true }) {
   const mountRef  = useRef(null)
   const rendRef   = useRef(null)
   const sphereRef = useRef(null)
@@ -561,6 +562,14 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
   const spinRef    = useRef(spinEnabled)
   const flyTarget  = useRef(null) // { y, x } target rotation in radians
   const camTargetZ = useRef(null) // smooth camera zoom target
+  const touch = useRef({ x: 0, y: 0, t: 0, moved: false, pinch: null })
+  const [pending, setPending] = useState(null)          // { lon, lat } waiting for confirmation
+  useEffect(() => { setPending(null) }, [onGlobeClick])  // new round / game → drop it
+  // Provisional (touch) pin drawn on top of whatever the game draws
+  const drawOverlayMerged = useMemo(() => {
+    if (!pending || !overlay) return overlay
+    return { ...overlay, pins: [...(overlay.pins ?? []), { lon: pending.lon, lat: pending.lat, color: '#ff3366', ring: 18 }] }
+  }, [overlay, pending])
 
   // ── Init Three.js scene ──────────────────────────────────────────────────
   useEffect(() => {
@@ -676,11 +685,11 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     // Coalesce bursts of state changes (e.g. several answers in one tick) into one redraw per frame
     const raf = requestAnimationFrame(() => {
       if (!canvasRef.current || !texRef.current) return
-      redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, locateMarker, hiddenCountries, soloMode, locateCorrectMarker, overlay)
+      redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, pending && !overlay ? pending : locateMarker, hiddenCountries, soloMode, locateCorrectMarker, drawOverlayMerged)
       texRef.current.needsUpdate = true
     })
     return () => cancelAnimationFrame(raf)
-  }, [guesses, mystery, gameWon, countries, highlighted, missed, locateMarker, locateCorrectMarker, hiddenCountries, soloMode, overlay])
+  }, [guesses, mystery, gameWon, countries, highlighted, missed, locateMarker, locateCorrectMarker, hiddenCountries, soloMode, drawOverlayMerged, pending])
 
   // ── Fly to an arbitrary point { lon, lat, zoom? } ───────────────────────
   useEffect(() => {
@@ -739,6 +748,20 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
   }, [])
 
   // ── Mouse drag to rotate ─────────────────────────────────────────────────
+  // Screen point → { lon, lat } on the globe (or null if the click missed it)
+  const pickLonLat = useCallback((clientX, clientY) => {
+    const el = mountRef.current, cam = camRef.current, sphere = sphereRef.current
+    if (!el || !cam || !sphere) return null
+    const rect = el.getBoundingClientRect()
+    const nx = ((clientX - rect.left) / rect.width)  * 2 - 1
+    const ny = -((clientY - rect.top) / rect.height) * 2 + 1
+    raycaster.current.setFromCamera({ x: nx, y: ny }, cam)
+    const hits = raycaster.current.intersectObject(sphere)
+    if (!hits.length || !hits[0].uv) return null
+    const uv = hits[0].uv
+    return { lon: (uv.x - 0.5) * 360, lat: (uv.y - 0.5) * 180 }
+  }, [])
+
   const onMouseDown = useCallback((e) => {
     const startX = e.clientX, startY = e.clientY
     drag.current = { active: true, prev: { x: e.clientX, y: e.clientY } }
@@ -759,43 +782,47 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
       drag.current.active = false
-
-      // If mouse barely moved, treat as a click
-      const moved = Math.hypot(e2.clientX - startX, e2.clientY - startY)
-      if (moved < 5 && onGlobeClick) {
-        const el = mountRef.current
-        const cam = camRef.current
-        const sphere = sphereRef.current
-        if (!el || !cam || !sphere) return
-        const rect = el.getBoundingClientRect()
-        const nx = ((e2.clientX - rect.left) / rect.width)  * 2 - 1
-        const ny = -((e2.clientY - rect.top) / rect.height) * 2 + 1
-        raycaster.current.setFromCamera({ x: nx, y: ny }, cam)
-        const hits = raycaster.current.intersectObject(sphere)
-        if (hits.length && hits[0].uv) {
-          const uv = hits[0].uv
-          const lon = (uv.x - 0.5) * 360
-          const lat = (uv.y - 0.5) * 180
-          onGlobeClick(lon, lat)
-        }
+      // If the mouse barely moved, it's a click
+      if (Math.hypot(e2.clientX - startX, e2.clientY - startY) < 5 && onGlobeClick) {
+        const p = pickLonLat(e2.clientX, e2.clientY)
+        if (p) onGlobeClick(p.lon, p.lat)
       }
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
-  }, [pauseAutoRotate, onGlobeClick])
+  }, [pauseAutoRotate, onGlobeClick, pickLonLat])
 
   // ── Touch drag ───────────────────────────────────────────────────────────
+  // ── Touch: one finger rotates, two fingers pinch-zoom, a tap places a pin ──
+  // On touch screens a tap doesn't answer straight away: it drops a provisional pin
+  // and shows "Confirm", so a slightly-off tap while rotating doesn't cost a round.
+
   const onTouchStart = useCallback((e) => {
+    pauseAutoRotate()
+    if (e.touches.length === 2) {
+      const [a, b] = e.touches
+      touch.current.pinch = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), z: camRef.current?.position.z ?? 3 }
+      touch.current.moved = true
+      drag.current.active = false
+      return
+    }
     if (e.touches.length !== 1) return
     const t = e.touches[0]
     drag.current = { active: true, prev: { x: t.clientX, y: t.clientY } }
-    pauseAutoRotate()
+    touch.current = { x: t.clientX, y: t.clientY, t: Date.now(), moved: false, pinch: null }
   }, [pauseAutoRotate])
 
   const onTouchMove = useCallback((e) => {
+    const cam = camRef.current
+    if (e.touches.length === 2 && touch.current.pinch && cam) {
+      const [a, b] = e.touches
+      const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+      cam.position.z = Math.max(1.4, Math.min(5, touch.current.pinch.z * (touch.current.pinch.d / Math.max(d, 1))))
+      return
+    }
     if (!drag.current.active || e.touches.length !== 1) return
-    e.preventDefault()
     const t = e.touches[0]
+    if (Math.hypot(t.clientX - touch.current.x, t.clientY - touch.current.y) > 8) touch.current.moved = true
     const dx = t.clientX - drag.current.prev.x
     const dy = t.clientY - drag.current.prev.y
     const sphere = sphereRef.current
@@ -806,7 +833,17 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     drag.current.prev = { x: t.clientX, y: t.clientY }
   }, [])
 
-  const onTouchEnd = useCallback(() => { drag.current.active = false }, [])
+  const onTouchEnd = useCallback((e) => {
+    drag.current.active = false
+    if (e.touches.length === 0) touch.current.pinch = null
+    const tc = touch.current
+    if (!onGlobeClick || tc.moved || tc.pinch || Date.now() - tc.t > 450 || e.changedTouches.length !== 1) return
+    const p = pickLonLat(tc.x, tc.y)
+    if (!p) return
+    if (confirmTap) setPending(p); else onGlobeClick(p.lon, p.lat)
+  }, [onGlobeClick, pickLonLat, confirmTap])
+
+  const confirmPending = () => { if (pending && onGlobeClick) { onGlobeClick(pending.lon, pending.lat); setPending(null) } }
 
   // ── Scroll to zoom ───────────────────────────────────────────────────────
   const onWheel = useCallback((e) => {
@@ -818,7 +855,7 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     <>
       <div
         ref={mountRef}
-        style={{ width: '100%', height: '100%', cursor: onGlobeClick ? 'crosshair' : 'grab' }}
+        style={{ width: '100%', height: '100%', cursor: onGlobeClick ? 'crosshair' : 'grab', touchAction: 'none' }}
         onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -826,6 +863,12 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
         onWheel={onWheel}
       />
       <GlobeControls camRef={camRef} sphereRef={sphereRef} spinRef={spinRef} />
+      {pending && onGlobeClick && (
+        <div className="globe-confirm" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
+          <button className="arc-primary" onClick={confirmPending}>{t('✓ Confirm pin')}</button>
+          <button className="arc-secondary" onClick={() => setPending(null)} aria-label={t('Cancel')}>✕</button>
+        </div>
+      )}
     </>
   )
 }

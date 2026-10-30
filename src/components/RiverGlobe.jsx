@@ -226,7 +226,7 @@ export default function RiverGlobe({ countries, rivers, foundNames, missedNames,
     <>
       <div
         ref={mountRef}
-        style={{ width: '100%', height: '100%', cursor: 'grab' }}
+        style={{ width: '100%', height: '100%', cursor: 'grab', touchAction: 'none' }}
         onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}

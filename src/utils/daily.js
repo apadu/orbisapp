@@ -1,3 +1,4 @@
+import { locale } from '../i18n'
 /** Simple seeded pseudo-random (mulberry32) */
 function mulberry32(seed) {
   return function () {
@@ -24,5 +25,5 @@ export function pickDailyCountry(features) {
 
 /** Return today's date as a readable string e.g. "July 3, 2026" */
 export function todayLabel() {
-  return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  return new Date().toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })
 }

@@ -3,6 +3,8 @@ import Globe, { FIXED_ELLIPSE_CENTERS } from './components/Globe'
 import GamePanel from './components/GamePanel'
 import CommandPalette, { PALETTE_SHORTCUT } from './components/CommandPalette'
 import RailNav from './components/RailNav'
+import MobileNav from './components/MobileNav'
+import { useIsMobile, useKeyboardInset, SheetHandle, useSheet, snapHeights } from './components/MobileSheet'
 import { GAME_GROUPS, gamesInGroup } from './utils/gameRegistry'
 import { setSoundEnabled, playCorrect, playWrong, playWin } from './utils/sounds'
 import StreakBadge from './components/StreakBadge'
@@ -222,6 +224,12 @@ export default function App() {
   // ── Shared game mode ─────────────────────────────────────────────────────
   const [mode, setMode] = useState('mystery')
   const [gameKey, setGameKey] = useState(0)   // bumps every time a game is (re)opened
+
+  // ── Phones: the game panel is a draggable bottom sheet over the globe ────
+  const isMobile = useIsMobile()
+  useKeyboardInset()
+  const sheet = useSheet(`${mode}-${gameKey}`)
+  const panelRef = useRef(null)
 
   // Close any open (endless) game session whenever the player switches game or page
   useEffect(() => () => flushSessions(), [mode, page])
@@ -1165,7 +1173,10 @@ export default function App() {
 
   return (
     <>
-    <div className={`app-shell page-${page}`}>
+    <div
+      className={`app-shell page-${page}${isMobile ? ` is-mobile sheet-${sheet.snap}` : ''}`}
+      style={isMobile && typeof window !== 'undefined' ? { '--sheet-h': `${snapHeights()[sheet.snap]}px` } : undefined}
+    >
       {/* ── Top bar ── */}
       <header className="topbar">
         <div className="topbar-left">
@@ -1390,6 +1401,7 @@ export default function App() {
                 hiddenCountries={mode === 'missing' ? missingHidden : undefined}
                 soloMode={mode === 'spotlight' || (mode === 'name-all' && nameAllBlind)}
                 onGlobeClick={mode === 'locate' ? handleLocateClick : mode === 'learn' ? handleLearnClick : null}
+                confirmTap={mode !== 'learn'}
                 locateMarker={mode === 'locate' ? locateMarker : null}
                 locateCorrectMarker={
                   mode === 'locate' && locateGuessed && locateResult && !locateResult.isHit && locateCurrent
@@ -1405,7 +1417,8 @@ export default function App() {
         </Suspense></div>
 
       {page !== 'home' && <RulesHint className="rules-hint-floating" />}
-      <div key={`${mode}-${gameKey}`} className="panel panel-float" style={{ display: page === 'game' ? undefined : 'none' }}>
+      <div key={`${mode}-${gameKey}`} ref={panelRef} onFocus={sheet.onFocusIn} className="panel panel-float" style={{ display: page === 'game' ? undefined : 'none' }}>
+        {isMobile && page === 'game' && <SheetHandle snap={sheet.snap} onSnap={sheet.setSnap} panelRef={panelRef} />}
         <Suspense fallback={<div className="panel-skeleton"><span /><span /><span /></div>}>
         {page === 'game' && <>
         {mode === 'mystery' && (
@@ -1589,6 +1602,17 @@ export default function App() {
     </div>
     <Confetti active={(mode === 'mystery' && gameWon) || missingComplete || !!completionStats} />
     <Analytics />
+    {/* hidden while playing (globe game or a quiz) — the game needs the bottom of the screen */}
+    {isMobile && page !== 'game' && !(page === 'quiz' && mode !== 'quiz-hub') && (
+      <MobileNav
+        page={page} mode={mode}
+        onHome={goHome}
+        onGames={() => setDrawerOpen(true)}
+        onSearch={() => setPaletteOpen(true)}
+        onDaily={() => openGame('daily-quiz')}
+        onProfile={() => page === 'profile' ? undefined : guard(openProfile)}
+      />
+    )}
     <ConfirmLeave open={!!pendingNav} onStay={() => setPendingNav(null)} onLeave={() => { const fn = pendingNav; setPendingNav(null); fn?.() }} />
     <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onSelect={openGame} />
     {completionStats && (

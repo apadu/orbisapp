@@ -1150,4 +1150,8 @@ export const RO = {
   "🔒 Privacy & terms": "🔒 Confidențialitate și termeni",
   "Profile": "Profil",
   "Orbis — Geography Games on a 3D Globe": "Orbis — Jocuri de geografie pe un glob 3D",
+  "✓ Confirm pin": "✓ Confirmă pinul",
+  "Main navigation": "Navigare principală",
+  "Show more of the globe": "Arată mai mult din glob",
+  "Expand the panel": "Mărește panoul",
 }

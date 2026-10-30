@@ -300,7 +300,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
         <div className="tq-title">
           <span className="tq-icon">{quiz.icon}</span>
           <div>
-            <h2>{quiz.title}{region !== 'World' && <span className="tq-region"> · {region}</span>}</h2>
+            <h2>{quiz.title}{region !== 'World' && <span className="tq-region"> · {continentName(region)}</span>}</h2>
             <p>{quiz.prompt}</p>
           </div>
         </div>
