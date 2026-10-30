@@ -5,6 +5,7 @@ import { CAPITALS } from '../utils/capitals'
 import { COUNTRY_INFO } from '../utils/countryInfo'
 import { resolveAlias, findClosestMatch } from '../utils/aliases'
 import { t, cn } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 export default function GamePanel({ countries, guesses, mystery, gameWon, onGuess, onNewGame, stats, dateLabel, practiceMode, onTogglePractice, gaveUp, onGiveUp }) {
   const [input,      setInput]      = useState('')
@@ -88,6 +89,8 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
   const mysteryCapital = CAPITALS[mysteryName]?.[0] ?? '—'
   const mysteryInfo    = COUNTRY_INFO[mysteryName]
 
+  // Phones: key numbers stay visible over the globe
+  useGameHud(!gameWon && guesses.length ? [{ icon: '🔍', text: String(guesses.length) }] : null)
   return (
     <>
       {/* Header + mode toggle */}

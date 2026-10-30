@@ -5,6 +5,7 @@ import GameSummary from './GameSummary'
 import { resolveAlias } from '../utils/aliases'
 import { t, cn } from '../i18n'
 import { setPoolSize } from '../utils/results'
+import { useGameHud } from '../utils/hudStore'
 
 const TOTAL = 20
 const SECS  = 240   // 4 minutes
@@ -157,6 +158,8 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
   const urgent = timeLeft <= 30 && phase === 'playing'
 
   // ── Setup screen ──────────────────────────────────────────────────────────
+  // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '✓', text: `${found.length}/${TOTAL}` }, { icon: '⏳', text: fmt(timeLeft), urgent }] : null)
   if (phase === 'idle') {
     return (
       <SetupCard

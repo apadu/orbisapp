@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import GameIntro from './GameIntro'
 import { t } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 /** Loose sea name matching — accepts partial names without "Sea", "Ocean", etc. */
 function normalizeSea(s) {
@@ -64,6 +65,8 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
   }, [answered, onCorrect])
 
   const [started, setStarted] = useState(false)
+  // Phones: key numbers stay visible over the globe
+  useGameHud(started ? [{ icon: '✓', text: `${score.correct}/${score.total}` }] : null)
   if (!started) return (
     <GameIntro
       icon="🌊"

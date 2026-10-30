@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { distanceLabel } from '../utils/geoUtils'
 import SetupCard from './SetupCard'
 import { t, cn } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 function scoreLabel(pts) {
   if (pts >= 1000) return { text: t('Perfect!'), color: 'var(--green)' }
@@ -107,6 +108,8 @@ export default function LocatePanel({
   )
 
   // ── Setup (one screen, remembers your last mode) ─────────────────────────
+  // Phones: key numbers stay visible over the globe
+  useGameHud(current && !gameOver ? [{ icon: '🎯', text: String(totalScore) }, ...(gameMode === 'sprint' ? [{ icon: '⏱', text: formatTime(sprintTime), urgent: sprintTime <= 15 }] : gameMode === 'sudden' ? [{ icon: '💀', text: `${suddenTime}s`, urgent: suddenTime <= 3 }] : [])] : null)
   if (!current) {
     return (
       <SetupCard

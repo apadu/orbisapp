@@ -4,7 +4,8 @@ import GamePanel from './components/GamePanel'
 import CommandPalette, { PALETTE_SHORTCUT } from './components/CommandPalette'
 import RailNav from './components/RailNav'
 import MobileNav from './components/MobileNav'
-import { useIsMobile, useKeyboardInset, SheetHandle, useSheet, snapHeights } from './components/MobileSheet'
+import GameHud from './components/GameHud'
+import { useIsMobile, useKeyboardInset, useTypingBar, SheetHandle, useSheet, snapHeights } from './components/MobileSheet'
 import { GAME_GROUPS, gamesInGroup } from './utils/gameRegistry'
 import { setSoundEnabled, playCorrect, playWrong, playWin } from './utils/sounds'
 import StreakBadge from './components/StreakBadge'
@@ -227,9 +228,10 @@ export default function App() {
 
   // ── Phones: the game panel is a draggable bottom sheet over the globe ────
   const isMobile = useIsMobile()
-  useKeyboardInset()
+  const kbOpen = useKeyboardInset()
   const sheet = useSheet(`${mode}-${gameKey}`)
   const panelRef = useRef(null)
+  const typingH = useTypingBar(isMobile && kbOpen, panelRef)   // keyboard up → panel shrinks to the input row
 
   // Close any open (endless) game session whenever the player switches game or page
   useEffect(() => () => flushSessions(), [mode, page])
@@ -1174,8 +1176,8 @@ export default function App() {
   return (
     <>
     <div
-      className={`app-shell page-${page}${isMobile ? ` is-mobile sheet-${sheet.snap}` : ''}`}
-      style={isMobile && typeof window !== 'undefined' ? { '--sheet-h': `${snapHeights()[sheet.snap]}px` } : undefined}
+      className={`app-shell page-${page}${isMobile ? ` is-mobile sheet-${sheet.snap}` : ''}${isMobile && typingH ? ' kb-typing' : ''}`}
+      style={isMobile && typeof window !== 'undefined' ? { '--sheet-h': `${typingH ?? snapHeights()[sheet.snap]}px` } : undefined}
     >
       {/* ── Top bar ── */}
       <header className="topbar">
@@ -1414,6 +1416,7 @@ export default function App() {
             )
           )}
           {page === 'game' && <GlobeFeedback />}
+          {page === 'game' && isMobile && <GameHud />}
         </Suspense></div>
 
       {page !== 'home' && <RulesHint className="rules-hint-floating" />}

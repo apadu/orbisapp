@@ -9,6 +9,7 @@ import { shuffle, fmtKm, dropPoints } from '../quizzes/globeGames'
 import { startSession, trackAnswer, finishGame, loadResults } from '../utils/results'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn, continentName, locale } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 const MODE = 'capital-drop'
 const ROUNDS = 10
@@ -87,7 +88,9 @@ export default function CapitalDropPanel({ gameCountries, onGlobe }) {
 
   // Globe state
   useEffect(() => {
-    if (phase === 'setup') { onGlobe({}); return }
+    // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${queue.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
+  if (phase === 'setup') { onGlobe({}); return }
     if (phase === 'over') {
       onGlobe({
         spin: false,

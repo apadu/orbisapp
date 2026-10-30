@@ -7,6 +7,7 @@ import GameSummary from './GameSummary'
 import { playCorrect, playWin } from '../utils/sounds'
 import { t, cn } from '../i18n'
 import { setPoolSize } from '../utils/results'
+import { useGameHud } from '../utils/hudStore'
 
 const normalize = normalizeInput
 const COUNTDOWN_SECONDS = 15 * 60
@@ -41,6 +42,11 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
   const activeFound  = found.filter(f => activeNames.has(f.name))
   const foundSet     = new Set(activeFound.map(f => f.name))
   const allFound     = activeFound.length === total && total > 0
+  // Phones: counter + clock stay visible over the globe
+  useGameHud(timerMode && !gameOver && !allFound ? [
+    { icon: '✓', text: `${activeFound.length}/${total}` },
+    { icon: timerMode === 'countdown' ? '⏳' : '⏱', text: formatTime(timerMode === 'countdown' ? remaining : elapsed), urgent: timerMode === 'countdown' && remaining <= 60 },
+  ] : null)
 
   useEffect(() => { inputRef.current?.focus() }, [])
 

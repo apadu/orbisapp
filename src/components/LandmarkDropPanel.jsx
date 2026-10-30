@@ -9,6 +9,7 @@ import { shuffle, fmtKm, dropPoints } from '../quizzes/globeGames'
 import { startSession, trackAnswer, finishGame, loadResults } from '../utils/results'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn, isRo, continentName, locale } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 const MODE = 'landmark-drop'
 const ROUNDS = 10
@@ -109,7 +110,9 @@ export default function LandmarkDropPanel({ onGlobe }) {
 
   // Globe
   useEffect(() => {
-    if (phase === 'setup') { onGlobe({}); return }
+    // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${queue.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
+  if (phase === 'setup') { onGlobe({}); return }
     if (phase === 'over') {
       onGlobe({ overlay: { pins: log.map(l => ({ lat: l.lm.lat, lon: l.lm.lon, color: l.km <= GOOD_KM ? '#22c55e' : '#f97316', label: `${l.lm.emoji} ${lmName(l.lm)}` })) } })
       return

@@ -9,6 +9,7 @@ import { shuffle, fmtKm, dropPoints } from '../quizzes/globeGames'
 import { startSession, trackAnswer, finishGame, loadResults } from '../utils/results'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn, continentName, locale } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 const MODE = 'antipodes'
 const ROUNDS = 8
@@ -99,6 +100,8 @@ export default function AntipodePanel({ onGlobe }) {
     })
   }, [phase, guess, onClick, round]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${queue.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
   if (phase === 'setup') {
     return <SetupCard mode={MODE} icon="🔄" title={t('Antipodes')} desc={t('Find the other side of the world')} options={OPTIONS} rules={RULES} onStart={begin} />
   }

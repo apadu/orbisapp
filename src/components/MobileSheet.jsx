@@ -20,19 +20,71 @@ export function useIsMobile(query = '(max-width: 700px)') {
  * elements can sit on top of the keyboard instead of behind it (iOS Safari especially).
  */
 export function useKeyboardInset() {
+  const [open, setOpen] = useState(false)
   useEffect(() => {
     const vv = window.visualViewport
-    if (!vv) return
     const root = document.documentElement
-    const update = () => {
-      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
-      root.style.setProperty('--kb', `${kb > 60 ? kb : 0}px`)
+    let tallest = window.innerHeight
+    const typing = () => {
+      const el = document.activeElement
+      return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !/^(range|checkbox|radio|button)$/.test(el.type)
     }
+    const update = () => {
+      if (!typing()) tallest = Math.max(tallest, window.innerHeight)
+      // iOS: the keyboard covers the page (visual viewport shrinks, window doesn't)
+      const overlay = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0
+      // Android Chrome: the keyboard shrinks the whole window instead
+      const shrunk = tallest - window.innerHeight
+      const isOpen = overlay > 80 || (shrunk > 150 && typing())
+      root.style.setProperty('--kb', `${overlay > 80 ? overlay : 0}px`)
+      setOpen(isOpen)
+      // iOS scrolls the whole page up when an input gets focus — undo that
+      if (isOpen && window.scrollY) window.scrollTo(0, 0)
+    }
+    const onRotate = () => { tallest = window.innerHeight; update() }
     update()
-    vv.addEventListener('resize', update)
-    vv.addEventListener('scroll', update)
-    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); root.style.setProperty('--kb', '0px') }
+    vv?.addEventListener('resize', update)
+    vv?.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', onRotate)
+    document.addEventListener('focusin', update)
+    document.addEventListener('focusout', update)
+    return () => {
+      vv?.removeEventListener('resize', update); vv?.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update); window.removeEventListener('orientationchange', onRotate)
+      document.removeEventListener('focusin', update); document.removeEventListener('focusout', update)
+      root.style.setProperty('--kb', '0px')
+    }
   }, [])
+  return open
+}
+
+/**
+ * While the keyboard is open, the game panel shrinks to just the row with the text box
+ * (input + its button), sitting right on top of the keyboard, so the globe keeps the rest
+ * of the screen. Returns the compact height (px) to use, or null.
+ */
+export function useTypingBar(kbOpen, panelRef) {
+  const [h, setH] = useState(null)
+  useEffect(() => {
+    if (!kbOpen) { setH(null); return }
+    const fit = () => {
+      const panel = panelRef.current
+      const el = document.activeElement
+      if (!panel || !el || !panel.contains(el)) { setH(null); return }
+      const row = el.closest('.input-wrap, .input-row, .missing-form, .dist-row, .na-input-row, .tq-input, form') ?? el
+      const r = row.getBoundingClientRect()
+      setH(Math.round(Math.min(r.height, 140) + 20))
+      requestAnimationFrame(() => {
+        const pr = panel.getBoundingClientRect(), rr = row.getBoundingClientRect()
+        panel.scrollTop += rr.top - pr.top - 10
+      })
+    }
+    fit()
+    document.addEventListener('focusin', fit)
+    return () => document.removeEventListener('focusin', fit)
+  }, [kbOpen, panelRef])
+  return h
 }
 
 export const SNAPS = ['mini', 'peek', 'full']

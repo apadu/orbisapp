@@ -8,6 +8,7 @@ import { startSession, trackAnswer, finishGame, loadResults } from '../utils/res
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
 import { geoCentroid } from 'd3-geo'
 import { t, cn } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 const MODE = 'silhouette'
 const LIVES = 3
@@ -52,7 +53,9 @@ export default function SilhouettePanel({ gameCountries, onGlobe }) {
 
   // Globe: only the current country is visible
   useEffect(() => {
-    if (phase === 'setup') { onGlobe({ soloMode: true }); return }
+    // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '✓', text: String(score) }, { icon: '❤️', text: String(lives) }, { icon: '⏳', text: `${Math.ceil(Math.max(0, deadline - now) / 1000)}s`, urgent: deadline - now < 3000 }] : null)
+  if (phase === 'setup') { onGlobe({ soloMode: true }); return }
     const show = phase === 'over' ? null : current
     const [lon, lat] = current ? geoCentroid(current) : [0, 0]
     onGlobe({

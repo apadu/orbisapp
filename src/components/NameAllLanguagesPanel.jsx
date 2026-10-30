@@ -6,6 +6,7 @@ import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { t } from '../i18n'
 import { setPoolSize } from '../utils/results'
+import { useGameHud } from '../utils/hudStore'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -64,6 +65,11 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
   useEffect(() => { setPoolSize('name-all-languages', total) }, [total])   // so an unfinished game is saved as found/total
   const foundSet = useMemo(() => new Set(found.map(f => f.language)), [found])
   const allFound = found.length === total && total > 0
+  // Phones: counter + clock stay visible over the globe
+  useGameHud(timerMode && !gameOver && !allFound ? [
+    { icon: '✓', text: `${found.length}/${total}` },
+    { icon: timerMode === 'countdown' ? '⏳' : '⏱', text: formatTime(timerMode === 'countdown' ? remaining : elapsed), urgent: timerMode === 'countdown' && remaining <= 60 },
+  ] : null)
 
   useEffect(() => { inputRef.current?.focus() }, [])
 

@@ -8,6 +8,7 @@ import { shuffle, fmtKm } from '../quizzes/globeGames'
 import { startSession, trackAnswer, finishGame, loadResults } from '../utils/results'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn, locale } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 const MODE = 'distance'
 const ROUNDS = 8
@@ -122,6 +123,8 @@ export default function DistancePanel({ onGlobe }) {
     })
   }, [phase, pair, answer, round]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${pairs.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
   if (phase === 'setup') {
     return <SetupCard mode={MODE} icon="📏" title={t('How Far?')} desc={t('Guess the distance between two capitals')} options={OPTIONS} rules={RULES} onStart={begin} />
   }

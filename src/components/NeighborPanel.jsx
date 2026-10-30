@@ -4,6 +4,7 @@ import GameSummary from './GameSummary'
 import GameIntro from './GameIntro'
 import { playCorrect, playWrong } from '../utils/sounds'
 import { t, cn } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 function norm(s) {
   return s.trim().toLowerCase().replace(/[^a-z]/g, '')
@@ -43,6 +44,8 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
   }
 
   const [started, setStarted] = useState(false)
+  // Phones: key numbers stay visible over the globe
+  useGameHud(started && target ? [{ icon: '✓', text: `${found.length}/${total}` }, { icon: '🏆', text: String(score) }] : null)
   if (!started) return (
     <GameIntro
       icon="📌"

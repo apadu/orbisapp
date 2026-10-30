@@ -8,6 +8,7 @@ import { FAMOUS_LINES, countriesOnLine, randomLine, lineLabel, lineFocus } from 
 import { startSession, trackAnswer, finishGame } from '../utils/results'
 import { playCorrect, playWin } from '../utils/sounds'
 import { t, cn } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 const MODE = 'line-up'
 const OPTIONS = [{
@@ -89,6 +90,8 @@ export default function LineUpPanel({ gameCountries, onGlobe }) {
     })
   }, [phase, line, found]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' && line ? [{ icon: '✓', text: `${found.length}/${line.names.length}` }] : null)
   if (phase === 'setup') {
     return <SetupCard mode={MODE} icon="📐" title={t('Line Up')} desc={t('Name every country on the line')} options={OPTIONS} rules={RULES} onStart={begin} />
   }

@@ -9,6 +9,7 @@ import { shuffle, countryAt, fmtOffset, clockAt } from '../quizzes/globeGames'
 import { startSession, trackAnswer, finishGame, loadResults } from '../utils/results'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn } from '../i18n'
+import { useGameHud } from '../utils/hudStore'
 
 const MODE = 'time-zones'
 const ROUNDS = 10
@@ -124,6 +125,8 @@ export default function TimeZonesPanel({ gameCountries, onGlobe }) {
     })
   }, [phase, round, answer, onClick, correctSet]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${idx + 1}/${rounds.length}` }, { text: `✓ ${score}` }] : null)
   if (phase === 'setup') {
     return <SetupCard mode={MODE} icon="🕰️" title={t('Time Zones')} desc={t('Find where it\'s that time right now')} options={OPTIONS} rules={RULES} onStart={begin} />
   }

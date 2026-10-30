@@ -5,6 +5,7 @@ import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { t, cn } from '../i18n'
 import { setPoolSize } from '../utils/results'
+import { useGameHud } from '../utils/hudStore'
 
 const TIMERS = { standard: 20 * 60, hard: 30 * 60 }
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -141,6 +142,8 @@ export default function SpotlightPanel({
   const urgent = timeLeft <= 60 && phase === 'playing'
 
   // ── Setup screen ──────────────────────────────────────────────────────────
+  // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '✓', text: `${found.length}/${total}` }, { icon: '⏳', text: fmt(timeLeft), urgent }] : null)
   if (phase === 'select') {
     return (
       <SetupCard
