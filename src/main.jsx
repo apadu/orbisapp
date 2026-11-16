@@ -4,6 +4,9 @@ import App from './App'
 import { AuthProvider } from './auth/AuthContext'
 import AuthModal from './components/AuthModal'
 import ErrorBoundary from './components/ErrorBoundary'
+import { installGlobalErrorHandlers } from './utils/errorReporter'
+
+installGlobalErrorHandlers()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

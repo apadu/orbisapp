@@ -225,7 +225,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
     onMissedChange([])
     onFeaturesChange([], [])
 
-    (era.dataKey ? fetchData(era.dataKey) : fetch(era.url))
+    ;(era.dataKey ? fetchData(era.dataKey) : fetch(era.url))
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then(data => {
         const all   = data.features.filter(f => f.geometry && f.properties?.NAME)

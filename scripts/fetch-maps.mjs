@@ -12,7 +12,7 @@ for (const [key, { file, url }] of Object.entries(DATA_SOURCES)) {
   const res = await fetch(url)
   if (!res.ok) { console.log(`failed (HTTP ${res.status})`); process.exitCode = 1; continue }
   const text = await res.text()
-  const data = slimGeoJSON(JSON.parse(text)) // valid JSON + keep only what the app needs
+  const data = slimGeoJSON(JSON.parse(text), { marine: key === 'marine' }) // valid JSON + keep only what the app needs
   await writeFile(new URL(file, OUT), JSON.stringify(data))
   const { size } = await stat(new URL(file, OUT))
   console.log(`${(size / 1024 / 1024).toFixed(2)} MB`)

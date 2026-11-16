@@ -108,11 +108,12 @@ export default function LandmarkDropPanel({ onGlobe }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, guess, next, begin, setup])
 
+  // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${queue.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
+
   // Globe
   useEffect(() => {
-    // Phones: key numbers stay visible over the globe
-  useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${queue.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
-  if (phase === 'setup') { onGlobe({}); return }
+    if (phase === 'setup') { onGlobe({}); return }
     if (phase === 'over') {
       onGlobe({ overlay: { pins: log.map(l => ({ lat: l.lm.lat, lon: l.lm.lon, color: l.km <= GOOD_KM ? '#22c55e' : '#f97316', label: `${l.lm.emoji} ${lmName(l.lm)}` })) } })
       return

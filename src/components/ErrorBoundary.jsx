@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import { t } from '../i18n'
+import { reportError, isChunkError, reloadForNewBuild } from '../utils/errorReporter'
 
 /**
  * Catches render/effect crashes so the app shows the error instead of a black screen.
@@ -16,6 +17,9 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[orbis] crash:', error, info?.componentStack)
+    // Old tab after a deploy asking for a chunk that's gone: just load the new build
+    if (isChunkError(error) && reloadForNewBuild(error)) return
+    reportError('render', error, { componentStack: info?.componentStack })
   }
 
   render() {

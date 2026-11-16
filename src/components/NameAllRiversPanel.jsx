@@ -130,7 +130,6 @@ const ALIASES = {
   'amazonas':       'Amazon',
   'mississippi':    'Mississippi',
   'parana':         'Paraná',
-  'parana':         'Paraná',
   'missouri':       'Missouri',
   'riograndedelsur':'Rio Grande',
   'riogranderiver': 'Rio Grande',

@@ -86,11 +86,12 @@ export default function CapitalDropPanel({ gameCountries, onGlobe }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, guess, next, begin, setup])
 
+  // Phones: key numbers stay visible over the globe
+  useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${queue.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
+
   // Globe state
   useEffect(() => {
-    // Phones: key numbers stay visible over the globe
-  useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${queue.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
-  if (phase === 'setup') { onGlobe({}); return }
+    if (phase === 'setup') { onGlobe({}); return }
     if (phase === 'over') {
       onGlobe({
         spin: false,

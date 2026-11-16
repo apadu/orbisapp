@@ -160,12 +160,12 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     daily?.onFinish?.(res)
   }, [rows, mode, region, daily])
 
-  // Timer (stops for good once the player switches to untimed)
+  // Timer (stops for good once the player switches to untimed; paused while the confirm prompt is open)
   useEffect(() => {
-    if (phase !== 'playing' || untimed) return
+    if (phase !== 'playing' || untimed || confirmUntimed) return
     const t = setInterval(() => setTimeLeft(s => s - 1), 1000)
     return () => clearInterval(t)
-  }, [phase, untimed])
+  }, [phase, untimed, confirmUntimed])
   useEffect(() => { if (phase === 'playing' && !untimed && timeLeft <= 0 && rows.length) finish('time') }, [timeLeft]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const goUntimed = () => {

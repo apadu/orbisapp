@@ -400,7 +400,10 @@ export default function App() {
   }, [])
 
   // ── Fetch marine polygons ────────────────────────────────────────────────
+  // Waits for the country map so the two downloads don't compete on slow phones
+  // (every sea game needs the globe first anyway).
   useEffect(() => {
+    if (loading) return
     fetchData('marine')
       .then(r => r.json())
       .then(data => {
@@ -424,7 +427,7 @@ export default function App() {
         setSeaCurrent(pickNextSea(new Set(), features))
       })
       .catch(e => console.warn('Could not load marine data:', e))
-  }, [])
+  }, [loading])
 
   function pickMystery(features, practice = false) {
     const pool = features ?? gameCountries
