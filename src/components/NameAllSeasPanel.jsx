@@ -177,12 +177,11 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
     <GameIntro
       icon="🌊"
       title={t('Name All Seas')}
-      desc={t('Type every ocean and sea — they light up on the globe as you name them.')}
+      desc={t('Oceans, seas, gulfs and bays. Each one you name turns the globe bluer.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('🌊 Oceans, seas, gulfs, and bays all count'),
         t('💡 Abbreviations accepted (e.g. "Pacific")'),
-        t('📈 Track your progress as you go'),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -193,12 +192,11 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
       mode="name-all-seas"
       icon="🌊"
       title={t('Name All Seas')}
-      desc={t('Type every ocean and sea — they light up on the globe as you name them.')}
+      desc={t('Oceans, seas, gulfs and bays. Each one you name turns the globe bluer.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('🌊 Oceans, seas, gulfs, and bays all count'),
         t('💡 Abbreviations accepted (e.g. "Pacific")'),
-        t('📈 Track your progress as you go'),
       ]}
       options={[TIMER_OPTION]}
       typeToStart

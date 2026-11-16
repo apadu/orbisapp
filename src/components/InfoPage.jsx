@@ -120,7 +120,8 @@ const TERMS_RO = () => (
 
 // ── Credits ────────────────────────────────────────────────────────────────
 const CREDITS = [
-  ['Natural Earth', 'https://www.naturalearthdata.com', { en: 'Country borders and seas map data — public domain', ro: 'Hărțile cu granițele țărilor și mările — domeniu public' }],
+  ['Natural Earth', 'https://www.naturalearthdata.com', { en: 'Country borders, seas, Romanian counties and US states — public domain', ro: 'Granițele țărilor, mările, județele României și statele SUA — domeniu public' }],
+  ['geoBoundaries', 'https://www.geoboundaries.org', { en: 'Districts of Moldova (data from UNHCR / OCHA) — CC BY 3.0 IGO', ro: 'Raioanele Republicii Moldova (date UNHCR / OCHA) — CC BY 3.0 IGO' }],
   ['Flagpedia / flagcdn.com', 'https://flagpedia.net', { en: 'Flag images', ro: 'Imaginile steagurilor' }],
   ['historical-basemaps (A. Ourednik)', 'https://github.com/aourednik/historical-basemaps', { en: 'Historical world map (1920) — GPL-3.0', ro: 'Harta istorică a lumii (1920) — GPL-3.0' }],
   ['World Bank Open Data', 'https://data.worldbank.org', { en: 'Population figures', ro: 'Datele despre populație' }],

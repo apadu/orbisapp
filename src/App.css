@@ -5384,7 +5384,8 @@ html, body, #root { height: 100%; background: var(--bg); color: var(--text); fon
 .qh-tile-name { font-size: 1rem; font-weight: 800; margin-top: 6px; }
 .qh-tile-desc {
   font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  /* Room for 3 lines: the descriptions carry a concrete example, not just "Name every X" */
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 .qh-tile-foot {
   margin-top: auto; padding-top: 10px;
@@ -5525,7 +5526,7 @@ button.hp-card:hover, .hp-daily-head:hover { transform: translateY(-2px); border
 .hp-row { margin-bottom: 26px; }
 
 /* Bottom banners */
-.hp-bottom { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+.hp-bottom { display: grid; grid-template-columns: 1.3fr 1.2fr 1fr; gap: 12px; }
 .hp-banner {
   display: flex; align-items: center; gap: 16px; text-align: left; cursor: pointer;
   padding: 20px 22px; border-radius: 18px; color: var(--text);
@@ -5541,6 +5542,15 @@ button.hp-card:hover, .hp-daily-head:hover { transform: translateY(-2px); border
   border: 1px solid rgba(251,191,36,0.4);
   background: radial-gradient(120% 160% at 0% 0%, rgba(251,191,36,0.2), transparent 60%), var(--surface);
 }
+.hp-banner-countries {
+  border: 1px solid rgba(56,189,248,0.42);
+  background: radial-gradient(120% 160% at 0% 0%, rgba(56,189,248,0.24), transparent 60%), var(--surface);
+}
+@media (max-width: 1100px) and (min-width: 861px) {
+  .hp-bottom { grid-template-columns: 1fr 1fr; }
+  .hp-banner-quiz { grid-column: 1 / -1; }
+}
+.hp-banner-countries:hover { box-shadow: 0 14px 40px rgba(56,189,248,0.2); }
 .hp-banner-learn:hover { box-shadow: 0 14px 40px rgba(251,191,36,0.18); }
 .hp-banner-icon { font-size: 2.2rem; flex-shrink: 0; }
 .hp-banner-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
@@ -5840,7 +5850,9 @@ button.hp-card:hover, .hp-daily-head:hover { transform: translateY(-2px); border
 .tq-hint { color: var(--text); min-width: 0; }
 .tq-extra { color: var(--text-dim); font-variant-numeric: tabular-nums; font-size: 0.8rem; }
 .tq-answer {
-  min-height: 22px; border-radius: 6px; padding: 2px 8px;
+  /* Fixed height: a filled answer must be exactly as tall as an empty one, otherwise the
+     newspaper columns re-balance and the whole table jumps after every correct answer */
+  box-sizing: border-box; height: 22px; line-height: 16px; border-radius: 6px; padding: 2px 8px;
   background: var(--bg); border: 1px dashed var(--border);
   font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -5868,7 +5880,12 @@ button.hp-card:hover, .hp-daily-head:hover { transform: translateY(-2px); border
   transition: background 0.3s, border-color 0.3s;
 }
 .tq-flag { font-size: 2.6rem; line-height: 1; }
-.tq-cell-answer { font-size: 0.72rem; font-weight: 800; text-align: center; min-height: 1em; line-height: 1.2; }
+/* Always reserve two lines (long names are clamped) so a revealed name never makes its
+   grid row taller and pushes every flag below it down */
+.tq-cell-answer {
+  font-size: 0.72rem; font-weight: 800; text-align: center; line-height: 1.2; min-height: 2.4em; max-width: 100%;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
 .tq-cell.ok, .tq-cell.hit { border-color: rgba(57,255,20,0.45); background: rgba(57,255,20,0.07); }
 .tq-cell.hit { background: rgba(57,255,20,0.18); }
 .tq-cell.ok .tq-cell-answer, .tq-cell.hit .tq-cell-answer { color: var(--green); }
@@ -6546,3 +6563,108 @@ button.hp-card:hover, .hp-daily-head:hover { transform: translateY(-2px); border
 @media (prefers-reduced-motion: reduce) { .ghud-item.urgent { animation: none; } }
 /* the globe controls move down a little so they don't sit under the pill */
 @media (max-width: 700px) { .is-mobile .globe-ctrl { top: 54px; } }
+
+/* ── Country maps (CountryMapQuiz): a flat 2D map split into subdivisions ─────── */
+.cmq-map-wrap {
+  background: radial-gradient(ellipse at 50% 40%, rgba(56,189,248,0.07), transparent 70%), var(--surface);
+  border: 1px solid var(--border); border-radius: 16px; padding: 10px; overflow: hidden;
+}
+.cmq-map { display: block; width: 100%; height: auto; max-height: calc(100vh - 300px); }
+.cmq-ctx path { fill: rgba(255,255,255,0.035); stroke: rgba(169,143,219,0.22); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.cmq-area {
+  fill: #241b40; stroke: #6d5aa8; stroke-width: 1.2; stroke-linejoin: round; vector-effect: non-scaling-stroke;
+  transition: fill 0.35s ease;
+}
+.cmq-area.ok     { fill: rgba(57,255,20,0.30); stroke: rgba(57,255,20,0.75); }
+.cmq-area.hit    { fill: rgba(57,255,20,0.55); stroke: #39ff14; }
+.cmq-area.missed { fill: rgba(239,68,68,0.22); stroke: rgba(248,113,113,0.7); }
+.cmq-area.off    { fill: rgba(255,255,255,0.06); stroke: rgba(169,143,219,0.35); }
+.cmq-label {
+  font: 700 15px system-ui, sans-serif; fill: #eafbe6; text-anchor: middle; dominant-baseline: middle;
+  paint-order: stroke; stroke: rgba(8,5,15,0.85); stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none;
+}
+.cmq-label.tiny { font-size: 11px; }
+.cmq-seats .cmq-label { font-size: 13px; }
+.cmq-seats .cmq-label.tiny { font-size: 10px; }
+.cmq-label.missed { fill: #fecaca; }
+.cmq-msg { color: var(--text-dim); text-align: center; padding: 60px 0; margin: 0; }
+.cmq-missed-note { color: #fca5a5; font-weight: 600; }
+@media (max-width: 640px) {
+  .cmq-map-wrap { padding: 4px; border-radius: 12px; }
+  .cmq-map { max-height: none; }
+  .cmq-label { font-size: 22px; stroke-width: 5px; }
+  .cmq-label.tiny { font-size: 16px; }
+}
+
+/* ── Country page (CountryPage) ─────────────────────────────────────────────── */
+.ctry { width: 100%; max-width: 1180px; margin: 0 auto; padding: 22px 24px 48px; display: flex; flex-direction: column; gap: 18px; }
+.ctry-hero { display: flex; align-items: center; gap: 18px; }
+.ctry-flag { font-size: 3.4rem; line-height: 1; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.4)); }
+.ctry-hero h1 { margin: 0; font-size: 2rem; font-weight: 900; letter-spacing: -0.01em; }
+.ctry-hero p { margin: 4px 0 0; color: var(--text-dim); }
+.ctry-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.ctry-fact { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+.ctry-fact-icon { grid-row: span 2; font-size: 1.4rem; }
+.ctry-fact-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+.ctry-fact-value { font-weight: 800; font-size: 0.95rem; }
+.ctry-main { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); gap: 18px; align-items: start; }
+.ctry-map-card, .ctry-games { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; }
+.ctry-map-card h2, .ctry-games h2 { margin: 0; font-size: 1rem; font-weight: 800; }
+.ctry-map-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.ctry-map-info { color: var(--text-dim); font-size: 0.85rem; min-height: 1.2em; }
+.ctry-map-info b { color: var(--text); }
+.ctry-map { display: block; width: 100%; height: auto; max-height: 72vh; }
+.ctry-area { cursor: pointer; }
+.ctry-area.is-hover { fill: rgba(199,125,255,0.45); stroke: #e9d5ff; }
+/* Touch screens keep :hover after a tap — only mouse users get the hover highlight */
+@media (hover: hover) { .ctry-area:hover { fill: rgba(199,125,255,0.45); stroke: #e9d5ff; } }
+.ctry-neighbours { margin: 8px 2px 0; font-size: 0.8rem; color: var(--text-dim); }
+.ctry-games { display: flex; flex-direction: column; gap: 10px; }
+.ctry-game {
+  display: flex; align-items: center; gap: 12px; text-align: left; width: 100%;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: var(--text); cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.ctry-game:hover { border-color: var(--accent); transform: translateY(-1px); }
+.ctry-game-icon { font-size: 1.8rem; flex-shrink: 0; }
+.ctry-game-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ctry-game-title { font-weight: 800; }
+.ctry-game-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.35; }
+.ctry-game-best { font-size: 0.75rem; color: var(--green); font-weight: 700; }
+.ctry-game-go { color: var(--accent); font-size: 1.2rem; }
+@media (max-width: 860px) {
+  .ctry { padding: 14px 12px 40px; }
+  .ctry-main { grid-template-columns: 1fr; }
+  .ctry-games { order: -1; }            /* phones: the games first, the map below */
+  .ctry-hero h1 { font-size: 1.6rem; }
+  .ctry-flag { font-size: 2.6rem; }
+  .ctry-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ── Countries hub (CountriesHub) ───────────────────────────────────────────── */
+.chub { width: 100%; max-width: 1180px; margin: 0 auto; padding: 22px 24px 48px; display: flex; flex-direction: column; gap: 18px; }
+.chub-head h1 { margin: 0; font-size: 2rem; font-weight: 900; }
+.chub-head p { margin: 6px 0 0; color: var(--text-dim); }
+.chub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.chub-card {
+  display: flex; flex-direction: column; gap: 10px; text-align: left; color: var(--text); cursor: pointer;
+  background: radial-gradient(120% 140% at 0% 0%, rgba(56,189,248,0.12), transparent 55%), var(--surface);
+  border: 1px solid var(--border); border-radius: 18px; padding: 18px;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.chub-card:hover { border-color: rgba(56,189,248,0.6); transform: translateY(-2px); box-shadow: 0 14px 36px rgba(56,189,248,0.14); }
+.chub-card-top { display: flex; align-items: center; gap: 14px; }
+.chub-flag { font-size: 2.8rem; line-height: 1; }
+.chub-card-title h2 { margin: 0; font-size: 1.25rem; font-weight: 900; }
+.chub-card-meta { font-size: 0.8rem; color: var(--text-dim); }
+.chub-tagline { margin: 0; font-size: 0.86rem; color: var(--text-dim); line-height: 1.4; }
+.chub-games { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.chub-games li { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 700; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
+.chub-best { margin-left: auto; font-size: 0.75rem; color: var(--green); font-weight: 800; }
+.chub-cta { margin-top: auto; color: #7dd3fc; font-weight: 800; font-size: 0.88rem; }
+.chub-more { text-align: center; color: var(--text-dim); font-size: 0.85rem; margin: 6px 0 0; }
+@media (max-width: 640px) {
+  .chub { padding: 14px 12px 40px; }
+  .chub-head h1 { font-size: 1.6rem; }
+  .chub-grid { grid-template-columns: 1fr; }
+}

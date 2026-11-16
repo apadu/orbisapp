@@ -185,7 +185,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
     <GameIntro
       icon="🏙️"
       title={t('Name All Capitals')}
-      desc={t('Type every capital city in the world. Countries light up on the globe as you find them.')}
+      desc={t('Every capital on Earth. Careful: South Africa has three.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('💡 Countries light up when you name their capital'),
@@ -200,7 +200,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       mode="name-all-caps"
       icon="🏙️"
       title={t('Name All Capitals')}
-      desc={t('Type every capital city in the world. Countries light up on the globe as you find them.')}
+      desc={t('Every capital on Earth. Careful: South Africa has three.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('💡 Countries light up when you name their capital'),

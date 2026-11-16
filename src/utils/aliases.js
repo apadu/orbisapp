@@ -15,6 +15,8 @@ export const ALIASES = {
   'central african republic':         'Central African Republic',
   'swaziland':                        'Eswatini',
   'czechia':                          'Czech Republic',
+  'turkiye':                          'Turkey',
+  'türkiye':                          'Turkey',
   'bosnia':                           'Bosnia and Herzegovina',
   'bosnia herzegovina':               'Bosnia and Herzegovina',
   'dr congo':                         'Democratic Republic of Congo',

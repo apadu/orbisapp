@@ -126,7 +126,7 @@ export default function DistancePanel({ onGlobe }) {
   // Phones: key numbers stay visible over the globe
   useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${pairs.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
   if (phase === 'setup') {
-    return <SetupCard mode={MODE} icon="📏" title={t('How Far?')} desc={t('Guess the distance between two capitals')} options={OPTIONS} rules={RULES} onStart={begin} />
+    return <SetupCard mode={MODE} icon="📏" title={t('How Far?')} desc={t('Lisbon to Moscow: 1,000 km or 4,000? Guess the distance between capitals.')} options={OPTIONS} rules={RULES} onStart={begin} />
   }
 
   if (phase === 'over') {

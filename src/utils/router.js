@@ -7,9 +7,13 @@
  *   /quiz              Quiz Hub
  *   /quiz/<mode>       a quiz (capital, ww2, country-wordle…)
  *   /daily             Quiz of the day
+ *   /countries         Countries (pick a country)
+ *   /countries/<slug>  a country page (Romania, Moldova…) with its games
  *   /profile           Profile
  *   /privacy /terms /credits   info pages
  */
+import { COUNTRY_PAGES, pageIdForSlug } from '../data/countryPages'
+
 export const INFO_PAGES = new Set(['privacy', 'terms', 'credits'])
 
 export function routeFor(page, mode, quizModes) {
@@ -18,6 +22,8 @@ export function routeFor(page, mode, quizModes) {
   if (INFO_PAGES.has(page)) return `/${page}`
   if (page === 'quiz') {
     if (mode === 'daily-quiz') return '/daily'
+    if (mode === 'countries') return '/countries'
+    if (COUNTRY_PAGES[mode]) return `/countries/${COUNTRY_PAGES[mode].slug}`
     return quizModes.has(mode) ? `/quiz/${mode}` : '/quiz'
   }
   return `/play/${mode}`
@@ -31,6 +37,11 @@ export function parseRoute(pathname, { quizModes, globeModes }) {
   if (head === 'profile' && !id) return { page: 'profile' }
   if (INFO_PAGES.has(head) && !id) return { page: head }
   if (head === 'daily' && !id) return { page: 'quiz', mode: 'daily-quiz' }
+  if (head === 'countries') {
+    if (!id) return { page: 'quiz', mode: 'countries' }
+    const pageId = pageIdForSlug(id)
+    return pageId ? { page: 'quiz', mode: pageId } : null
+  }
   if (head === 'quiz') {
     if (!id) return { page: 'quiz', mode: 'quiz-hub' }
     return quizModes.has(id) ? { page: 'quiz', mode: id } : null

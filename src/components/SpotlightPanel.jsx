@@ -149,12 +149,13 @@ export default function SpotlightPanel({
       <SetupCard
         mode="spotlight"
         icon="🔦"
-        title={t('Solo Map')}
-        desc={t('One country lights up on an otherwise empty globe — identify it to move on!')}
+        title={t('Spotlight')}
+        desc={t('An empty globe lights up one country at a time. Name it to reveal the next.')}
         rules={[
           t('🔦 One country at a time lights up'),
           t('⌨️ Type its name to move to the next'),
           t('🙈 Hard mode: only the current country is ever visible'),
+          t('⏱ 20 minutes on the clock, 30 in hard mode'),
         ]}
         options={[{
           id: 'difficulty', label: t('Mode'), default: 'standard',

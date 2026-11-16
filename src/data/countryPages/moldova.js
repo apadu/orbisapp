@@ -1,0 +1,71 @@
+/**
+ * Country page: Republic of Moldova (bilingual inline, like romania.js).
+ * Facts checked Nov 2026: 2024 census — 2,401,200 usual residents; Bălănești Hill 430 m
+ * (429 in some sources); Mileștii Mici = Guinness largest wine collection (2005);
+ * "Romanian" replaced "Moldovan" in all laws incl. the Constitution (March 2023);
+ * EU candidate status June 2022.
+ */
+export const MOLDOVA_PAGE = {
+  id: 'md',
+  flag: '🇲🇩',
+  name: { en: 'Moldova', ro: 'Republica Moldova' },
+  tagline: {
+    en: 'Between the Prut and the Dniester: hills, vineyards and the world\'s largest wine collection.',
+    ro: 'Între Prut și Nistru: dealuri, podgorii și cea mai mare colecție de vinuri din lume.',
+  },
+  mapHint: { en: 'Hover or tap a district', ro: 'Treci cu mouse-ul sau atinge un raion' },
+  facts: [
+    { icon: '🏛️', label: { en: 'Capital', ro: 'Capitala' }, value: { en: 'Chișinău', ro: 'Chișinău' } },
+    { icon: '👥', label: { en: 'Population', ro: 'Populație' }, value: { en: '2.4 million (2024)', ro: '2,4 milioane (2024)' } },
+    { icon: '📐', label: { en: 'Area', ro: 'Suprafață' }, value: { en: '33,851 km²', ro: '33.851 km²' } },
+    { icon: '🗺️', label: { en: 'Divisions', ro: 'Diviziuni' }, value: { en: '32 districts + 5', ro: '32 de raioane + 5' } },
+    { icon: '⛰️', label: { en: 'Highest point', ro: 'Cel mai înalt punct' }, value: { en: 'Bălănești Hill, 430 m', ro: 'Dealul Bălănești, 430 m' } },
+    { icon: '💶', label: { en: 'Currency', ro: 'Moneda' }, value: { en: 'Moldovan leu (MDL)', ro: 'Leu moldovenesc (MDL)' } },
+    { icon: '🗣️', label: { en: 'Language', ro: 'Limba' }, value: { en: 'Romanian', ro: 'Română' } },
+    { icon: '📅', label: { en: 'Independence', ro: 'Independență' }, value: { en: '27 August 1991', ro: '27 august 1991' } },
+  ],
+  neighbours: { en: 'Romania, Ukraine', ro: 'România, Ucraina' },
+  // 20-question table quiz ('md-quiz'). Answers must not repeat between questions.
+  questions: [
+    { id: 'capital', q: { en: 'Capital of Moldova', ro: 'Capitala Republicii Moldova' },
+      answers: ['Chișinău', 'Kishinev'], show: { en: 'Chișinău', ro: 'Chișinău' } },
+    { id: 'north', q: { en: 'City known as the "capital of the north"', ro: 'Orașul numit „capitala de nord”' },
+      answers: ['Bălți'], show: { en: 'Bălți', ro: 'Bălți' } },
+    { id: 'prut', q: { en: 'River on the border with Romania', ro: 'Râul de la granița cu România' },
+      answers: ['Prut', 'Prutul'], show: { en: 'Prut', ro: 'Prut' } },
+    { id: 'nistru', q: { en: 'River in the east, which gives Transnistria its name', ro: 'Râul din est, care dă numele Transnistriei' },
+      answers: ['Nistru', 'Nistrul', 'Dniester'], show: { en: 'Dniester (Nistru)', ro: 'Nistru' } },
+    { id: 'peak', q: { en: 'Highest point (430 m)', ro: 'Cel mai înalt punct (430 m)' },
+      answers: ['Bălănești', 'Dealul Bălănești', 'Balanesti Hill'], show: { en: 'Bălănești Hill', ro: 'Dealul Bălănești' } },
+    { id: 'independence-year', q: { en: 'Year of independence', ro: 'Anul independenței' },
+      answers: ['1991'], show: { en: '1991', ro: '1991' } },
+    { id: 'independence-day', q: { en: 'Date of Independence Day', ro: 'Data Zilei Independenței' },
+      answers: ['27 August', 'August 27', '27 aug', '27.08'], show: { en: '27 August', ro: '27 august' } },
+    { id: 'currency', q: { en: 'Currency', ro: 'Moneda' },
+      answers: ['leu', 'lei', 'MDL', 'leu moldovenesc', 'Moldovan leu'], show: { en: 'Moldovan leu (MDL)', ro: 'Leu moldovenesc (MDL)' } },
+    { id: 'language', q: { en: 'Official language (named so in all laws since 2023)', ro: 'Limba oficială (numită așa în toate legile din 2023)' },
+      answers: ['română', 'limba română', 'Romanian'], show: { en: 'Romanian', ro: 'Română' } },
+    { id: 'gagauzia', q: { en: 'Autonomous territory in the south, with a Turkic-speaking people', ro: 'Unitatea autonomă din sud, cu un popor vorbitor de limbă turcică' },
+      answers: ['Găgăuzia', 'Gagauzia', 'Gagauz Yeri', 'UTA Găgăuzia'], show: { en: 'Gagauzia', ro: 'Găgăuzia' } },
+    { id: 'transnistria', q: { en: 'Breakaway region on the left bank of the Dniester', ro: 'Regiunea separatistă de pe malul stâng al Nistrului' },
+      answers: ['Transnistria', 'Stânga Nistrului', 'Pridnestrovie'], show: { en: 'Transnistria', ro: 'Transnistria' } },
+    { id: 'milestii', q: { en: 'Winery with the Guinness record for the largest wine collection', ro: 'Combinatul de vinuri cu recordul Guinness pentru cea mai mare colecție de vinuri' },
+      answers: ['Mileștii Mici'], show: { en: 'Mileștii Mici', ro: 'Mileștii Mici' } },
+    { id: 'danube', q: { en: 'Village with Moldova\'s only port on the Danube', ro: 'Localitatea cu singurul port al Moldovei la Dunăre' },
+      answers: ['Giurgiulești'], show: { en: 'Giurgiulești', ro: 'Giurgiulești' } },
+    { id: 'neighbours', q: { en: 'How many countries border Moldova?', ro: 'Cu câte țări se învecinează Moldova?' },
+      answers: ['2', 'două', 'doi', 'two'], show: { en: '2', ro: '2' } },
+    { id: 'stefan', q: { en: 'Medieval prince shown on Moldovan banknotes', ro: 'Domnitorul medieval de pe bancnotele moldovenești' },
+      answers: ['Ștefan cel Mare', 'Stephen the Great', 'Ștefan cel Mare și Sfânt'], show: { en: 'Stephen the Great', ro: 'Ștefan cel Mare' } },
+    { id: 'orheiul-vechi', q: { en: 'Cave monastery complex on the Răut river', ro: 'Complexul cu mănăstire rupestră de pe râul Răut' },
+      answers: ['Orheiul Vechi', 'Old Orhei'], show: { en: 'Orheiul Vechi', ro: 'Orheiul Vechi' } },
+    { id: 'soroca', q: { en: 'Town with the round medieval fortress on the Dniester', ro: 'Orașul cu cetatea medievală rotundă de pe Nistru' },
+      answers: ['Soroca'], show: { en: 'Soroca', ro: 'Soroca' } },
+    { id: 'ozone', q: { en: 'Band behind the hit "Dragostea din tei"', ro: 'Formația care a lansat hitul „Dragostea din tei”' },
+      answers: ['O-Zone', 'Ozone'], show: { en: 'O-Zone', ro: 'O-Zone' } },
+    { id: 'eu', q: { en: 'Year Moldova became an EU candidate', ro: 'Anul în care Moldova a devenit candidată la UE' },
+      answers: ['2022'], show: { en: '2022', ro: '2022' } },
+    { id: 'bessarabia', q: { en: 'Historical region between the Prut and the Dniester', ro: 'Regiunea istorică dintre Prut și Nistru' },
+      answers: ['Basarabia', 'Bessarabia'], show: { en: 'Bessarabia', ro: 'Basarabia' } },
+  ],
+}

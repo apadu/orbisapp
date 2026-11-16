@@ -6,6 +6,8 @@ import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import FlagImg from './FlagImg'
 import { t, continentName } from '../i18n'
+import { QUIZ_ITEMS } from './QuizHub'
+import { countryGame } from '../data/countryPages'
 
 const MIN_ROWS = 5
 const PREFIX_WAIT_MS = 700   // "Niger" waits a moment in case you're typing "Nigeria"
@@ -134,7 +136,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     setRecent(new Set())
     setLabels({})
     setInput(typed ?? '')
-    setTimeLeft(timeLimitFor(built.length))
+    setTimeLeft(quiz.timeLimit ?? timeLimitFor(built.length))
     setEndReason(null)
     setUntimed(false)
     setConfirmUntimed(false)
@@ -221,10 +223,12 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     if (!k || !index.has(k)) return
     if (quiz.focus) { if ((index.get(k) ?? []).includes(activeId)) accept(k); return }
     if (!(index.get(k) ?? []).some(id => !filledRef.current.has(id))) return
-    // Another unanswered answer starts with this one? ("Niger" → "Nigeria") — wait a beat
+    // Another unanswered answer starts with this one? ("Niger" → "Nigeria") — wait a beat.
+    // Longer spellings of the same answer ("Cluj" → "Cluj-Napoca") don't count.
+    const mine = new Set(index.get(k))
     let longer = false
     for (const [key, ids] of index) {
-      if (key.length > k.length && key.startsWith(k) && ids.some(id => !filledRef.current.has(id))) { longer = true; break }
+      if (key.length > k.length && key.startsWith(k) && ids.some(id => !filledRef.current.has(id) && !mine.has(id))) { longer = true; break }
     }
     if (longer) pendingRef.current = setTimeout(() => accept(k), PREFIX_WAIT_MS)
     else accept(k)
@@ -267,9 +271,9 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
           mode={quizId}
           icon={quiz.icon}
           title={quiz.title}
-          desc={quiz.prompt}
+          desc={(QUIZ_ITEMS.find(q => q.id === quizId) ?? countryGame(quizId))?.desc ?? quiz.prompt}
           rules={[
-            `⌨️ ${quiz.prompt} — any order, no Enter needed`,
+            t('⌨️ {prompt} — any order, no Enter needed', { prompt: quiz.prompt }),
             t('⏱ The clock depends on how many answers there are'),
             t('🏳️ Give up any time to see what you missed'),
             t('✨ XP only for answers you haven\'t got before'),
@@ -387,7 +391,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
                 onClick={quiz.focus && playing && !ok ? () => { setActiveId(r.id); setInput(''); inputRef.current?.focus() } : undefined}
               >
                 <Hint hint={r.hint} />
-                <span className="tq-cell-answer">{ok ? (labels[r.id] ?? r.display) : !playing ? r.display : ''}</span>
+                <span className="tq-cell-answer" title={ok || !playing ? (labels[r.id] ?? r.display) : undefined}>{ok ? (labels[r.id] ?? r.display) : !playing ? r.display : ''}</span>
               </div>
             )
           })}

@@ -144,7 +144,7 @@ export default function SilhouettePanel({ gameCountries, onGlobe }) {
 
   if (phase === 'setup') {
     return (
-      <SetupCard mode={MODE} icon="🌀" title={t('Silhouette Spin')} desc={t('Name the glowing country before time runs out')}
+      <SetupCard mode={MODE} icon="🌀" title={t('Silhouette Spin')} desc={t('Just the outline. The clock shrinks with every right answer.')}
         options={OPTIONS} rules={RULES} typeToStart onStart={(v, typed) => { begin(v); if (typed) setInput(typed) }} />
     )
   }

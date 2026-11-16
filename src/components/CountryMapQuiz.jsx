@@ -1,0 +1,258 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCountryMap, divName, divLabel } from './countryMap/useCountryMap'
+import { COUNTRY_MAP_QUIZZES } from '../data/countryMaps'
+import { norm } from '../quizzes/tableQuizzes'
+import { startSession, trackAnswer, finishGame, markSession } from '../utils/results'
+import { playCorrect, playWin, playWrong } from '../utils/sounds'
+import SetupCard from './SetupCard'
+import GiveUpButton from './GiveUpButton'
+import { t } from '../i18n'
+
+/**
+ * A flat 2D map of one country split into subdivisions (see data/countryMaps).
+ * Type names in any order; each correct one fills in on the map with its label.
+ */
+
+const PREFIX_WAIT_MS = 700
+const TIME_S = 5 * 60
+
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`
+
+export default function CountryMapQuiz({ quizId }) {
+  const quiz = COUNTRY_MAP_QUIZZES[quizId]
+  const mode = quizId
+  const { map, kind } = quiz
+
+  // Items to find: every subdivision (or every one that has a seat, in seats mode)
+  const items = useMemo(() => map.divisions
+    .filter(d => kind === 'divisions' || d.seat)
+    .map(d => ({
+      id: d.id,
+      answer: kind === 'seats' ? d.seat : divName(d),
+      county: divName(d),
+      accepts: kind === 'seats' ? [d.seat, ...(d.seatAlt ?? [])] : [d.name, ...(d.ro ? [d.ro] : []), ...(d.alt ?? [])],
+    })), [map, kind])
+  const index = useMemo(() => {
+    const m = new Map()
+    for (const it of items) for (const a of it.accepts) {
+      const k = norm(a)
+      if (!m.has(k)) m.set(k, [])
+      m.get(k).push(it.id)
+    }
+    return m
+  }, [items])
+
+  const { drawn, error: loadError } = useCountryMap(map)
+  const [phase, setPhase] = useState('setup')        // setup · playing · done
+  const [timed, setTimed] = useState(true)
+  const [timeLeft, setTimeLeft] = useState(TIME_S)
+  const [found, setFound] = useState(() => new Set())
+  const [recent, setRecent] = useState(null)
+  const [input, setInput] = useState('')
+  const [endReason, setEndReason] = useState(null)
+  const [elapsed, setElapsed] = useState(0)
+  const foundRef = useRef(found)
+  const inputRef = useRef(null)
+  const pendingRef = useRef(null)
+  const startedAt = useRef(0)
+
+  // ── Game flow ────────────────────────────────────────────────────────────
+  const start = useCallback((values, typed) => {
+    const isTimed = values?.time !== 'free'
+    setTimed(isTimed)
+    setTimeLeft(TIME_S)
+    const empty = new Set()
+    foundRef.current = empty
+    setFound(empty)
+    setRecent(null)
+    setInput(typed ?? '')
+    setEndReason(null)
+    setPhase('playing')
+    startedAt.current = Date.now()
+    startSession(mode)
+    if (!isTimed) markSession(mode, { untimed: true })   // free play: no XP, medals or leaderboard
+    setTimeout(() => inputRef.current?.focus(), 30)
+  }, [mode])
+
+  const finish = useCallback((reason) => {
+    clearTimeout(pendingRef.current)
+    const done = foundRef.current
+    for (const it of items) if (!done.has(it.id)) trackAnswer(mode, null, false, 0, it.id, { silent: true })
+    finishGame(mode, { completed: true, meta: { map: map.id, kind } })
+    setElapsed(Date.now() - startedAt.current)
+    setEndReason(reason)
+    setPhase('done')
+    if (reason === 'complete') playWin(); else playWrong()
+  }, [items, mode, map.id, kind])
+
+  useEffect(() => {
+    if (phase !== 'playing' || !timed) return
+    const id = setInterval(() => setTimeLeft(s => s - 1), 1000)
+    return () => clearInterval(id)
+  }, [phase, timed])
+  useEffect(() => { if (phase === 'playing' && timed && timeLeft <= 0) finish('time') }, [timeLeft]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => clearTimeout(pendingRef.current), [])
+
+  const accept = useCallback((key) => {
+    const ids = (index.get(key) ?? []).filter(id => !foundRef.current.has(id))
+    if (!ids.length) return false
+    const next = new Set(foundRef.current)
+    for (const id of ids) { next.add(id); trackAnswer(mode, null, true, 10, id) }
+    foundRef.current = next
+    setFound(next)
+    setRecent(ids[0])
+    setInput('')
+    if (next.size === items.length) finish('complete')
+    else playCorrect()
+    return true
+  }, [index, mode, items.length, finish])
+
+  const onChange = (e) => {
+    const v = e.target.value
+    setInput(v)
+    clearTimeout(pendingRef.current)
+    const k = norm(v)
+    if (!k || !(index.get(k) ?? []).some(id => !foundRef.current.has(id))) return
+    // A longer open answer starts the same way? Wait a beat before accepting
+    const mine = new Set(index.get(k))       // longer spellings of the same answer don't count
+    let longer = false
+    for (const [key, ids] of index) {
+      if (key.length > k.length && key.startsWith(k) && ids.some(id => !foundRef.current.has(id) && !mine.has(id))) { longer = true; break }
+    }
+    if (longer) pendingRef.current = setTimeout(() => accept(k), PREFIX_WAIT_MS)
+    else accept(k)
+  }
+
+  const onKeyDown = (e) => {
+    if (e.key !== 'Enter') return
+    clearTimeout(pendingRef.current)
+    if (!accept(norm(input)) && input.trim()) {
+      e.currentTarget.classList.remove('tq-shake'); void e.currentTarget.offsetWidth; e.currentTarget.classList.add('tq-shake')
+    }
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────
+  if (phase === 'setup') {
+    return (
+      <div className="tq-setup">
+        <SetupCard
+          mode={mode}
+          icon={quiz.icon}
+          title={quiz.title}
+          desc={quiz.prompt}
+          options={[{
+            id: 'time', label: t('Clock'),
+            choices: [
+              { value: '5', label: t('⏱ 5 minutes'), hint: t('Earns XP and counts for the leaderboard') },
+              { value: 'free', label: t('∞ No limit'), hint: t('Take your time — no XP, no leaderboard') },
+            ],
+          }]}
+          rules={[
+            t('⌨️ {prompt} — any order, no Enter needed', { prompt: quiz.prompt }),
+            t('🗺️ Each answer fills in on the map with its name'),
+            ...(quiz.example ? [t('✅ Diacritics optional: "{plain}" works as well as "{exact}"', quiz.example)] : []),
+            t('🏳️ Give up any time to see what you missed'),
+          ]}
+          typeToStart
+          onStart={start}
+        />
+      </div>
+    )
+  }
+
+  const total = items.length
+  const score = found.size
+  const playing = phase === 'playing'
+  const pct = total ? Math.round((score / total) * 100) : 0
+  const itemById = Object.fromEntries(items.map(it => [it.id, it]))
+  const missedCount = total - score
+
+  return (
+    <div className={`tq cmq cmq-${kind}${playing ? '' : ' tq-done'}`}>
+      <header className="tq-head">
+        <div className="tq-title">
+          <span className="tq-icon">{quiz.icon}</span>
+          <div>
+            <h2>{quiz.title}</h2>
+            <p>{quiz.prompt}</p>
+          </div>
+        </div>
+        <div className="tq-stats">
+          {timed
+            ? <span className={`tq-timer${playing && timeLeft <= 30 ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
+            : <span className="tq-timer tq-untimed" title={t('Untimed — this game earns no XP')}>{t('∞ Untimed · no XP')}</span>}
+          <span className="tq-score"><strong>{score}</strong> / {total}</span>
+        </div>
+      </header>
+
+      <div className="tq-bar">
+        {playing ? (
+          <>
+            <input
+              ref={inputRef}
+              className="tq-input"
+              value={input}
+              onChange={onChange}
+              onKeyDown={onKeyDown}
+              placeholder={quiz.placeholder ?? (kind === 'seats' ? t('Type a county seat…') : t('Type a county…'))}
+              autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+              aria-label={quiz.prompt}
+            />
+            <GiveUpButton onConfirm={() => finish('giveup')} />
+          </>
+        ) : (
+          <div className="tq-result">
+            <span className="tq-result-msg">
+              {endReason === 'complete'
+                ? t('🎉 All {total} in {time}!', { total, time: fmt(Math.round(elapsed / 1000)) })
+                : endReason === 'time' ? t('⌛ Time\'s up!') : t('🏳️ You gave up.')}
+              {' '}<strong>{score}/{total}</strong> ({pct}%)
+              {endReason !== 'complete' && missedCount > 0 && <span className="cmq-missed-note"> · {t('{n} missed, shown in red', { n: missedCount })}</span>}
+            </span>
+            <div className="tq-result-btns">
+              <button className="tq-btn tq-btn-primary" onClick={() => start({ time: timed ? '5' : 'free' })}>{t('▶ Play again')}</button>
+              <button className="tq-btn" onClick={() => setPhase('setup')}>{t('⚙ Settings')}</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
+
+      <div className="cmq-map-wrap">
+        {loadError && <p className="cmq-msg">{t('Could not load the map. Check your connection and try again.')}</p>}
+        {!drawn && !loadError && <p className="cmq-msg">{t('Loading map…')}</p>}
+        {drawn && (
+          <svg className="cmq-map" viewBox={`0 0 ${drawn.W} ${drawn.H}`} role="img" aria-label={quiz.title}>
+            <defs><clipPath id={`cmq-clip-${mode}`}><rect width={drawn.W} height={drawn.H} /></clipPath></defs>
+            <g className="cmq-ctx" clipPath={`url(#cmq-clip-${mode})`}>{drawn.ctx.map(c => <path key={c.key} d={c.d} />)}</g>
+            {[false, true].map(cityLayer => (
+              <g key={String(cityLayer)}>
+                {drawn.subs.filter(s => s.city === cityLayer).map(s => {
+                  const ok = found.has(s.id)
+                  const inGame = !!itemById[s.id]
+                  const cls = !inGame ? ' off' : ok ? (recent === s.id ? ' hit' : ' ok') : !playing ? ' missed' : ''
+                  return <path key={s.id} d={s.d} className={`cmq-area${cls}`} />
+                })}
+              </g>
+            ))}
+            <g className="cmq-labels" aria-hidden="true">
+              {drawn.subs.map(s => {
+                const it = itemById[s.id]
+                if (!it) return null
+                const ok = found.has(s.id)
+                if (!ok && playing) return null
+                const [x, y] = drawn.labelPos[s.id] ?? [s.cx, s.cy]
+                return (
+                  <text key={s.id} x={x} y={y} className={`cmq-label${ok ? '' : ' missed'}${s.city || s.small ? ' tiny' : ''}`}>
+                    {kind === 'seats' ? it.answer : divLabel(map.divisions.find(d => d.id === s.id), s.small, map)}
+                  </text>
+                )
+              })}
+            </g>
+          </svg>
+        )}
+      </div>
+    </div>
+  )
+}

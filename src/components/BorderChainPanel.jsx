@@ -176,7 +176,7 @@ export default function BorderChainPanel({
     <GameIntro
       icon="🔗"
       title={t('Border Chain')}
-      desc={t('Connect two highlighted countries through a chain of shared borders.')}
+      desc={t('Cross the map neighbour by neighbour. Can you match the shortest path?')}
       rules={[
         t('🗺️ Each step must share a land border with the previous'),
         t('⭐ Try to find the shortest chain'),

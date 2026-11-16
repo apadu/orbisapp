@@ -27,6 +27,9 @@ import { COUNTRY_FACTS } from '../utils/countryFacts'
 import { FLAG_COLORS } from '../utils/flagColors'
 import { ALIASES, roAnswers } from '../utils/aliases'
 import { LIST_QUIZZES } from './listQuizzes'
+import { ROMANIA_PAGE } from '../data/countryPages/romania'
+import { MOLDOVA_PAGE } from '../data/countryPages/moldova'
+import { USA_PAGE } from '../data/countryPages/usa'
 import { WAR_QUIZZES } from './warQuizzes'
 import { t, cn, isRo, locale } from '../i18n'
 
@@ -226,6 +229,21 @@ export const TABLE_QUIZZES = {
 for (const [id, q] of Object.entries({ ...LIST_QUIZZES, ...WAR_QUIZZES })) {
   TABLE_QUIZZES[id] = { ...q, build: (ctx) => q.build({ ...ctx, countryAnswers, inRegion, currency: COUNTRY_CURRENCY, languages: COUNTRY_LANGUAGES, area: COUNTRY_AREA, population: POPULATION, capitals: CAPITALS }) }
 }
+
+// Country quizzes: 20 questions about one country, typed answers (data/countryPages)
+const countryQuiz = (page, title, prompt) => ({
+  title, prompt, icon: '❓', regions: false, timeLimit: 5 * 60,
+  columns: { hint: t('Question'), answer: t('Answer') },
+  build: () => page.questions.map(q => ({
+    id: q.id,
+    hint: { type: 'text', value: isRo ? q.q.ro : q.q.en, long: true },
+    answers: q.answers,
+    display: isRo ? q.show.ro : q.show.en,
+  })),
+})
+TABLE_QUIZZES['ro-quiz'] = countryQuiz(ROMANIA_PAGE, t('Quiz: Romania'), t('Answer 20 questions about Romania'))
+TABLE_QUIZZES['md-quiz'] = countryQuiz(MOLDOVA_PAGE, t('Quiz: Moldova'), t('Answer 20 questions about Moldova'))
+TABLE_QUIZZES['us-quiz'] = countryQuiz(USA_PAGE, t('Quiz: United States'), t('Answer 20 questions about the United States'))
 
 // Localise country names shown in the tables (keys / ids stay English)
 if (isRo) {

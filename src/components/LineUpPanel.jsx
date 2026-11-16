@@ -93,7 +93,7 @@ export default function LineUpPanel({ gameCountries, onGlobe }) {
   // Phones: key numbers stay visible over the globe
   useGameHud(phase === 'playing' && line ? [{ icon: '✓', text: `${found.length}/${line.names.length}` }] : null)
   if (phase === 'setup') {
-    return <SetupCard mode={MODE} icon="📐" title={t('Line Up')} desc={t('Name every country on the line')} options={OPTIONS} rules={RULES} onStart={begin} />
+    return <SetupCard mode={MODE} icon="📐" title={t('Line Up')} desc={t('A parallel or meridian cuts across the globe. Name every country it touches.')} options={OPTIONS} rules={RULES} onStart={begin} />
   }
 
   const total = line.names.length

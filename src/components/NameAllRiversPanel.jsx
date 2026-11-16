@@ -310,12 +310,11 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
     <GameIntro
       icon="🏞️"
       title={t('Name All Rivers')}
-      desc={t('Type every major river in the world — they trace across the globe as you name them.')}
+      desc={t('68 rivers, from the Danube to the Mekong. Each one flows onto the globe.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('🌊 Major rivers from all continents'),
         t('💡 Common name variations accepted'),
-        t('📈 Track your progress as you go'),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -326,12 +325,11 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
       mode="name-all-rivers"
       icon="🏞️"
       title={t('Name All Rivers')}
-      desc={t('Type every major river in the world — they trace across the globe as you name them.')}
+      desc={t('68 rivers, from the Danube to the Mekong. Each one flows onto the globe.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('🌊 Major rivers from all continents'),
         t('💡 Common name variations accepted'),
-        t('📈 Track your progress as you go'),
       ]}
       options={[TIMER_OPTION]}
       typeToStart

@@ -135,7 +135,7 @@ export default function LandmarkDropPanel({ onGlobe }) {
   }, [phase, guess, onClick, round, log]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (phase === 'setup') {
-    return <SetupCard mode={MODE} icon="🗽" title={t('Landmark Drop')} desc={t('Find famous places on the globe')} options={OPTIONS} rules={RULES} onStart={begin} />
+    return <SetupCard mode={MODE} icon="🗽" title={t('Landmark Drop')} desc={t('Machu Picchu, Petra, Angkor Wat… pin famous places from a pool of 112.')} options={OPTIONS} rules={RULES} onStart={begin} />
   }
 
   if (phase === 'over') {

@@ -115,11 +115,11 @@ export default function ConnectionsPanel() {
     <GameIntro
       icon="🔗"
       title={t('Country Connections')}
-      desc={t('Group 16 countries into 4 categories of 4. Each category has a hidden connection.')}
+      desc={t('16 countries, 4 hidden links. "One away!" means you\'re close.')}
       rules={[
         t('🟡 Yellow = easiest, 🟣 Purple = hardest'),
         t('✅ Select 4 countries then press Submit'),
-        t('❌ You have unlimited guesses'),
+        t('♾️ Unlimited guesses — mistakes only lower your medal'),
         t('💡 "One away!" means 3 of your 4 are correct'),
       ]}
       onStart={() => { setStarted(true); startGame(0) }}

@@ -162,7 +162,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     <GameIntro
       icon="🌍"
       title={t('Name All Countries')}
-      desc={t('Type every country in the world. Countries light up on the globe as you name them.')}
+      desc={t('196 countries, one text box. Watch the globe fill in as you type.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('🙈 Optional: start with an empty globe'),
@@ -178,7 +178,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       mode="name-all"
       icon="🌍"
       title={t('Name All Countries')}
-      desc={t('Type every country in the world. Countries light up on the globe as you name them.')}
+      desc={t('196 countries, one text box. Watch the globe fill in as you type.')}
       rules={[
         t('💡 Alternate spellings and aliases accepted'),
         t('🙈 Empty globe: countries only appear once you name them'),

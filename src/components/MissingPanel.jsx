@@ -166,12 +166,12 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
         mode="missing"
         icon="🗺️"
         title={t('Blind Map')}
-        desc={t('20 countries vanish from the globe. Name them all before the clock runs out!')}
+        desc={t('20 countries vanish from the globe. You have 4 minutes to bring them back.')}
         rules={[
           t('⏱ 4 minutes on the clock'),
           t('🌍 Countries reappear as you find them'),
           t('🔴 Missed ones revealed in red at the end'),
-          t('🔹 Really small countries are opted out'),
+          t('🔹 Tiny countries are left out — too small to spot'),
         ]}
         typeToStart
         onStart={(_, typed) => { startGame(); if (typed) setInput(typed) }}

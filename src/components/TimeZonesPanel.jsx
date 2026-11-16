@@ -128,7 +128,7 @@ export default function TimeZonesPanel({ gameCountries, onGlobe }) {
   // Phones: key numbers stay visible over the globe
   useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${idx + 1}/${rounds.length}` }, { text: `✓ ${score}` }] : null)
   if (phase === 'setup') {
-    return <SetupCard mode={MODE} icon="🕰️" title={t('Time Zones')} desc={t('Find where it\'s that time right now')} options={OPTIONS} rules={RULES} onStart={begin} />
+    return <SetupCard mode={MODE} icon="🕰️" title={t('Time Zones')} desc={t('It\'s 9 AM in Tokyo. Where in the world is it midnight right now?')} options={OPTIONS} rules={RULES} onStart={begin} />
   }
 
   if (phase === 'over') {

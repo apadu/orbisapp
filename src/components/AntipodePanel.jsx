@@ -103,7 +103,7 @@ export default function AntipodePanel({ onGlobe }) {
   // Phones: key numbers stay visible over the globe
   useGameHud(phase === 'playing' ? [{ icon: '🔁', text: `${round + 1}/${queue.length}` }, { text: `${total.toLocaleString(locale)} ${t('pts')}` }] : null)
   if (phase === 'setup') {
-    return <SetupCard mode={MODE} icon="🔄" title={t('Antipodes')} desc={t('Find the other side of the world')} options={OPTIONS} rules={RULES} onStart={begin} />
+    return <SetupCard mode={MODE} icon="🔄" title={t('Antipodes')} desc={t('Dig straight through the Earth from a capital. Where do you come out?')} options={OPTIONS} rules={RULES} onStart={begin} />
   }
 
   if (phase === 'over') {

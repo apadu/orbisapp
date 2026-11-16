@@ -144,7 +144,7 @@ export default function HigherLower({ countryNames = [] }) {
     return (
       <div className="arc-wrap">
         <div className="arc-card">
-          <SetupCard mode={MODE} icon="⚖️" title={t('Higher or Lower')} desc={t('Keep the streak alive')} options={OPTIONS} rules={RULES} onStart={begin} />
+          <SetupCard mode={MODE} icon="⚖️" title={t('Higher or Lower')} desc={t('More people? Bigger? One wrong call ends the streak.')} options={OPTIONS} rules={RULES} onStart={begin} />
         </div>
       </div>
     )

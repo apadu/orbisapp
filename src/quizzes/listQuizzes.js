@@ -322,7 +322,7 @@ export const LIST_QUIZZES = {
       .map(n => ({ id: n, country: n, hint: { type: 'text', value: COUNTRY_INFO[n]?.continent ?? '—' }, answers: countryAnswers(n), display: n }))
       .sort((a, b) => a.hint.value.localeCompare(b.hint.value) || a.display.localeCompare(b.display)),
   },
-  'capital-same-name': listQuiz({ title: t('Capital Shares the Name'), icon: '🪞', prompt: t('Name every country whose capital (almost) shares its name — e.g. Mexico → Mexico City'), names: CAPITAL_SHARES_NAME, regions: false }),
+  'capital-same-name': listQuiz({ title: t('Capital Namesakes'), icon: '🪞', prompt: t('Name every country whose capital (almost) shares its name — e.g. Mexico → Mexico City'), names: CAPITAL_SHARES_NAME, regions: false }),
   caribbean:         listQuiz({ title: t('Caribbean Countries'), icon: '🌴', prompt: t('Name the 13 island countries of the Caribbean'), names: CARIBBEAN, hint: n => n.length, hintLabel: 'Letters', sortBy: 'name', regions: false }),
   'central-america': listQuiz({ title: t('Central America'), icon: '🌋', prompt: t('Name the 7 countries of Central America'), names: CENTRAL_AMERICA, hint: n => n.length, hintLabel: 'Letters', sortBy: 'name', regions: false }),
   nordic:            listQuiz({ title: t('Nordic Countries'), icon: '❄️', prompt: t('Name the 5 Nordic countries'), names: NORDIC, hint: n => n.length, hintLabel: 'Letters', sortBy: 'name', regions: false }),

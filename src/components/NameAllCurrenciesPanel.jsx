@@ -192,12 +192,11 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
     <GameIntro
       icon="💰"
       title={t('Name All Currencies')}
-      desc={t('Type world currencies — countries that use them light up on the globe as you go.')}
+      desc={t('143 currencies. Name one and every country using it lights up.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('💡 Currency codes accepted too (e.g. USD, EUR)'),
         t('🌐 Countries sharing a currency all light up at once'),
-        t('📈 Track your progress as you go'),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -208,12 +207,11 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
       mode="name-all-currencies"
       icon="💰"
       title={t('Name All Currencies')}
-      desc={t('Type world currencies — countries that use them light up on the globe as you go.')}
+      desc={t('143 currencies. Name one and every country using it lights up.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('💡 Currency codes accepted too (e.g. USD, EUR)'),
         t('🌐 Countries sharing a currency all light up at once'),
-        t('📈 Track your progress as you go'),
       ]}
       options={[TIMER_OPTION]}
       typeToStart

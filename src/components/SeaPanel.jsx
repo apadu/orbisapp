@@ -70,12 +70,11 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
   if (!started) return (
     <GameIntro
       icon="🌊"
-      title={t('Seas Quiz')}
-      desc={t('A body of water is highlighted on the globe — name it.')}
+      title={t('Name the Sea')}
+      desc={t('A patch of ocean lights up. Sea, gulf or bay — which one is it?')}
       rules={[
         t('🌍 Oceans, seas, gulfs, and bays are all fair game'),
         t('↩ Skip to pass on any question'),
-        t('📈 Build a streak for a score multiplier'),
         t('🗺️ Rotate the globe to get a better view'),
       ]}
       onStart={() => { setStarted(true); onGameStart?.() }}

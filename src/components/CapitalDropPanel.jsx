@@ -117,7 +117,7 @@ export default function CapitalDropPanel({ gameCountries, onGlobe }) {
   }, [phase, guess, onClick, round, log]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (phase === 'setup') {
-    return <SetupCard mode={MODE} icon="📍" title={t('Capital Drop')} desc={t('Drop a pin on each capital')} options={OPTIONS} rules={RULES} onStart={begin} />
+    return <SetupCard mode={MODE} icon="📍" title={t('Capital Drop')} desc={t('Pin 10 capitals on the globe. Land within 25 km for a perfect 1000.')} options={OPTIONS} rules={RULES} onStart={begin} />
   }
 
   if (phase === 'over') {

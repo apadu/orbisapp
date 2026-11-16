@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { QUIZ_ITEMS, QuizTile, summarize, timeAgo } from './QuizHub'
+import { COUNTRY_PAGE_IDS } from '../data/countryPages'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
 import { levelForXp, levelTitle, computeXp } from '../utils/profileData'
@@ -19,7 +20,7 @@ function useResults() {
   return results
 }
 
-export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile, onDailyQuiz, onOpenInfo, countryNames = [] }) {
+export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCountries, onProfile, onDailyQuiz, onOpenInfo, countryNames = [] }) {
   const { list: daily, streak: dailyStreak } = useDailyChallenges()
   const auth = useAuth()
   const results = useResults()
@@ -59,7 +60,7 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile
           </p>
           <h1 className="hp-title">{t('How well do you')}<br /><span>{t('know the world?')}</span></h1>
           <p className="hp-tagline">
-            {ALL_PLAYABLE.length} {t('geography games on a living globe — flags, capitals, borders, rivers and more.')}
+            {ALL_PLAYABLE.length} {t('geography games on a spinning globe — from flags you know to capitals you\'ve never heard of.')}
           </p>
           <div className="hp-ctas">
             <button className="hp-cta-primary" onClick={() => onSelectMode('mystery')}>
@@ -82,7 +83,7 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile
           <button className="hp-card hp-card-wide" onClick={() => onSelectMode('mystery')}>
             <span className="hp-card-kicker">{t('New here?')}</span>
             <span className="hp-card-title">{t('Start with Mystery Country')}</span>
-            <span className="hp-card-sub">{t('Guess a country, get a distance hint, narrow it down. Takes a minute.')}</span>
+            <span className="hp-card-sub">{t('One hidden country. Every guess tells you how far off you are and which way to go.')}</span>
           </button>
         ) : (
           <div className="hp-card hp-continue">
@@ -160,8 +161,16 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile
           <span className="hp-banner-icon">🎯</span>
           <span className="hp-banner-body">
             <span className="hp-banner-title">{t('Quiz Hub')}</span>
-            <span className="hp-banner-sub">{QUIZ_ITEMS.length} {t('quizzes, no globe needed ·')} {quizPlayed}/{QUIZ_ITEMS.length} {t('played')}</span>
+            <span className="hp-banner-sub">{QUIZ_ITEMS.length} {t('quizzes, from flags to forgotten empires ·')} {quizPlayed}/{QUIZ_ITEMS.length} {t('played')}</span>
             <span className="hp-banner-bar"><span style={{ width: `${(quizPlayed / QUIZ_ITEMS.length) * 100}%` }} /></span>
+          </span>
+          <span className="hp-banner-cta">{t('Open ▸')}</span>
+        </button>
+        <button className="hp-banner hp-banner-countries" onClick={onEnterCountries}>
+          <span className="hp-banner-icon">🗺️</span>
+          <span className="hp-banner-body">
+            <span className="hp-banner-title">{t('Countries')}</span>
+            <span className="hp-banner-sub">{t('Maps by county and state, capitals and quizzes ·')} {t('{n} countries', { n: COUNTRY_PAGE_IDS.size })}</span>
           </span>
           <span className="hp-banner-cta">{t('Open ▸')}</span>
         </button>
@@ -169,7 +178,7 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onProfile
           <span className="hp-banner-icon">🎓</span>
           <span className="hp-banner-body">
             <span className="hp-banner-title">{t('Learn mode')}</span>
-            <span className="hp-banner-sub">{t('Click any country on the globe to see its facts')}</span>
+            <span className="hp-banner-sub">{t('Spin the globe, click a country, learn something you didn\'t know.')}</span>
           </span>
           <span className="hp-banner-cta">{t('Explore ▸')}</span>
         </button>

@@ -116,7 +116,7 @@ export default function LocatePanel({
         mode="locate"
         icon="📍"
         title={t('Pinpoint Country')}
-        desc={t('A country name appears — click where it is on the globe.')}
+        desc={t('A name, a globe, one click. Land inside the borders for a perfect 1000.')}
         rules={[
           t('🎯 Click inside the country for 1000 pts'),
           t('📏 Close misses still score (within 500 km)'),

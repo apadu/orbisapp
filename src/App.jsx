@@ -30,6 +30,8 @@ import GlobeFeedback from './components/GlobeFeedback'
 import UserMenu from './components/UserMenu'
 import RulesHint from './components/RulesHint'
 import { TABLE_QUIZ_IDS, TABLE_QUIZZES } from './quizzes/tableQuizzes'
+import { COUNTRY_MAP_QUIZZES, COUNTRY_MAP_IDS } from './data/countryMaps'
+import { COUNTRY_PAGES, COUNTRY_PAGE_IDS, COUNTRY_GAME_HOME, countryName } from './data/countryPages'
 import { clearRules } from './utils/rulesStore'
 import HomePage from './components/HomePage'
 import Confetti from './components/Confetti'
@@ -38,7 +40,7 @@ import './App.css'
 import { Analytics } from "@vercel/analytics/react"
 import { trackPageView } from './utils/pageViews'
 import { fetchData } from './utils/fetchData'
-import { t } from './i18n'
+import { t, isRo } from './i18n'
 
 // Code-split: each game / page is loaded the first time it's opened
 const HydroGlobe = lazy(() => import('./components/HydroGlobe'))
@@ -72,6 +74,9 @@ const NameAllSeaGlobe = lazy(() => import('./components/NameAllSeaGlobe'))
 const ProfilePage = lazy(() => import('./components/ProfilePage'))
 const InfoPage = lazy(() => import('./components/InfoPage'))
 const TableQuiz = lazy(() => import('./components/TableQuiz'))
+const CountryMapQuiz = lazy(() => import('./components/CountryMapQuiz'))
+const CountryPage = lazy(() => import('./components/CountryPage'))
+const CountriesHub = lazy(() => import('./components/CountriesHub'))
 const DailyQuiz = lazy(() => import('./components/DailyQuiz'))
 const HigherLower = lazy(() => import('./components/HigherLower'))
 const TrueFalse = lazy(() => import('./components/TrueFalse'))
@@ -135,6 +140,9 @@ const QUIZ_MODES = new Set([
   'currency', 'language', 'area', 'pop-order', 'border-chain',
   'missing-vowels', 'flag-colors', 'connections', 'emoji-quiz', 'country-fact', 'endonyms',
   ...TABLE_QUIZ_IDS,
+  ...COUNTRY_MAP_IDS,
+  ...COUNTRY_PAGE_IDS,
+  'countries',
   'daily-quiz',
   'higher-lower', 'true-false', 'country-wordle',
 ])
@@ -1025,6 +1033,7 @@ export default function App() {
       : page === 'profile' ? t('Profile')
       : page === 'privacy' ? t('Privacy Policy') : page === 'terms' ? t('Terms of Use') : page === 'credits' ? t('Credits')
       : mode === 'quiz-hub' ? t('Quiz Hub') : mode === 'learn' ? t('Learn')
+      : mode === 'countries' ? t('Countries') : COUNTRY_PAGES[mode] ? countryName(mode)
       : GAME_CATALOG[mode]?.label ?? null
     document.title = name ? `${name} · Orbis` : t('Orbis — Geography Games on a 3D Globe')
     if (window.location.pathname !== path) {
@@ -1230,6 +1239,7 @@ export default function App() {
           onEnter={() => openGame(mode === 'quiz-hub' || QUIZ_MODES.has(mode) ? 'mystery' : mode)}
           onSelectMode={openGame}
           onEnterQuiz={() => { setMode('quiz-hub'); setPage('quiz') }}
+          onEnterCountries={() => openGame('countries')}
           onProfile={openProfile}
           countryNames={gameCountryNames}
           onDailyQuiz={() => { switchMode('daily-quiz'); setPage('quiz') }}
@@ -1244,15 +1254,24 @@ export default function App() {
             <button className="quiz-nav-back" onClick={goHome}>
               {t('← Home')}
             </button>
-            {QUIZ_MODES.has(mode) && (
-              <button className="quiz-nav-hub" onClick={() => guard(() => setMode('quiz-hub'))}>
-                {t('← All Quizzes')}
-              </button>
+            {/* Back one level: country game → its country · country → all countries · quiz → Quiz Hub */}
+            {QUIZ_MODES.has(mode) && mode !== 'countries' && (
+              COUNTRY_GAME_HOME[mode] ? (
+                <button className="quiz-nav-hub" onClick={() => openGame(COUNTRY_GAME_HOME[mode])}>
+                  ← {COUNTRY_PAGES[COUNTRY_GAME_HOME[mode]].page.flag} {countryName(COUNTRY_GAME_HOME[mode])}
+                </button>
+              ) : COUNTRY_PAGE_IDS.has(mode) ? (
+                <button className="quiz-nav-hub" onClick={() => openGame('countries')}>{t('← All countries')}</button>
+              ) : (
+                <button className="quiz-nav-hub" onClick={() => guard(() => setMode('quiz-hub'))}>
+                  {t('← All Quizzes')}
+                </button>
+              )
             )}
             <span className="quiz-nav-title">
-              {mode === 'daily-quiz' ? t('📅 Daily Quiz') : TABLE_QUIZ_IDS.has(mode) ? `${TABLE_QUIZZES[mode].icon} ${TABLE_QUIZZES[mode].title}` : QUIZ_MODES.has(mode) ? t(QUIZ_LABELS[mode]) : t('🎯 Quiz Hub')}
+              {mode === 'daily-quiz' ? t('📅 Daily Quiz') : mode === 'countries' ? t('🗺️ Countries') : COUNTRY_PAGE_IDS.has(mode) ? `${COUNTRY_PAGES[mode].page.flag} ${isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en}` : COUNTRY_MAP_IDS.has(mode) ? `${COUNTRY_MAP_QUIZZES[mode].icon} ${COUNTRY_MAP_QUIZZES[mode].title}` : TABLE_QUIZ_IDS.has(mode) ? `${TABLE_QUIZZES[mode].icon} ${TABLE_QUIZZES[mode].title}` : QUIZ_MODES.has(mode) ? t(QUIZ_LABELS[mode]) : t('🎯 Quiz Hub')}
             </span>
-            {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && <RulesHint className="rules-hint-quiz" />}
+            {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && !COUNTRY_PAGE_IDS.has(mode) && mode !== 'countries' && <RulesHint className="rules-hint-quiz" />}
           </div>
 
           <div className="quiz-content"><Suspense fallback={null}>
@@ -1266,6 +1285,12 @@ export default function App() {
               <TrueFalse key={mode} countryNames={gameCountryNames} />
             ) : mode === 'country-wordle' ? (
               <CountryWordle key={mode} countryNames={gameCountryNames} />
+            ) : COUNTRY_PAGE_IDS.has(mode) ? (
+              <CountryPage key={mode} pageId={mode} onOpen={openGame} />
+            ) : mode === 'countries' ? (
+              <CountriesHub onOpen={openGame} />
+            ) : COUNTRY_MAP_IDS.has(mode) ? (
+              <CountryMapQuiz key={mode} quizId={mode} />
             ) : TABLE_QUIZ_IDS.has(mode) ? (
               <TableQuiz key={mode} quizId={mode} countryNames={gameCountryNames} />
             ) : (
@@ -1611,7 +1636,7 @@ export default function App() {
     <Confetti active={(mode === 'mystery' && gameWon) || missingComplete || !!completionStats} />
     <Analytics />
     {/* hidden while playing (globe game or a quiz) — the game needs the bottom of the screen */}
-    {isMobile && page !== 'game' && !(page === 'quiz' && mode !== 'quiz-hub') && (
+    {isMobile && page !== 'game' && !(page === 'quiz' && mode !== 'quiz-hub' && mode !== 'countries' && !COUNTRY_PAGE_IDS.has(mode)) && (
       <MobileNav
         page={page} mode={mode}
         onHome={goHome}

@@ -103,7 +103,7 @@ export default function TrueFalse({ countryNames = [] }) {
     return (
       <div className="arc-wrap">
         <div className="arc-card">
-          <SetupCard mode={MODE} icon="✅" title={t('True or False')} desc={t('Rapid-fire statements')} options={OPTIONS} rules={RULES} onStart={begin} />
+          <SetupCard mode={MODE} icon="✅" title={t('True or False')} desc={t('Rapid-fire facts. True or false — every mistake costs 3 seconds.')} options={OPTIONS} rules={RULES} onStart={begin} />
         </div>
       </div>
     )

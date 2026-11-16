@@ -192,12 +192,11 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
     <GameIntro
       icon="🗣️"
       title={t('Name All Languages')}
-      desc={t('Type official languages — countries that speak them light up on the globe.')}
+      desc={t('153 official languages, from Spanish to Tok Pisin.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('🌐 Multiple countries may share a language'),
         t('💡 All official languages count'),
-        t('📈 Track your progress as you go'),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -208,12 +207,11 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
       mode="name-all-languages"
       icon="🗣️"
       title={t('Name All Languages')}
-      desc={t('Type official languages — countries that speak them light up on the globe.')}
+      desc={t('153 official languages, from Spanish to Tok Pisin.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('🌐 Multiple countries may share a language'),
         t('💡 All official languages count'),
-        t('📈 Track your progress as you go'),
       ]}
       options={[TIMER_OPTION]}
       typeToStart

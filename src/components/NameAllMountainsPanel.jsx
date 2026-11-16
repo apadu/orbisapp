@@ -162,12 +162,11 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
     <GameIntro
       icon="⛰️"
       title={t('Name All Mountain Ranges')}
-      desc={t('Type every major mountain range in the world — they appear on the globe as you name them.')}
+      desc={t('40 mountain ranges, from the Himalayas to the Andes. Name them all.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('🏔️ All major ranges across all continents'),
         t('💡 Abbreviations and nicknames accepted'),
-        t('📈 Track your progress as you go'),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -178,12 +177,11 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
       mode="mountains"
       icon="⛰️"
       title={t('Name All Mountain Ranges')}
-      desc={t('Type every major mountain range in the world — they appear on the globe as you name them.')}
+      desc={t('40 mountain ranges, from the Himalayas to the Andes. Name them all.')}
       rules={[
         t('⏱ Choose countdown or free play'),
         t('🏔️ All major ranges across all continents'),
         t('💡 Abbreviations and nicknames accepted'),
-        t('📈 Track your progress as you go'),
       ]}
       options={[TIMER_OPTION]}
       typeToStart

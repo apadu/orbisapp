@@ -50,12 +50,12 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
     <GameIntro
       icon="📌"
       title={t('Neighbor Challenge')}
-      desc={t('A country is highlighted — name all countries that share a border with it.')}
+      desc={t('One country lights up. Name every neighbour it shares a land border with.')}
       rules={[
         t('🗺️ Countries that share a land border count'),
         t('❌ Missed ones revealed in red'),
         t('🔄 New country every round'),
-        t('📈 Build a streak for bonus points'),
+        t('💯 100 points for every neighbour you name'),
       ]}
       onStart={() => { setStarted(true); onGameStart?.() }}
       disabled={!target}
