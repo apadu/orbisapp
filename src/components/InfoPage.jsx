@@ -32,6 +32,8 @@ const PRIVACY_EN = () => (
       <li><b>Vercel</b> — hosts the website; also provides Vercel Web Analytics, which counts page views anonymously without cookies.</li>
     </ul>
     <p>We don't use advertising or tracking cookies, and we don't share your data with anyone else.</p>
+    <h2>Usage statistics and error reports</h2>
+    <p>To see which pages are used and to fix bugs, Orbis also records, in its own database: the page you open, the site you came from (just its name), the type of device (phone, tablet or computer) and the app language, grouped by a random number that only lasts while the tab is open. No cookies, no IP address, no fingerprinting. If your browser sends “Do Not Track”, nothing is recorded. When something crashes, we save the technical error message, the page and your browser version so we can fix it. If you're signed in, both are linked to your account. Page statistics are deleted after 180 days.</p>
     <h2>How long we keep it</h2>
     <p>Account data is kept until you delete your account. Guest data stays on your device until you clear it.</p>
     <h2>Your rights</h2>
@@ -62,6 +64,8 @@ const PRIVACY_RO = () => (
       <li><b>Vercel</b> — găzduiește site-ul; oferă și Vercel Web Analytics, care numără vizitele anonim, fără cookie-uri.</li>
     </ul>
     <p>Nu folosim reclame sau cookie-uri de urmărire și nu împărtășim datele tale cu nimeni altcineva.</p>
+    <h2>Statistici de utilizare și rapoarte de erori</h2>
+    <p>Ca să vedem ce pagini sunt folosite și să reparăm erorile, Orbis înregistrează și în propria bază de date: pagina deschisă, site-ul de unde vii (doar numele lui), tipul dispozitivului (telefon, tabletă sau calculator) și limba aplicației, grupate după un număr aleatoriu care există doar cât e deschis tab-ul. Fără cookie-uri, fără adresă IP, fără amprentare. Dacă browserul tău trimite „Do Not Track”, nu se înregistrează nimic. Când ceva se blochează, salvăm mesajul tehnic al erorii, pagina și versiunea browserului, ca să o putem repara. Dacă ești conectat, ambele sunt legate de contul tău. Statisticile de pagini se șterg după 180 de zile.</p>
     <h2>Cât timp le păstrăm</h2>
     <p>Datele contului sunt păstrate până îți ștergi contul. Datele de invitat rămân pe dispozitivul tău până le ștergi.</p>
     <h2>Drepturile tale</h2>

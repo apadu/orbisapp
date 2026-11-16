@@ -36,6 +36,7 @@ import Confetti from './components/Confetti'
 import CompletionModal from './components/CompletionModal'
 import './App.css'
 import { Analytics } from "@vercel/analytics/react"
+import { trackPageView } from './utils/pageViews'
 import { fetchData } from './utils/fetchData'
 import { t } from './i18n'
 
@@ -1030,6 +1031,7 @@ export default function App() {
       if (fromPop.current) window.history.replaceState(null, '', path)
       else window.history.pushState(null, '', path)
     }
+    trackPageView(path)
     fromPop.current = false
   }, [loading, page, mode, applyRoute, routeOpts])
 
