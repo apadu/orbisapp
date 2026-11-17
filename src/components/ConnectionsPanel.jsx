@@ -4,6 +4,7 @@ import { CONNECTIONS_ROUNDS, DIFF_COLORS } from '../utils/connectionsData'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { startSession, trackAnswer, finishGame } from '../utils/results'
 import { t, cn } from '../i18n'
+import { plain } from '../utils/plain'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -118,9 +119,9 @@ export default function ConnectionsPanel() {
       desc={t('16 countries, 4 hidden links. "One away!" means you\'re close.')}
       rules={[
         t('🟡 Yellow = easiest, 🟣 Purple = hardest'),
-        t('✅ Select 4 countries then press Submit'),
-        t('♾️ Unlimited guesses — mistakes only lower your medal'),
-        t('💡 "One away!" means 3 of your 4 are correct'),
+        plain(t('✅ Select 4 countries then press Submit')),
+        plain(t('♾️ Unlimited guesses — mistakes only lower your score')),
+        plain(t('💡 "One away!" means 3 of your 4 are correct')),
       ]}
       onStart={() => { setStarted(true); startGame(0) }}
     />
@@ -129,7 +130,7 @@ export default function ConnectionsPanel() {
   if (done) {
     return (
       <>
-        <div className="panel-header"><h2>{t('🔗 Country Connections')}</h2></div>
+        <div className="panel-header"><h2>{plain(t('🔗 Country Connections'))}</h2></div>
         <div className="quiz-done-wrap">
           <div className="quiz-done-icon">🎉</div>
           <div className="quiz-done-title">{t('Puzzle solved!')}</div>
@@ -161,7 +162,7 @@ export default function ConnectionsPanel() {
     <>
       <div className="panel-header">
         <div className="quiz-header-row">
-          <h2>{t('🔗 Country Connections')}</h2>
+          <h2>{plain(t('🔗 Country Connections'))}</h2>
           <span className="conn-round-label">{t('Puzzle')} {(roundIdx % CONNECTIONS_ROUNDS.length) + 1}</span>
         </div>
         <p className="panel-subtitle">{t('Find four groups of four countries.')}</p>
@@ -196,7 +197,7 @@ export default function ConnectionsPanel() {
 
       {/* Controls */}
       <div className="conn-controls">
-        {oneAway && <div className="conn-one-away">{t('💡 One away!')}</div>}
+        {oneAway && <div className="conn-one-away">{plain(t('💡 One away!'))}</div>}
         <div className="conn-btn-row">
           <button
             className="conn-btn-deselect"

@@ -6,14 +6,16 @@ import { COUNTRY_INFO } from '../utils/countryInfo'
 import { startSession, trackAnswer, finishGame, loadResults } from '../utils/results'
 import { playCorrect, playWrong, playStreak } from '../utils/sounds'
 import { t } from '../i18n'
+import { plain } from '../utils/plain'
+import Icon from './Icon'
 
 const MODE = 'higher-lower'
 const OPTIONS = [{
   id: 'stat', label: t('Compare by'),
   choices: [
-    { value: 'population', label: t('👥 Population'), hint: t('Which country has more people?') },
-    { value: 'area',       label: t('📏 Area'),       hint: t('Which country is bigger?') },
-    { value: 'mixed',      label: t('🎲 Mixed'),      hint: t('Population or area — changes every round') },
+    { value: 'population', label: plain(t('👥 Population')), hint: t('Which country has more people?') },
+    { value: 'area',       label: plain(t('📏 Area')),       hint: t('Which country is bigger?') },
+    { value: 'mixed',      label: plain(t('🎲 Mixed')),      hint: t('Population or area — changes every round') },
   ],
 }]
 const RULES = [
@@ -156,7 +158,7 @@ export default function HigherLower({ countryNames = [] }) {
   return (
     <div className="arc-wrap">
       <div className="hl-top">
-        <span className="hl-streak">🔥 {streak}</span>
+        <span className="hl-streak"><Icon name="flame" size={16} /> {streak}</span>
         <span className="hl-q">{stat === 'population' ? t('Does {c} have more or fewer people?', { c: shortName(right) }) : t('Does {c} have a bigger or smaller area?', { c: shortName(right) })}</span>
         <span className="hl-best">{t('Best')} {Math.max(best, streak)}</span>
       </div>
@@ -180,7 +182,7 @@ export default function HigherLower({ countryNames = [] }) {
       {phase === 'over' && (
         <div className="arc-over">
           <div className="arc-over-big">{streak}<small> {t('in a row')}</small></div>
-          <div className="arc-over-sub">{newBest ? t('🎉 New personal best!') : t('Your best: {best}', { best: best })}</div>
+          <div className="arc-over-sub">{newBest ? plain(t('🎉 New personal best!')) : t('Your best: {best}', { best: best })}</div>
           <div className="arc-over-btns">
             <button className="arc-primary" onClick={() => begin(setup)}>{t('▶ Play again')} <kbd>{t('Enter')}</kbd></button>
             <button className="arc-secondary" onClick={() => setPhase('setup')}>{t('Settings')}</button>

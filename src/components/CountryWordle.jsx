@@ -9,6 +9,9 @@ import { COUNTRY_INFO } from '../utils/countryInfo'
 import { startSession, trackAnswer, finishGame, loadResults } from '../utils/results'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, isRo, continentName } from '../i18n'
+import { plain } from '../utils/plain'
+import Icon from './Icon'
+import { shareText } from '../utils/share'
 
 const MODE = 'country-wordle'
 const KEYS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']
@@ -145,7 +148,7 @@ export default function CountryWordle({ countryNames = [] }) {
 
   const share = async () => {
     const text = wordleShareText(game.day, rows, solved)
-    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch {}
+    if (await shareText(text) === 'copied') { setCopied(true); setTimeout(() => setCopied(false), 2000) }
   }
 
   if (!game) return <div className="arc-wrap"><div className="game-intro-wait">{t('Loading…')}</div></div>
@@ -157,10 +160,10 @@ export default function CountryWordle({ countryNames = [] }) {
     <div className="arc-wrap wd-wrap">
       <div className="wd-head">
         {game.daily
-          ? <span className="dq-badge">{t('🟩 Wordle #')}{game.day}</span>
-          : <span className="wd-practice">{t('🎲 Practice')}</span>}
+          ? <span className="dq-badge">Wordle #{game.day}</span>
+          : <span className="wd-practice">{plain(t('🎲 Practice'))}</span>}
         <span className="wd-len">{target.length} {t('letters')}</span>
-        {streak > 0 && <span className="dq-streak">🔥 {streak}</span>}
+        {streak > 0 && <span className="dq-streak"><Icon name="flame" size={15} /> {streak}</span>}
         {!game.daily && <button className="wd-link" onClick={backToDaily}>{t('← Today\'s Wordle')}</button>}
       </div>
 
@@ -184,7 +187,7 @@ export default function CountryWordle({ countryNames = [] }) {
 
       <div className="wd-msg">
         {error ? <span className="wd-error">{error}</span>
-          : !over && misses >= HINT_AFTER ? <span className="wd-hint">{t('💡 It\'s in')} {info?.continent === 'Americas' ? t('the Americas') : continentName(info?.continent)}</span>
+          : !over && misses >= HINT_AFTER ? <span className="wd-hint">{plain(t('💡 It\'s in'))} {info?.continent === 'Americas' ? t('the Americas') : continentName(info?.continent)}</span>
           : null}
       </div>
 
@@ -196,8 +199,8 @@ export default function CountryWordle({ countryNames = [] }) {
             <div className="wd-result-sub">{solved ? t('Solved in {length}/{WORDLE_TRIES}', { length: guesses.length, WORDLE_TRIES: WORDLE_TRIES }) : t('Out of tries — tomorrow is a new country')}</div>
           </div>
           <div className="wd-result-btns">
-            {game.daily && <button className="arc-secondary" onClick={share}>{copied ? t('✓ Copied') : t('📋 Share')}</button>}
-            <button className="arc-primary" onClick={practice}>{t('🎲 Practice')} <kbd>{t('Enter')}</kbd></button>
+            {game.daily && <button className="arc-secondary" onClick={share}>{copied ? plain(t('✓ Copied')) : plain(t('📋 Share'))}</button>}
+            <button className="arc-primary" onClick={practice}>{plain(t('🎲 Practice'))} <kbd>{t('Enter')}</kbd></button>
           </div>
           {game.daily && <div className="dq-next">{t('Next Wordle in')} <strong>{fmtClock(left)}</strong></div>}
         </div>

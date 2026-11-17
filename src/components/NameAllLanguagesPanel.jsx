@@ -7,6 +7,8 @@ import GameSummary from './GameSummary'
 import { t } from '../i18n'
 import { setPoolSize } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { langName, langSpellings } from '../i18n/names'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -17,7 +19,7 @@ function formatTime(secs) {
 }
 
 function normLang(str) {
-  return str.trim().toLowerCase().replace(/[^a-z]/g, '')
+  return str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '')
 }
 
 export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, onMissedChange, onNewGame, onComplete }) {
@@ -57,8 +59,11 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
     for (const entry of Object.values(byLang)) {
       if (!seen.has(entry.language)) { seen.add(entry.language); all.push(entry) }
     }
-    all.sort((a, b) => a.language.localeCompare(b.language))
-    return { langMap: byLang, allLanguages: all }
+    all.sort((a, b) => langName(a.language).localeCompare(langName(b.language)))
+    // typed spelling → entry, in the site language only
+    const map = {}
+    for (const entry of all) for (const sp of langSpellings(entry.language)) map[normLang(sp)] ??= entry
+    return { langMap: map, allLanguages: all }
   }, [gameCountries])
 
   const total    = allLanguages.length
@@ -194,9 +199,9 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
       title={t('Name All Languages')}
       desc={t('153 official languages, from Spanish to Tok Pisin.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('🌐 Multiple countries may share a language'),
-        t('💡 All official languages count'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('🌐 Multiple countries may share a language')),
+        plain(t('💡 All official languages count')),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -209,9 +214,9 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
       title={t('Name All Languages')}
       desc={t('153 official languages, from Spanish to Tok Pisin.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('🌐 Multiple countries may share a language'),
-        t('💡 All official languages count'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('🌐 Multiple countries may share a language')),
+        plain(t('💡 All official languages count')),
       ]}
       options={[TIMER_OPTION]}
       typeToStart
@@ -222,7 +227,7 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
   return (
     <>
       <div className="panel-header">
-        <h2>{t('🗣️ Name All Languages')}</h2>
+        <h2>{plain(t('🗣️ Name All Languages'))}</h2>
         <p className="panel-subtitle">
           {t('Type primary official languages. Countries light up as you find them.')}
         </p>
@@ -235,7 +240,7 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? t('⏳ countdown') : t('⏱ count up')}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ count up'))}
           </span>
           <div className="na-timer-controls">
             {!gameOver && !expired && !allFound && (
@@ -249,7 +254,7 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
       {/* Time's up */}
       {expired && (
         <div className="na-expired">
-          {t('⌛ Time\'s up! You found')} <strong>{found.length}</strong> / {total} {t('languages.')}
+          {plain(t('⌛ Time\'s up! You found'))} <strong>{found.length}</strong> / {total} {t('languages.')}
         </div>
       )}
 
@@ -307,8 +312,8 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
           noun={t('languages')}
           total={total}
           timeLabel={timerMode === 'countdown' ? t('{v} used', { v: formatTime(COUNTDOWN_SECONDS - remaining) }) : formatTime(elapsed)}
-          found={found.map(l => ({ label: l.language, sub: `${l.countries.length} ${l.countries.length === 1 ? 'country' : 'countries'}` }))}
-          missed={allLanguages.filter(l => !foundSet.has(l.language)).map(l => ({ label: l.language, sub: `${l.countries.length} ${l.countries.length === 1 ? 'country' : 'countries'}` }))}
+          found={found.map(l => ({ label: langName(l.language), sub: `${l.countries.length} ${t(l.countries.length === 1 ? 'country' : 'countries')}` }))}
+          missed={allLanguages.filter(l => !foundSet.has(l.language)).map(l => ({ label: langName(l.language), sub: `${l.countries.length} ${t(l.countries.length === 1 ? 'country' : 'countries')}` }))}
         />
       )}
 
@@ -319,8 +324,8 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
           <ul className="guess-list">
             {[...found].reverse().map(l => (
               <li key={l.language} className="guess-item">
-                <span className="guess-swatch" style={{ background: '#39ff14' }} />
-                <span className="guess-name">{l.language}</span>
+                <span className="guess-swatch" style={{ background: '#5BD18B' }} />
+                <span className="guess-name">{langName(l.language)}</span>
                 <span className="guess-dist" style={{ color: '#888', fontSize: '0.78em' }}>
                   &nbsp;· {l.countries.length} {l.countries.length === 1 ? t('country') : t('countries')}
                 </span>
@@ -334,10 +339,10 @@ export default function NameAllLanguagesPanel({ gameCountries, onFoundChange, on
         {(gameOver || expired || allFound) ? (
           <>
             <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>{t('▶ Play again')}</button>
-            <button className="new-game-btn" onClick={handleReset}>{t('⚙ Settings')}</button>
+            <button className="new-game-btn" onClick={handleReset}>{plain(t('⚙ Settings'))}</button>
           </>
         ) : (
-          <button className="new-game-btn" onClick={handleReset}>{t('🔄 Reset')}</button>
+          <button className="new-game-btn" onClick={handleReset}>{plain(t('🔄 Reset'))}</button>
         )}
       </div>
     </>

@@ -1,4 +1,7 @@
 import { StrictMode, lazy, Suspense } from 'react'
+// Fonts served from our own site (no requests to Google: GDPR), latin + latin-ext subsets
+import '@fontsource-variable/fraunces'
+import '@fontsource-variable/inter'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './auth/AuthContext'

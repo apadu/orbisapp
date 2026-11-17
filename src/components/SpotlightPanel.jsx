@@ -6,6 +6,7 @@ import GameSummary from './GameSummary'
 import { t, cn } from '../i18n'
 import { setPoolSize } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
 
 const TIMERS = { standard: 20 * 60, hard: 30 * 60 }
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -152,10 +153,10 @@ export default function SpotlightPanel({
         title={t('Spotlight')}
         desc={t('An empty globe lights up one country at a time. Name it to reveal the next.')}
         rules={[
-          t('🔦 One country at a time lights up'),
-          t('⌨️ Type its name to move to the next'),
-          t('🙈 Hard mode: only the current country is ever visible'),
-          t('⏱ 20 minutes on the clock, 30 in hard mode'),
+          plain(t('🔦 One country at a time lights up')),
+          plain(t('⌨️ Type its name to move to the next')),
+          plain(t('🙈 Hard mode: only the current country is ever visible')),
+          plain(t('⏱ 20 minutes on the clock, 30 in hard mode')),
         ]}
         options={[{
           id: 'difficulty', label: t('Mode'), default: 'standard',
@@ -213,7 +214,7 @@ export default function SpotlightPanel({
       {phase === 'done' && (
         <div className="missing-done-banner">
           {found.length === total
-            ? <span className="missing-perfect">{t('🎉 All')} {total} {t('countries identified!')}</span>
+            ? <span className="missing-perfect">{plain(t('🎉 All'))} {total} {t('countries identified!')}</span>
             : <span className="missing-score">{t('Identified')} {found.length} / {total}</span>
           }
           <div className="locate-again-row">
@@ -227,7 +228,7 @@ export default function SpotlightPanel({
               className="new-game-btn"
               onClick={() => { onMissedChange([]); onFoundChange([]); setPhase('select') }}
             >
-              {t('⚙ Settings')}
+              {plain(t('⚙ Settings'))}
             </button>
           </div>
         </div>
@@ -246,7 +247,7 @@ export default function SpotlightPanel({
       {/* Found list (live, during play) */}
       {phase !== 'done' && found.length > 0 && (
         <div className="missing-list-block">
-          <div className="missing-list-header found-header">{t('✓ Identified (')}{found.length})</div>
+          <div className="missing-list-header found-header">{plain(t('✓ Identified ('))}{found.length})</div>
           {[...found].reverse().map(name => (
             <div key={name} className="missing-list-item found-item">
               <span className="missing-item-flag">{countryInfo[name]?.flag ?? '🏳️'}</span>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { geoAlbersUsa, geoMercator, geoPath } from 'd3-geo'
+import { geoAlbersUsa, geoConicConformal, geoMercator, geoPath } from 'd3-geo'
 import { isRo } from '../../i18n'
 
 /** Name to show for a subdivision: its Romanian name in Romanian, if it has one */
@@ -7,7 +7,8 @@ export const divName = (d) => (isRo && d.ro) || d.name
 /** Map label: the abbreviation for tiny subdivisions on maps that use them (US: "RI", "DE"…) */
 export const divLabel = (d, small, map) => (small && map.abbreviateSmall ? d.id.split('-')[1] : divName(d))
 
-const PROJECTIONS = { mercator: geoMercator, albersUsa: geoAlbersUsa }
+// conicCanada: Lambert conformal conic, standard parallels 49° and 77° (Statistics Canada's choice)
+const PROJECTIONS = { mercator: geoMercator, albersUsa: geoAlbersUsa, conicCanada: () => geoConicConformal().parallels([49, 77]).rotate([96, 0]) }
 
 /**
  * Loads a country map (public/data/maps/<file>) and projects it into an SVG
@@ -42,7 +43,9 @@ export function useCountryMap(map) {
 
   const drawn = useMemo(() => {
     if (!geo) return null
-    const subs = geo.features.filter(f => !f.properties.ctx)
+    const subs = geo.features.filter(f => !f.properties.ctx && !f.properties.frame)
+    // Inset frames: islands moved next to the mainland (the Canaries, Okinawa) get a dashed box
+    const frames = map.projection === 'albersUsa' ? [] : geo.features.filter(f => f.properties.frame)
     // Composite projections (Albers USA) can't draw what's outside their panels: no neighbours then
     const ctx = map.projection === 'albersUsa' ? [] : geo.features.filter(f => f.properties.ctx)
     const fc = { type: 'FeatureCollection', features: subs }
@@ -74,7 +77,7 @@ export function useCountryMap(map) {
         if (!s.city && Math.hypot(s.cx - city.cx, s.cy - city.cy) <= 18) labelPos[s.id] = [s.cx, s.cy + 26]
       }
     }
-    return { W, H, ctx: ctx.map((f, i) => ({ key: `c${i}`, d: path(f) })), subs: subsDrawn, labelPos }
+    return { W, H, ctx: ctx.map((f, i) => ({ key: `c${i}`, d: path(f) })), frames: frames.map((f, i) => ({ key: `f${i}`, d: path(f) })), subs: subsDrawn, labelPos }
   }, [geo, map.divisions, map.projection])
 
   return { drawn, error }

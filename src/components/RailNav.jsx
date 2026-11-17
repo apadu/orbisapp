@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
-import { GAME_GROUPS, gamesInGroup, groupOf } from '../utils/gameRegistry'
+import { GAME_GROUPS, gamesInGroup, groupOf, menuGames } from '../utils/gameRegistry'
 import { PALETTE_SHORTCUT } from './CommandPalette'
 import { t } from '../i18n'
+import Icon, { SECTION_ICON } from './Icon'
+import GameIcon from './GameIcon'
 
-// Quick links shown in the Quizzes flyout (the full list lives in the Quiz Hub)
-const QUIZ_QUICK = ['quiz-hub', 'daily-quiz', 'country-wordle', 'higher-lower', 'true-false', 'connections', 'border-chain', 'flag', 'capital']
 
 /**
- * Left rail: one button per category. Hover (or click) opens a flyout with that
- * category's games. Search sits on top (Ctrl/⌘ K).
+ * Left rail, on every desktop page: one button per section. Click = open the section's
+ * page; hover = a flyout with its games for a quick jump. Search sits on top (Ctrl/⌘ K).
  */
-export default function RailNav({ mode, onOpen, onSearch, onHome }) {
+export default function RailNav({ mode, page, onOpen, onSearch, onHome }) {
   const [open, setOpen] = useState(null)       // group id
   const closeTimer = useRef(null)
-  const activeGroup = groupOf(mode)
+  // The section you're in: its own page, or one of its games (nothing on Home / Profile)
+  const activeGroup = page === 'home' || page === 'profile' ? null
+    : GAME_GROUPS.find(g => g.page === mode)?.id ?? groupOf(mode)
 
   const show = (g) => { clearTimeout(closeTimer.current); setOpen(g) }
   const hideSoon = () => { clearTimeout(closeTimer.current); closeTimer.current = setTimeout(() => setOpen(null), 220) }
@@ -25,9 +27,7 @@ export default function RailNav({ mode, onOpen, onSearch, onHome }) {
     return () => window.removeEventListener('keydown', esc)
   }, [open])
 
-  const items = open === 'quizzes'
-    ? QUIZ_QUICK.map(id => gamesInGroup('quizzes').find(g => g.id === id)).filter(Boolean)
-    : open ? gamesInGroup(open) : []
+  const items = open ? menuGames(open) : []
   const group = GAME_GROUPS.find(g => g.id === open)
 
   const pick = (id) => { setOpen(null); onOpen(id) }
@@ -36,11 +36,11 @@ export default function RailNav({ mode, onOpen, onSearch, onHome }) {
     <div className="nrail-wrap" onMouseLeave={hideSoon} onMouseEnter={() => clearTimeout(closeTimer.current)}>
       <nav className="nrail" aria-label={t('Games')}>
         <button className="nrail-btn nrail-search" onClick={onSearch} title={`${t('Search games')} (${PALETTE_SHORTCUT})`}>
-          <span className="nrail-icon">🔎</span>
+          <span className="nrail-icon"><Icon name="search" size={20} /></span>
           <span className="nrail-label">{t('Search')}</span>
         </button>
-        <button className="nrail-btn" onClick={onHome} title={t('Home')}>
-          <span className="nrail-icon">🏠</span>
+        <button className={`nrail-btn${page === 'home' ? ' active' : ''}`} onClick={onHome} title={t('Home')}>
+          <span className="nrail-icon"><Icon name="home" size={20} /></span>
           <span className="nrail-label">{t('Home')}</span>
         </button>
         <div className="nrail-sep" />
@@ -49,13 +49,14 @@ export default function RailNav({ mode, onOpen, onSearch, onHome }) {
             key={g.id}
             className={`nrail-btn${activeGroup === g.id ? ' active' : ''}${open === g.id ? ' open' : ''}`}
             style={{ '--cat': g.color }}
-            onMouseEnter={() => g.id !== 'learn' && show(g.id)}
+            onMouseEnter={() => g.id !== 'learn' ? show(g.id) : setOpen(null)}
             onFocus={() => g.id !== 'learn' && show(g.id)}
-            onClick={() => g.id === 'learn' ? pick('learn') : setOpen(o => (o === g.id ? null : g.id))}
-            aria-expanded={g.id !== 'learn' ? open === g.id : undefined}
+            onClick={() => pick(g.page)}
+            aria-haspopup={g.id !== 'learn' ? 'menu' : undefined}
+            aria-current={activeGroup === g.id ? 'page' : undefined}
             title={g.label}
           >
-            <span className="nrail-icon">{g.icon}</span>
+            <span className="nrail-icon"><Icon name={SECTION_ICON[g.id]} size={20} /></span>
             <span className="nrail-label">{g.short}</span>
           </button>
         ))}
@@ -64,13 +65,13 @@ export default function RailNav({ mode, onOpen, onSearch, onHome }) {
       {open && group && (
         <div className="nrail-fly" style={{ '--cat': group.color }} role="menu">
           <div className="nrail-fly-head">
-            <span>{group.icon} {group.label}</span>
-            <span className="nrail-fly-count">{gamesInGroup(open).length}</span>
+            <span>{group.label}</span>
+            <span className="nrail-fly-count">{open === 'quizzes' ? gamesInGroup(open).length - 2 : items.length}</span>
           </div>
           <div className="nrail-fly-list">
             {items.map(g => (
               <button key={g.id} role="menuitem" className={`nrail-fly-item${mode === g.id ? ' active' : ''}`} onClick={() => pick(g.id)}>
-                <span className="nrail-fly-icon">{g.icon}</span>
+                <span className="nrail-fly-icon"><GameIcon id={g.id} size={18} /></span>
                 <span className="nrail-fly-text">
                   <span className="nrail-fly-label">{g.label}</span>
                   <span className="nrail-fly-desc">{g.desc}</span>
@@ -78,9 +79,9 @@ export default function RailNav({ mode, onOpen, onSearch, onHome }) {
               </button>
             ))}
           </div>
-          {open === 'quizzes' && (
-            <button className="nrail-fly-more" onClick={() => pick('quiz-hub')}>{t('All {n} quizzes →', { n: gamesInGroup('quizzes').length - 2 })}</button>
-          )}
+          <button className="nrail-fly-more" onClick={() => pick(group.page)}>
+            {open === 'quizzes' ? t('All {n} quizzes →', { n: gamesInGroup('quizzes').length - 2 }) : t('Open {section} →', { section: group.label })}
+          </button>
         </div>
       )}
     </div>

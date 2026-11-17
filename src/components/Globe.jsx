@@ -4,6 +4,7 @@ import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient,
 import { geoEquirectangular, geoPath, geoCentroid, geoBounds } from 'd3-geo'
 import GlobeControls from './GlobeControls'
 import { t } from '../i18n'
+import { plain } from '../utils/plain'
 
 const CANVAS_W = 4096
 const CANVAS_H = 2048
@@ -244,7 +245,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     if (isOcean) {
       fillStyle = OCEAN
     } else if (gameWon && name === mysteryName) {
-      fillStyle = '#39ff14'
+      fillStyle = '#5BD18B'
     } else if (name === highlightedName) {
       fillStyle = '#f97316'
     } else if (effectiveColor) {
@@ -348,7 +349,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     if (isHidden) continue   // nothing to draw — the sea is already there
     let blobFill, blobStroke
     if (isWinner) {
-      blobFill   = '#39ff14'; blobStroke = '#39ff14'
+      blobFill   = '#5BD18B'; blobStroke = '#5BD18B'
     } else if (name === highlightedName) {
       blobFill   = '#f97316'; blobStroke = '#f97316'
     } else if (guessColor) {
@@ -422,7 +423,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     ctx.beginPath()
     ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
     if (isWinner) {
-      ctx.fillStyle = '#39ff14'
+      ctx.fillStyle = '#5BD18B'
     } else if (name === highlightedName) {
       ctx.fillStyle = '#f97316'
     } else if (guessColor) {
@@ -446,6 +447,9 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     }
     ctx.restore()
   }
+
+  // Lines + pins (drawn under the locate pin, so the pin stays on top)
+  if (overlay) drawOverlay(ctx, overlay)
 
   // ── Locate marker: dot where the user clicked ────────────────────────────
   if (locateMarker) {
@@ -490,9 +494,6 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     }
   }
 
-  // Correct-location pin removed — country stays highlighted green, no pin drawn
-
-  if (overlay) drawOverlay(ctx, overlay)
 }
 
 // ── Generic overlay: lines (great-circle arcs, parallels, meridians) + pins ──
@@ -865,7 +866,7 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
       <GlobeControls camRef={camRef} sphereRef={sphereRef} spinRef={spinRef} />
       {pending && onGlobeClick && (
         <div className="globe-confirm" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
-          <button className="arc-primary" onClick={confirmPending}>{t('✓ Confirm pin')}</button>
+          <button className="arc-primary" onClick={confirmPending}>{plain(t('✓ Confirm pin'))}</button>
           <button className="arc-secondary" onClick={() => setPending(null)} aria-label={t('Cancel')}>✕</button>
         </div>
       )}

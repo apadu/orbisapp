@@ -7,6 +7,8 @@ import GameSummary from './GameSummary'
 import { t } from '../i18n'
 import { setPoolSize } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { curName, curSpellings } from '../i18n/names'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -17,7 +19,7 @@ function formatTime(secs) {
 }
 
 function normCurrency(str) {
-  return str.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+  return str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
 }
 
 export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, onMissedChange, onNewGame, onComplete }) {
@@ -49,7 +51,10 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
       byName[key].countries.push({ name, feature: f })
     }
     // Build lookup (includes code aliases)
-    const map = { ...byName }
+    const map = {}
+    for (const entry of Object.values(byName)) {
+      for (const sp of curSpellings(entry.currencyName)) map[normCurrency(sp)] ??= entry   // site language only
+    }
     for (const entry of Object.values(byName)) {
       const codeKey = normCurrency(entry.code)
       if (!map[codeKey]) map[codeKey] = entry
@@ -60,7 +65,7 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
     for (const entry of Object.values(byName)) {
       if (!seen.has(entry.currencyName)) { seen.add(entry.currencyName); all.push(entry) }
     }
-    all.sort((a, b) => a.currencyName.localeCompare(b.currencyName))
+    all.sort((a, b) => curName(a.currencyName).localeCompare(curName(b.currencyName)))
     return { currencyMap: map, allCurrencies: all }
   }, [gameCountries])
 
@@ -194,9 +199,9 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
       title={t('Name All Currencies')}
       desc={t('143 currencies. Name one and every country using it lights up.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('💡 Currency codes accepted too (e.g. USD, EUR)'),
-        t('🌐 Countries sharing a currency all light up at once'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('💡 Currency codes accepted too (e.g. USD, EUR)')),
+        plain(t('🌐 Countries sharing a currency all light up at once')),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -209,9 +214,9 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
       title={t('Name All Currencies')}
       desc={t('143 currencies. Name one and every country using it lights up.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('💡 Currency codes accepted too (e.g. USD, EUR)'),
-        t('🌐 Countries sharing a currency all light up at once'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('💡 Currency codes accepted too (e.g. USD, EUR)')),
+        plain(t('🌐 Countries sharing a currency all light up at once')),
       ]}
       options={[TIMER_OPTION]}
       typeToStart
@@ -222,7 +227,7 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
   return (
     <>
       <div className="panel-header">
-        <h2>{t('💰 Name All Currencies')}</h2>
+        <h2>{plain(t('💰 Name All Currencies'))}</h2>
         <p className="panel-subtitle">
           {t('Type every currency. Countries light up as you find them.')}
         </p>
@@ -235,7 +240,7 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? t('⏳ countdown') : t('⏱ count up')}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ count up'))}
           </span>
           <div className="na-timer-controls">
             {!gameOver && !expired && !allFound && (
@@ -249,7 +254,7 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
       {/* Time's up */}
       {expired && (
         <div className="na-expired">
-          {t('⌛ Time\'s up! You found')} <strong>{found.length}</strong> / {total} {t('currencies.')}
+          {plain(t('⌛ Time\'s up! You found'))} <strong>{found.length}</strong> / {total} {t('currencies.')}
         </div>
       )}
 
@@ -307,8 +312,8 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
           noun={t('currencies')}
           total={total}
           timeLabel={timerMode === 'countdown' ? t('{v} used', { v: formatTime(COUNTDOWN_SECONDS - remaining) }) : formatTime(elapsed)}
-          found={found.map(c => ({ label: c.currencyName, sub: c.code }))}
-          missed={allCurrencies.filter(c => !foundSet.has(c.currencyName)).map(c => ({ label: c.currencyName, sub: c.code }))}
+          found={found.map(c => ({ label: curName(c.currencyName), sub: c.code }))}
+          missed={allCurrencies.filter(c => !foundSet.has(c.currencyName)).map(c => ({ label: curName(c.currencyName), sub: c.code }))}
         />
       )}
 
@@ -319,8 +324,8 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
           <ul className="guess-list">
             {[...found].reverse().map(c => (
               <li key={c.currencyName} className="guess-item">
-                <span className="guess-swatch" style={{ background: '#39ff14' }} />
-                <span className="guess-name">{c.currencyName}</span>
+                <span className="guess-swatch" style={{ background: '#5BD18B' }} />
+                <span className="guess-name">{curName(c.currencyName)}</span>
                 <span className="guess-dist" style={{ color: '#888', fontSize: '0.78em' }}>
                   &nbsp;({c.code}) · {c.countries.length} {c.countries.length === 1 ? t('country') : t('countries')}
                 </span>
@@ -334,10 +339,10 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
         {(gameOver || expired || allFound) ? (
           <>
             <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>{t('▶ Play again')}</button>
-            <button className="new-game-btn" onClick={handleReset}>{t('⚙ Settings')}</button>
+            <button className="new-game-btn" onClick={handleReset}>{plain(t('⚙ Settings'))}</button>
           </>
         ) : (
-          <button className="new-game-btn" onClick={handleReset}>{t('🔄 Reset')}</button>
+          <button className="new-game-btn" onClick={handleReset}>{plain(t('🔄 Reset'))}</button>
         )}
       </div>
     </>

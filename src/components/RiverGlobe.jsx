@@ -9,7 +9,7 @@ const CANVAS_H = 2048
 
 // River visual config
 const RIVER_UNFOUND = { stroke: 'rgba(130, 210, 255, 0.75)', width: 2.5 }
-const RIVER_FOUND   = { stroke: '#39ff14',                   width: 3.5 }
+const RIVER_FOUND   = { stroke: '#5BD18B',                   width: 3.5 }
 const RIVER_MISSED  = { stroke: '#ef4444',                   width: 3.0 }
 
 function redrawRivers(canvas, countries, rivers, foundNames, missedNames) {

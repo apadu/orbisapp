@@ -4,6 +4,10 @@ import { dailyNumber, dailyQuizFor, msToNextDaily, dailyShareText, utcDayStartIS
 import { loadResults, subscribeResults, fetchLeaderboard } from '../utils/results'
 import { useAuth } from '../auth/AuthContext'
 import { t, locale, continentName } from '../i18n'
+import GameIcon from './GameIcon'
+import { plain } from '../utils/plain'
+import Icon from './Icon'
+import { shareText } from '../utils/share'
 
 function fmtClock(ms) {
   const s = Math.max(0, Math.floor(ms / 1000))
@@ -52,7 +56,7 @@ function DailyLeaderboard() {
   if (!backendEnabled) return null
   return (
     <div className="dq-lb">
-      <div className="dq-lb-head">{t('🏆 Today\'s leaderboard')}</div>
+      <div className="dq-lb-head">{plain(t('🏆 Today\'s leaderboard'))}</div>
       {!user && <div className="dq-lb-hint"><button onClick={openAuth}>{t('Sign in')}</button> {t('to appear on it.')}</div>}
       {rows === null ? <div className="dq-lb-empty">{t('Loading…')}</div>
         : rows.length === 0 ? <div className="dq-lb-empty">{t('No scores yet today — be the first!')}</div>
@@ -75,8 +79,7 @@ function ResultCard({ info, res, streak, onPractice }) {
   const pct = res.total ? Math.round((res.score / res.total) * 100) : 0
   const share = async () => {
     try {
-      if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) await navigator.share({ text })
-      else { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+      if (await shareText(text) === 'copied') { setCopied(true); setTimeout(() => setCopied(false), 2000) }
     } catch { /* cancelled */ }
   }
   return (
@@ -87,7 +90,7 @@ function ResultCard({ info, res, streak, onPractice }) {
           <span className="dq-sub">{pct}% · ⏱ {fmtTime(res.durationMs)}{streak > 1 ? t(' · 🔥 {streak}-day streak', { streak: streak }) : ''}</span>
         </div>
         <div className="dq-result-btns">
-          <button className="tq-btn tq-btn-primary" onClick={share}>{copied ? t('✅ Copied!') : t('📋 Share result')}</button>
+          <button className="tq-btn tq-btn-primary" onClick={share}>{copied ? plain(t('✅ Copied!')) : plain(t('📋 Share result'))}</button>
           <button className="tq-btn" onClick={onPractice}>{t('Practice this quiz')}</button>
         </div>
       </div>
@@ -140,13 +143,13 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
     <div className="dq">
       <DailyHeader info={info} streak={streak} />
       <div className="dq-intro">
-        <span className="dq-intro-icon">{info.icon}</span>
+        <span className="dq-intro-icon"><GameIcon id={info.quizId} size={44} strokeWidth={1.3} /></span>
         <h2>{info.title}{info.region !== 'World' && <span> · {continentName(info.region)}</span>}</h2>
         <p>{info.prompt}</p>
         <div className="dq-facts">
           <span>📋 {info.size} {t('answers')}</span>
-          <span>{t('🎯 One attempt')}</span>
-          <span>{t('🌍 Same quiz for everyone')}</span>
+          <span>{plain(t('🎯 One attempt'))}</span>
+          <span>{plain(t('🌍 Same quiz for everyone'))}</span>
         </div>
         <button className="dq-start" onClick={() => setPlaying(true)}>{t('▶ Start daily #')}{info.day}</button>
         <span className="dq-warn">{t('Leaving mid-game counts as your attempt.')}</span>
@@ -158,9 +161,9 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
 function DailyHeader({ info, streak }) {
   return (
     <div className="dq-header">
-      <span className="dq-badge">{t('📅 Daily #')}{info.day}</span>
+      <span className="dq-badge">{plain(t('📅 Daily #'))}{info.day}</span>
       <span className="dq-date">{new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
-      {streak > 0 && <span className="dq-streak">🔥 {streak}</span>}
+      {streak > 0 && <span className="dq-streak"><Icon name="flame" size={15} /> {streak}</span>}
     </div>
   )
 }

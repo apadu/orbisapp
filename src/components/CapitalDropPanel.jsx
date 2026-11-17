@@ -10,6 +10,8 @@ import { startSession, trackAnswer, finishGame, loadResults } from '../utils/res
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn, continentName, locale } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { capName } from '../i18n/names'
 
 const MODE = 'capital-drop'
 const ROUNDS = 10
@@ -26,7 +28,7 @@ const RULES = [
   t('Drag to rotate, scroll to zoom — the click only counts when you don\'t drag.'),
 ]
 
-const verdict = (km) => km <= 25 ? t('🎯 Bullseye!') : km <= 150 ? t('🔥 Very close') : km <= GOOD_KM ? t('👍 Close') : km <= 1000 ? t('🙂 Not bad') : km <= 3000 ? t('😬 Far off') : t('🧭 Way off')
+const verdict = (km) => km <= 25 ? plain(t('🎯 Bullseye!')) : km <= 150 ? plain(t('🔥 Very close')) : km <= GOOD_KM ? plain(t('👍 Close')) : km <= 1000 ? plain(t('🙂 Not bad')) : km <= 3000 ? plain(t('😬 Far off')) : plain(t('🧭 Way off'))
 
 export default function CapitalDropPanel({ gameCountries, onGlobe }) {
   const [phase, setPhase] = useState('setup')
@@ -38,7 +40,7 @@ export default function CapitalDropPanel({ gameCountries, onGlobe }) {
 
   const features = useMemo(() => Object.fromEntries(gameCountries.map(f => [f.properties.NAME, f])), [gameCountries])
   const country = queue[round]
-  const capital = country ? CAPITALS[country][0] : ''
+  const capital = country ? capName(CAPITALS[country][0]) : ''
   const target = country ? CAPITAL_COORDS[country] : null
   const total = log.reduce((s, l) => s + l.pts, 0)
 
@@ -104,7 +106,7 @@ export default function CapitalDropPanel({ gameCountries, onGlobe }) {
     const midLon = guess.lon + ((((tLon - guess.lon) + 540) % 360) - 180) / 2
     onGlobe({
       onClick, spin: false,
-      guesses: [{ name: country, color: '#39ff14' }],
+      guesses: [{ name: country, color: '#5BD18B' }],
       overlay: {
         lines: [{ type: 'arc', from: [guess.lon, guess.lat], to: [tLon, tLat], color: '#facc15', width: 4, dash: [14, 10] }],
         pins: [
@@ -128,7 +130,7 @@ export default function CapitalDropPanel({ gameCountries, onGlobe }) {
         <GameHeader icon="📍" title={t('Capital Drop')} />
         <div className="gg-over">
           <div className="gg-over-big">{total.toLocaleString(locale)}<small> / {(log.length * 1000).toLocaleString(locale)}</small></div>
-          <div className="gg-sub">{t('avg')} {fmtKm(avg)} {t('off ·')} {total >= bestScore ? t('🎉 Personal best') : t('best {v}', { v: bestScore.toLocaleString(locale) })} · {continentName(setup.region)}</div>
+          <div className="gg-sub">{t('avg')} {fmtKm(avg)} {t('off ·')} {total >= bestScore ? plain(t('🎉 Personal best')) : t('best {v}', { v: bestScore.toLocaleString(locale) })} · {continentName(setup.region)}</div>
           <div className="gg-list">
             {log.map((l, i) => (
               <div key={i} className="gg-list-row">
@@ -166,7 +168,7 @@ export default function CapitalDropPanel({ gameCountries, onGlobe }) {
           <button className="arc-primary" onClick={next}>{round + 1 >= queue.length ? t('See results') : t('Next')} <kbd>{t('Enter')}</kbd></button>
         </div>
       ) : (
-        <div className="gg-hint">{t('🖱️ Click the globe to drop your pin')}</div>
+        <div className="gg-hint">{plain(t('🖱️ Click the globe to drop your pin'))}</div>
       )}
     </div>
   )

@@ -1,7 +1,7 @@
 /* /admin — self-contained (App.css isn't loaded on this page) */
 .adm {
-  --a-bg: #08050f; --a-surface: #110d1e; --a-surface2: #1a1430; --a-border: #2e2452;
-  --a-text: #f0e6ff; --a-dim: #a98fdb; --a-muted: #7d6aa6; --a-accent: #c77dff;
+  --a-bg: #0D1A2B; --a-surface: #12233A; --a-surface2: #18304D; --a-border: #2e2452;
+  --a-text: #F2E9D8; --a-dim: #B5AD9E; --a-muted: #7d6aa6; --a-accent: #FF7A3D;
   --a-bad: #f87171; --a-good: #4ade80;
   position: fixed; inset: 0; overflow-y: auto;
   background: var(--a-bg); color: var(--a-text);
@@ -73,7 +73,7 @@
 /* Ranked lists */
 .adm-rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .adm-rank li { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; overflow: hidden; }
-.adm-rank-bar { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(199,125,255,.16); border-radius: 6px; }
+.adm-rank-bar { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,122,61,.16); border-radius: 6px; }
 .adm-rank-label { position: relative; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adm-rank-extra { position: relative; color: var(--a-muted); font-size: 12px; white-space: nowrap; }
 .adm-rank-value { position: relative; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 36px; text-align: right; }
@@ -91,7 +91,7 @@
 .adm-err details summary { color: var(--a-dim); cursor: pointer; font-size: 12px; margin-bottom: 6px; }
 .adm-err-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .adm-pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(248,113,113,.15); color: #fecaca; text-transform: uppercase; letter-spacing: .03em; }
-.adm-pill-chunk { background: rgba(199,125,255,.15); color: #e9d5ff; }
+.adm-pill-chunk { background: rgba(255,122,61,.15); color: #F2E9D8; }
 
 /* Tables */
 .adm-search { background: var(--a-bg); color: var(--a-text); border: 1px solid var(--a-border); border-radius: 8px; padding: 7px 10px; font: inherit; min-width: 220px; }
@@ -100,7 +100,7 @@
 .adm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .adm-table th { text-align: left; color: var(--a-dim); font-weight: 600; font-size: 12px; padding: 6px 10px; border-bottom: 1px solid var(--a-border); white-space: nowrap; }
 .adm-table td { padding: 8px 10px; border-bottom: 1px solid rgba(46,36,82,.6); white-space: nowrap; }
-.adm-table tr:hover td { background: rgba(199,125,255,.05); }
+.adm-table tr:hover td { background: rgba(255,122,61,.05); }
 .adm-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 
 .adm-foot { color: var(--a-muted); font-size: 12px; text-align: center; margin-top: 24px; }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults } from '../utils/results'
 import { t } from '../i18n'
+import Icon from './Icon'
 
 const USERNAME_RE = /^[A-Za-z0-9_]{3,24}$/
 
@@ -108,7 +109,7 @@ export default function AuthModal() {
       <div className="auth-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <button className="auth-close" onClick={closeAuth} aria-label={t('Close')}>✕</button>
 
-        <div className="auth-brand">🌐</div>
+        <div className="auth-brand"><Icon name="globe" size={40} strokeWidth={1.4} /></div>
         <h2 className="auth-title">
           {tab === 'signup' ? t('Create your Orbis account') : tab === 'reset' ? t('Reset password') : t('Welcome back')}
         </h2>

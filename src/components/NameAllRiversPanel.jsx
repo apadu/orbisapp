@@ -3,9 +3,11 @@ import GameIntro from './GameIntro'
 import SetupCard, { TIMER_OPTION } from './SetupCard'
 import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
-import { t } from '../i18n'
+import { t, isRo } from '../i18n'
 import { setPoolSize } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { riverName, riverSpellings, plainKey } from '../i18n/names'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -17,8 +19,8 @@ function formatTime(secs) {
 
 // Strip common words to allow flexible input
 function normRiver(str) {
-  return str.trim().toLowerCase()
-    .replace(/\b(river|fiume|rio|rivière|fluss|stroom|flod|nehri|nehr|rivier|elv|joki)\b/g, '')
+  return str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\b(river|fiume|rio|riviere|fluss|stroom|flod|nehri|nehr|rivier|elv|joki|fluviul|raul)\b/g, '')
     .replace(/[^a-z0-9]/g, '')
     .trim()
 }
@@ -173,15 +175,17 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
     for (const f of rivers) {
       const name = f.properties.NAME
       if (!name) continue
-      // Exact normalized name
-      map[normRiver(name)] = f
-      // Plain lowercase no punctuation
-      map[name.trim().toLowerCase().replace(/[^a-z0-9]/g, '')] = f
+      for (const sp of riverSpellings(name)) {      // the name(s) in the site language
+        map[normRiver(sp)] ??= f
+        map[plainKey(sp)] ??= f
+      }
     }
-    // Add alias mappings
+    // Local names (Donau, Wisła…) count in both languages — but not the English name in Romanian
     for (const [alias, canonical] of Object.entries(ALIASES)) {
       const feature = rivers.find(f => f.properties.NAME === canonical)
-      if (feature) map[alias] = feature
+      if (!feature) continue
+      if (isRo && riverName(canonical) !== canonical && (alias === plainKey(canonical) || alias === normRiver(canonical) || alias === 'yellowriver')) continue
+      map[alias] ??= feature
     }
     return map
   }, [rivers])
@@ -283,7 +287,7 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
     if (expired || gameOver) return
     if (!raw.trim()) return
     const q  = normRiver(raw)
-    const q2 = raw.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+    const q2 = plainKey(raw)
     const entry = riverMap[q] || riverMap[q2]
     if (!entry) return
     if (foundRef.current.some(f => f.properties.NAME === entry.properties.NAME)) return
@@ -303,7 +307,7 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
   const onKeyDown     = e => { if (e.key === 'Enter') tryGuess(input) }
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
-  const sortedRivers    = useMemo(() => [...rivers].sort((a, b) => a.properties.NAME.localeCompare(b.properties.NAME)), [rivers])
+  const sortedRivers    = useMemo(() => [...rivers].sort((a, b) => riverName(a.properties.NAME).localeCompare(riverName(b.properties.NAME))), [rivers])
 
   const [started, setStarted] = useState(false)
   if (!started) return (
@@ -312,9 +316,9 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
       title={t('Name All Rivers')}
       desc={t('68 rivers, from the Danube to the Mekong. Each one flows onto the globe.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('🌊 Major rivers from all continents'),
-        t('💡 Common name variations accepted'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('🌊 Major rivers from all continents')),
+        plain(t('💡 Common name variations accepted')),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -327,9 +331,9 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
       title={t('Name All Rivers')}
       desc={t('68 rivers, from the Danube to the Mekong. Each one flows onto the globe.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('🌊 Major rivers from all continents'),
-        t('💡 Common name variations accepted'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('🌊 Major rivers from all continents')),
+        plain(t('💡 Common name variations accepted')),
       ]}
       options={[TIMER_OPTION]}
       typeToStart
@@ -340,7 +344,7 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
   return (
     <>
       <div className="panel-header">
-        <h2>{t('🌊 Name All Rivers')}</h2>
+        <h2>{plain(t('🌊 Name All Rivers'))}</h2>
         <p className="panel-subtitle">
           {t('Type every major river in the world. They light up on the globe as you find them.')}
         </p>
@@ -353,7 +357,7 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? t('⏳ countdown') : t('⏱ count up')}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ count up'))}
           </span>
           <div className="na-timer-controls">
             {!gameOver && !expired && !allFound && (
@@ -367,7 +371,7 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
       {/* Time's up */}
       {expired && (
         <div className="na-expired">
-          {t('⌛ Time\'s up! You found')} <strong>{found.length}</strong> / {total} {t('rivers.')}
+          {plain(t('⌛ Time\'s up! You found'))} <strong>{found.length}</strong> / {total} {t('rivers.')}
         </div>
       )}
 
@@ -425,8 +429,8 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
           noun={t('rivers')}
           total={total}
           timeLabel={timerMode === 'countdown' ? t('{v} used', { v: formatTime(COUNTDOWN_SECONDS - remaining) }) : formatTime(elapsed)}
-          found={found.map(f => ({ label: f.properties.NAME }))}
-          missed={sortedRivers.filter(f => !foundSet.has(f.properties.NAME)).map(f => ({ label: f.properties.NAME }))}
+          found={found.map(f => ({ label: riverName(f.properties.NAME) }))}
+          missed={sortedRivers.filter(f => !foundSet.has(f.properties.NAME)).map(f => ({ label: riverName(f.properties.NAME) }))}
         />
       )}
 
@@ -437,8 +441,8 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
           <ul className="guess-list">
             {[...found].reverse().map(f => (
               <li key={f.properties.NAME} className="guess-item">
-                <span className="guess-swatch" style={{ background: '#39ff14' }} />
-                <span className="guess-name">{f.properties.NAME}</span>
+                <span className="guess-swatch" style={{ background: '#5BD18B' }} />
+                <span className="guess-name">{riverName(f.properties.NAME)}</span>
               </li>
             ))}
           </ul>
@@ -449,10 +453,10 @@ export default function NameAllRiversPanel({ rivers, onFoundChange, onMissedChan
         {(gameOver || expired || allFound) ? (
           <>
             <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>{t('▶ Play again')}</button>
-            <button className="new-game-btn" onClick={handleReset}>{t('⚙ Settings')}</button>
+            <button className="new-game-btn" onClick={handleReset}>{plain(t('⚙ Settings'))}</button>
           </>
         ) : (
-          <button className="new-game-btn" onClick={handleReset}>{t('🔄 Reset')}</button>
+          <button className="new-game-btn" onClick={handleReset}>{plain(t('🔄 Reset'))}</button>
         )}
       </div>
     </>

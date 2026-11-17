@@ -9,6 +9,7 @@ import { startSession, trackAnswer, finishGame } from '../utils/results'
 import { playCorrect, playWin } from '../utils/sounds'
 import { t, cn } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
 
 const MODE = 'line-up'
 const OPTIONS = [{
@@ -16,8 +17,8 @@ const OPTIONS = [{
   choices: [
     { value: 'parallel', label: t('↔ Parallels'), hint: t('A random line of latitude') },
     { value: 'meridian', label: t('↕ Meridians'), hint: t('A random line of longitude') },
-    { value: 'mixed',    label: t('🎲 Mixed'),     hint: t('Parallel or meridian') },
-    { value: 'famous',   label: t('⭐ Famous'),    hint: t('Equator, the Tropics, the Arctic Circle, the Prime Meridian') },
+    { value: 'mixed',    label: plain(t('🎲 Mixed')),     hint: t('Parallel or meridian') },
+    { value: 'famous',   label: plain(t('⭐ Famous')),    hint: t('Equator, the Tropics, the Arctic Circle, the Prime Meridian') },
   ],
 }]
 const RULES = [
@@ -83,7 +84,7 @@ export default function LineUpPanel({ gameCountries, onGlobe }) {
     if (phase === 'setup' || !line) { onGlobe({}); return }
     const color = line.type === 'parallel' ? '#facc15' : '#38bdf8'
     onGlobe({
-      guesses: found.map(n => ({ name: n, color: '#39ff14' })),
+      guesses: found.map(n => ({ name: n, color: '#5BD18B' })),
       missed: missed.map(n => byName[n]).filter(Boolean),
       overlay: { lines: [{ type: line.type, lat: line.lat, lon: line.lon, color, width: 5 }] },
       flyTo: { ...lineFocus(line), zoom: 3.4, hold: 8000, _k: lineLabel(line) },

@@ -2,6 +2,17 @@ import { t } from '../../i18n'
 import { ROMANIA } from './romania'
 import { MOLDOVA } from './moldova'
 import { USA } from './usa'
+import { ITALY } from './italy'
+import { FRANCE } from './france'
+import { GERMANY } from './germany'
+import { SPAIN } from './spain'
+import { JAPAN } from './japan'
+import { UNITED_KINGDOM } from './unitedKingdom'
+import { POLAND } from './poland'
+import { HUNGARY } from './hungary'
+import { BRAZIL } from './brazil'
+import { CANADA } from './canada'
+import { AUSTRALIA } from './australia'
 
 /**
  * "Country maps" quizzes: a flat 2D map of one country split into its subdivisions.
@@ -41,6 +52,132 @@ export const COUNTRY_MAP_QUIZZES = {
     title: t('US State Capitals'),
     prompt: t('Type the capital of every state — its state lights up'),
     placeholder: t('Type a state capital…'),
+  },
+  'it-regions': {
+    map: ITALY, kind: 'divisions', icon: '🇮🇹',
+    title: t('Regions of Italy'),
+    prompt: t('Type all 20 regions of Italy'),
+    placeholder: t('Type a region…'),
+  },
+  'it-capitals': {
+    map: ITALY, kind: 'seats', icon: '🏛️',
+    title: t('Regional Capitals of Italy'),
+    prompt: t('Type the capital of every region — its region lights up'),
+    placeholder: t('Type a regional capital…'),
+  },
+  'fr-regions': {
+    map: FRANCE, kind: 'divisions', icon: '🇫🇷',
+    title: t('Regions of France'),
+    prompt: t('Type the 13 regions of metropolitan France'),
+    placeholder: t('Type a region…'),
+  },
+  'fr-capitals': {
+    map: FRANCE, kind: 'seats', icon: '🏛️',
+    title: t('Regional Capitals of France'),
+    prompt: t('Type the prefecture of every region — its region lights up'),
+    placeholder: t('Type a city…'),
+  },
+  'de-states': {
+    map: GERMANY, kind: 'divisions', icon: '🇩🇪',
+    title: t('States of Germany'),
+    prompt: t('Type all 16 German states'),
+    placeholder: t('Type a state…'),
+  },
+  'de-capitals': {
+    map: GERMANY, kind: 'seats', icon: '🏛️',
+    title: t('State Capitals of Germany'),
+    prompt: t('Type the capital of every state (the city-states have none)'),
+    placeholder: t('Type a state capital…'),
+  },
+  'es-regions': {
+    map: SPAIN, kind: 'divisions', icon: '🇪🇸',
+    title: t('Autonomous Communities of Spain'),
+    prompt: t('Type the 17 communities — and Ceuta and Melilla'),
+    placeholder: t('Type a community…'),
+  },
+  'es-capitals': {
+    map: SPAIN, kind: 'seats', icon: '🏛️',
+    title: t('Regional Capitals of Spain'),
+    prompt: t('Type the capital of every community — its area lights up'),
+    placeholder: t('Type a city…'),
+  },
+  'jp-prefectures': {
+    map: JAPAN, kind: 'divisions', icon: '🇯🇵',
+    title: t('Prefectures of Japan'),
+    prompt: t('Type all 47 prefectures of Japan'),
+    placeholder: t('Type a prefecture…'),
+  },
+  'jp-capitals': {
+    map: JAPAN, kind: 'seats', icon: '🏯',
+    title: t('Prefectural Capitals of Japan'),
+    prompt: t('Type the capital of every prefecture — many share its name'),
+    placeholder: t('Type a city…'),
+  },
+  'gb-regions': {
+    map: UNITED_KINGDOM, kind: 'divisions', icon: '🇬🇧',
+    title: t('Regions of the United Kingdom'),
+    prompt: t('Type the 12 regions — the 9 of England, plus Scotland, Wales and Northern Ireland'),
+    placeholder: t('Type a region…'),
+  },
+  'pl-voivodeships': {
+    map: POLAND, kind: 'divisions', icon: '🇵🇱',
+    title: t('Voivodeships of Poland'),
+    prompt: t('Type all 16 voivodeships'),
+    placeholder: t('Type a voivodeship…'),
+  },
+  'pl-capitals': {
+    map: POLAND, kind: 'seats', icon: '🏛️',
+    title: t('Voivodeship Capitals of Poland'),
+    prompt: t('Type the capital of every voivodeship — its area lights up'),
+    placeholder: t('Type a city…'),
+  },
+  'hu-counties': {
+    map: HUNGARY, kind: 'divisions', icon: '🇭🇺',
+    title: t('Counties of Hungary'),
+    prompt: t('Type all 19 counties — and Budapest'),
+    placeholder: t('Type a county…'),
+  },
+  'hu-seats': {
+    map: HUNGARY, kind: 'seats', icon: '🏛️',
+    title: t('County Seats of Hungary'),
+    prompt: t('Type the seat of every county — its county lights up'),
+    placeholder: t('Type a city…'),
+  },
+  'br-states': {
+    map: BRAZIL, kind: 'divisions', icon: '🇧🇷',
+    title: t('States of Brazil'),
+    prompt: t('Type all 26 states — and the Federal District'),
+    placeholder: t('Type a state…'),
+  },
+  'br-capitals': {
+    map: BRAZIL, kind: 'seats', icon: '🏛️',
+    title: t('State Capitals of Brazil'),
+    prompt: t('Type the capital of every state — its state lights up'),
+    placeholder: t('Type a city…'),
+  },
+  'ca-provinces': {
+    map: CANADA, kind: 'divisions', icon: '🇨🇦',
+    title: t('Provinces and Territories of Canada'),
+    prompt: t('Type the 10 provinces and 3 territories'),
+    placeholder: t('Type a province…'),
+  },
+  'ca-capitals': {
+    map: CANADA, kind: 'seats', icon: '🏛️',
+    title: t('Provincial Capitals of Canada'),
+    prompt: t('Type the capital of every province and territory'),
+    placeholder: t('Type a city…'),
+  },
+  'au-states': {
+    map: AUSTRALIA, kind: 'divisions', icon: '🇦🇺',
+    title: t('States and Territories of Australia'),
+    prompt: t('Type the 6 states and 2 territories'),
+    placeholder: t('Type a state…'),
+  },
+  'au-capitals': {
+    map: AUSTRALIA, kind: 'seats', icon: '🏛️',
+    title: t('State Capitals of Australia'),
+    prompt: t('Type the capital of every state and territory'),
+    placeholder: t('Type a city…'),
   },
 }
 export const COUNTRY_MAP_IDS = new Set(Object.keys(COUNTRY_MAP_QUIZZES))

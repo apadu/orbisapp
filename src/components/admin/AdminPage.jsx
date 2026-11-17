@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth/AuthContext'
 import { gameMeta } from '../../utils/gameCatalog'
 import './admin.css'
+import CommentsAdmin from './CommentsAdmin'
 
 /**
  * /admin — only for accounts listed in public.admins (see supabase/admin.sql).
@@ -237,6 +238,8 @@ export default function AdminPage() {
           <ul className="adm-errs">{data.errors.map(e => <ErrorItem key={e.kind + e.message} e={e} onResolve={resolve} />)}</ul>
         )}
       </section>
+
+      <CommentsAdmin />
 
       <section className="adm-grid2">
         <RankList title="Pagini populare" rows={data.top_pages} label={r => pageLabel(r.path)} value={r => r.views} extra={r => `${fmtN(r.visits)} viz.`} />

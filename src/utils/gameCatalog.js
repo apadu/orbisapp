@@ -1,4 +1,5 @@
 import { t } from '../i18n'
+import { TRIPOINT_QUIZZES } from '../quizzes/tripointQuizzes'
 /**
  * Metadata for every tracked game mode.
  * cat:      'globe' | 'nameall' | 'quiz'
@@ -24,7 +25,7 @@ export const GAME_CATALOG = {
   'name-all-caps':       { label: t('Name All Capitals'),   icon: '🏙️', cat: 'nameall', timed: true },
   'name-all-currencies': { label: t('Name All Currencies'), icon: '💰', cat: 'nameall', timed: true },
   'name-all-languages':  { label: t('Name All Languages'),  icon: '🗣️', cat: 'nameall', timed: true },
-  mountains:             { label: t('Mountain Ranges'),     icon: '⛰️', cat: 'nameall', timed: true },
+  mountains:             { label: t('Name All Mountain Ranges'),     icon: '⛰️', cat: 'nameall', timed: true },
   'name-all-seas':       { label: t('Name All Seas'),       icon: '🌊', cat: 'nameall', timed: true },
   'name-all-rivers':     { label: t('Name All Rivers'),     icon: '🏞️', cat: 'nameall', timed: true },
   // HIDDEN until ready — uncomment to bring History Maps back:
@@ -37,11 +38,11 @@ export const GAME_CATALOG = {
   currency:          { label: t('Currencies'),        icon: '💰', cat: 'quiz' },
   language:          { label: t('Languages'),         icon: '🗣️', cat: 'quiz' },
   area:              { label: t('Largest Countries'), icon: '📏', cat: 'quiz' },
-  'pop-order':       { label: t('Most Populous'),   icon: '📊', cat: 'quiz' },
+  'pop-order':       { label: t('Most Populous Countries'),   icon: '📊', cat: 'quiz' },
   'border-chain':    { label: t('Border Chain'),      icon: '🔗', cat: 'quiz' },
   'missing-vowels':  { label: t('Missing Vowels'),    icon: '🔡', cat: 'quiz' },
   'flag-colors':     { label: t('Flag Colors'),       icon: '🎨', cat: 'quiz' },
-  connections:       { label: t('Connections'),       icon: '🧩', cat: 'quiz' },
+  connections:       { label: t('Country Connections'),       icon: '🧩', cat: 'quiz' },
   'emoji-quiz':      { label: t('Country Emoji'),     icon: '🌍', cat: 'quiz' },
   'country-fact':    { label: t('Country by Fact'),   icon: '📖', cat: 'quiz' },
   endonyms:          { label: t('Endonyms'),          icon: '🗺️', cat: 'quiz' },
@@ -92,11 +93,56 @@ export const GAME_CATALOG = {
   'us-capitals':    { label: t('US State Capitals'),     icon: '🏛️', cat: 'quiz', timed: true },
   'us-quiz':        { label: t('Quiz: United States'),   icon: '❓', cat: 'quiz' },
   'country-us':     { label: t('United States — country page'), icon: '🇺🇸', cat: 'quiz' },
+  'it-regions': { label: t('Regions of Italy'), icon: '🇮🇹', cat: 'quiz', timed: true },
+  'it-capitals': { label: t('Regional Capitals of Italy'), icon: '🏛️', cat: 'quiz', timed: true },
+  'it-quiz': { label: t('Quiz: Italy'), icon: '❓', cat: 'quiz' },
+  'country-it': { label: t('Italy — country page'), icon: '🇮🇹', cat: 'quiz' },
+  'fr-regions': { label: t('Regions of France'), icon: '🇫🇷', cat: 'quiz', timed: true },
+  'fr-capitals': { label: t('Regional Capitals of France'), icon: '🏛️', cat: 'quiz', timed: true },
+  'fr-quiz': { label: t('Quiz: France'), icon: '❓', cat: 'quiz' },
+  'country-fr': { label: t('France — country page'), icon: '🇫🇷', cat: 'quiz' },
+  'de-states': { label: t('States of Germany'), icon: '🇩🇪', cat: 'quiz', timed: true },
+  'de-capitals': { label: t('State Capitals of Germany'), icon: '🏛️', cat: 'quiz', timed: true },
+  'de-quiz': { label: t('Quiz: Germany'), icon: '❓', cat: 'quiz' },
+  'country-de': { label: t('Germany — country page'), icon: '🇩🇪', cat: 'quiz' },
+  'es-regions': { label: t('Autonomous Communities of Spain'), icon: '🇪🇸', cat: 'quiz', timed: true },
+  'es-capitals': { label: t('Regional Capitals of Spain'), icon: '🏛️', cat: 'quiz', timed: true },
+  'es-quiz': { label: t('Quiz: Spain'), icon: '❓', cat: 'quiz' },
+  'country-es': { label: t('Spain — country page'), icon: '🇪🇸', cat: 'quiz' },
+  'jp-prefectures': { label: t('Prefectures of Japan'), icon: '🇯🇵', cat: 'quiz', timed: true },
+  'jp-capitals': { label: t('Prefectural Capitals of Japan'), icon: '🏯', cat: 'quiz', timed: true },
+  'jp-quiz': { label: t('Quiz: Japan'), icon: '❓', cat: 'quiz' },
+  'country-jp': { label: t('Japan — country page'), icon: '🇯🇵', cat: 'quiz' },
+  'gb-regions': { label: t('Regions of the United Kingdom'), icon: '🇬🇧', cat: 'quiz', timed: true },
+  'gb-quiz': { label: t('Quiz: United Kingdom'), icon: '❓', cat: 'quiz' },
+  'country-gb': { label: t('United Kingdom — country page'), icon: '🇬🇧', cat: 'quiz' },
+  'pl-voivodeships': { label: t('Voivodeships of Poland'), icon: '🇵🇱', cat: 'quiz', timed: true },
+  'pl-capitals': { label: t('Voivodeship Capitals of Poland'), icon: '🏛️', cat: 'quiz', timed: true },
+  'pl-quiz': { label: t('Quiz: Poland'), icon: '❓', cat: 'quiz' },
+  'country-pl': { label: t('Poland — country page'), icon: '🇵🇱', cat: 'quiz' },
+  'hu-counties': { label: t('Counties of Hungary'), icon: '🇭🇺', cat: 'quiz', timed: true },
+  'hu-seats': { label: t('County Seats of Hungary'), icon: '🏛️', cat: 'quiz', timed: true },
+  'hu-quiz': { label: t('Quiz: Hungary'), icon: '❓', cat: 'quiz' },
+  'country-hu': { label: t('Hungary — country page'), icon: '🇭🇺', cat: 'quiz' },
+  'br-states': { label: t('States of Brazil'), icon: '🇧🇷', cat: 'quiz', timed: true },
+  'br-capitals': { label: t('State Capitals of Brazil'), icon: '🏛️', cat: 'quiz', timed: true },
+  'br-quiz': { label: t('Quiz: Brazil'), icon: '❓', cat: 'quiz' },
+  'country-br': { label: t('Brazil — country page'), icon: '🇧🇷', cat: 'quiz' },
+  'ca-provinces': { label: t('Provinces and Territories of Canada'), icon: '🇨🇦', cat: 'quiz', timed: true },
+  'ca-capitals': { label: t('Provincial Capitals of Canada'), icon: '🏛️', cat: 'quiz', timed: true },
+  'ca-quiz': { label: t('Quiz: Canada'), icon: '❓', cat: 'quiz' },
+  'country-ca': { label: t('Canada — country page'), icon: '🇨🇦', cat: 'quiz' },
+  'au-states': { label: t('States and Territories of Australia'), icon: '🇦🇺', cat: 'quiz', timed: true },
+  'au-capitals': { label: t('State Capitals of Australia'), icon: '🏛️', cat: 'quiz', timed: true },
+  'au-quiz': { label: t('Quiz: Australia'), icon: '❓', cat: 'quiz' },
+  'country-au': { label: t('Australia — country page'), icon: '🇦🇺', cat: 'quiz' },
   // Arcade
   'higher-lower':   { label: t('Higher or Lower'), icon: '⚖️', cat: 'quiz', unit: t('Streak') },
   'true-false':     { label: t('True or False'),   icon: '✅', cat: 'quiz', unit: t('Correct') },
   'country-wordle': { label: t('Country Wordle'),  icon: '🟩', cat: 'quiz', unit: t('Points') },
 }
+
+for (const q of Object.values(TRIPOINT_QUIZZES)) GAME_CATALOG[q.id] = { label: q.title, icon: '⨯', cat: 'quiz' }
 
 export const CAT_LABELS = { globe: 'Globe Games', nameall: 'Name All', quiz: 'Quizzes' }
 

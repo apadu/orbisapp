@@ -6,6 +6,8 @@ import GameSummary from './GameSummary'
 import { t } from '../i18n'
 import { setPoolSize } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { seaName, seaSpellings, seaKey, plainKey } from '../i18n/names'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -13,14 +15,6 @@ function formatTime(secs) {
   const m = Math.floor(Math.abs(secs) / 60).toString().padStart(2, '0')
   const s = (Math.abs(secs) % 60).toString().padStart(2, '0')
   return `${m}:${s}`
-}
-
-// Strip common sea/ocean words so "Pacific", "Pacific Ocean", "the Pacific" all match.
-// Also strips "of"/"the" so "Gulf of Mexico" → "mexico", "Bay of Bengal" → "bengal".
-function normSea(str) {
-  return str.trim().toLowerCase()
-    .replace(/\b(the|of|ocean|sea|gulf|bay|channel|strait|sound|passage|bight)\b/g, '')
-    .replace(/[^a-z]/g, '')
 }
 
 export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, onNewGame, onComplete }) {
@@ -46,11 +40,11 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
     for (const f of seas) {
       const name = f.properties.NAME
       if (!name) continue
-      const stripped = normSea(name)
-      if (stripped) map[stripped] = f
-      // Plain fallback (no word stripping) so full name always matches
-      const plain = name.trim().toLowerCase().replace(/[^a-z]/g, '')
-      if (!map[plain]) map[plain] = f
+      for (const sp of seaSpellings(name)) {        // site language only
+        const stripped = seaKey(sp)
+        if (stripped) map[stripped] ??= f
+        map[plainKey(sp)] ??= f                      // full name always matches
+      }
     }
     return map
   }, [seas])
@@ -150,8 +144,8 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
   const tryGuess = (raw) => {
     if (expired || gameOver) return
     if (!raw.trim()) return
-    const q      = normSea(raw)
-    const qPlain = raw.trim().toLowerCase().replace(/[^a-z]/g, '')
+    const q      = seaKey(raw)
+    const qPlain = plainKey(raw)
     const entry  = seaMap[q] || seaMap[qPlain]
     if (!entry) return
     if (foundRef.current.some(f => f.properties.NAME === entry.properties.NAME)) return
@@ -170,7 +164,7 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
   const onKeyDown     = e => { if (e.key === 'Enter') tryGuess(input) }
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
-  const sortedSeas = useMemo(() => [...seas].sort((a, b) => a.properties.NAME.localeCompare(b.properties.NAME)), [seas])
+  const sortedSeas = useMemo(() => [...seas].sort((a, b) => seaName(a.properties.NAME).localeCompare(seaName(b.properties.NAME))), [seas])
 
   const [started, setStarted] = useState(false)
   if (!started) return (
@@ -179,9 +173,9 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
       title={t('Name All Seas')}
       desc={t('Oceans, seas, gulfs and bays. Each one you name turns the globe bluer.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('🌊 Oceans, seas, gulfs, and bays all count'),
-        t('💡 Abbreviations accepted (e.g. "Pacific")'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('🌊 Oceans, seas, gulfs, and bays all count')),
+        plain(t('💡 Abbreviations accepted (e.g. "Pacific")')),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -194,9 +188,9 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
       title={t('Name All Seas')}
       desc={t('Oceans, seas, gulfs and bays. Each one you name turns the globe bluer.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('🌊 Oceans, seas, gulfs, and bays all count'),
-        t('💡 Abbreviations accepted (e.g. "Pacific")'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('🌊 Oceans, seas, gulfs, and bays all count')),
+        plain(t('💡 Abbreviations accepted (e.g. "Pacific")')),
       ]}
       options={[TIMER_OPTION]}
       typeToStart
@@ -207,7 +201,7 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
   return (
     <>
       <div className="panel-header">
-        <h2>{t('🌊 Name All Seas')}</h2>
+        <h2>{plain(t('🌊 Name All Seas'))}</h2>
         <p className="panel-subtitle">
           {t('Type every ocean and sea. They light up on the globe as you find them.')}
         </p>
@@ -220,7 +214,7 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? t('⏳ countdown') : t('⏱ count up')}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ count up'))}
           </span>
           <div className="na-timer-controls">
             {!gameOver && !expired && !allFound && (
@@ -234,7 +228,7 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
       {/* Time's up */}
       {expired && (
         <div className="na-expired">
-          {t('⌛ Time\'s up! You found')} <strong>{found.length}</strong> / {total} {t('seas.')}
+          {plain(t('⌛ Time\'s up! You found'))} <strong>{found.length}</strong> / {total} {t('seas.')}
         </div>
       )}
 
@@ -292,8 +286,8 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
           noun={t('seas')}
           total={total}
           timeLabel={timerMode === 'countdown' ? t('{v} used', { v: formatTime(COUNTDOWN_SECONDS - remaining) }) : formatTime(elapsed)}
-          found={found.map(f => ({ label: f.properties.NAME }))}
-          missed={sortedSeas.filter(f => !foundSet.has(f.properties.NAME)).map(f => ({ label: f.properties.NAME }))}
+          found={found.map(f => ({ label: seaName(f.properties.NAME) }))}
+          missed={sortedSeas.filter(f => !foundSet.has(f.properties.NAME)).map(f => ({ label: seaName(f.properties.NAME) }))}
         />
       )}
 
@@ -304,8 +298,8 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
           <ul className="guess-list">
             {[...found].reverse().map(f => (
               <li key={f.properties.NAME} className="guess-item">
-                <span className="guess-swatch" style={{ background: '#39ff14' }} />
-                <span className="guess-name">{f.properties.NAME}</span>
+                <span className="guess-swatch" style={{ background: '#5BD18B' }} />
+                <span className="guess-name">{seaName(f.properties.NAME)}</span>
               </li>
             ))}
           </ul>
@@ -316,10 +310,10 @@ export default function NameAllSeasPanel({ seas, onFoundChange, onMissedChange, 
         {(gameOver || expired || allFound) ? (
           <>
             <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>{t('▶ Play again')}</button>
-            <button className="new-game-btn" onClick={handleReset}>{t('⚙ Settings')}</button>
+            <button className="new-game-btn" onClick={handleReset}>{plain(t('⚙ Settings'))}</button>
           </>
         ) : (
-          <button className="new-game-btn" onClick={handleReset}>{t('🔄 Reset')}</button>
+          <button className="new-game-btn" onClick={handleReset}>{plain(t('🔄 Reset'))}</button>
         )}
       </div>
     </>

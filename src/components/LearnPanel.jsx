@@ -5,6 +5,8 @@ import { COUNTRY_AREA } from '../utils/countryArea'
 import { COUNTRY_CURRENCY } from '../utils/countryCurrency'
 import { COUNTRY_LANGUAGES } from '../utils/countryLanguages'
 import { t, cn, continentName } from '../i18n'
+import { plain } from '../utils/plain'
+import { capName, curName, langName } from '../i18n/names'
 
 function formatPop(millions) {
   if (!millions) return '—'
@@ -26,7 +28,7 @@ const CONTINENT_EMOJI = {
 export default function LearnPanel({ selected, history }) {
   const name      = selected?.properties?.NAME ?? null
   const info      = name ? COUNTRY_INFO[name] : null
-  const capital   = name ? (CAPITALS[name]?.[0] ?? '—') : null
+  const capital   = name ? (capName(CAPITALS[name]?.[0]) ?? '—') : null
   const pop       = name ? POPULATION[name] : null
   const area      = name ? COUNTRY_AREA[name] : null
   const currency  = name ? COUNTRY_CURRENCY[name] : null
@@ -37,7 +39,7 @@ export default function LearnPanel({ selected, history }) {
   return (
     <>
       <div className="panel-header">
-        <h2>{t('🎓 Learning Mode')}</h2>
+        <h2>{plain(t('🎓 Learning Mode'))}</h2>
         <p className="panel-subtitle">{t('Click any country on the globe to learn about it.')}</p>
       </div>
 
@@ -69,12 +71,12 @@ export default function LearnPanel({ selected, history }) {
             </div>
             <div className="learn-stat">
               <span className="learn-stat-label">{t('Currency')}</span>
-              <span className="learn-stat-value">💰 {currency ? `${currency.name} (${currency.code})` : '—'}</span>
+              <span className="learn-stat-value">💰 {currency ? `${curName(currency.name)} (${currency.code})` : '—'}</span>
             </div>
             {langs.length > 0 && (
               <div className="learn-stat">
                 <span className="learn-stat-label">{t('Languages')}</span>
-                <span className="learn-stat-value">🗣️ {langs.join(', ')}</span>
+                <span className="learn-stat-value">🗣️ {langs.map(langName).join(', ')}</span>
               </div>
             )}
           </div>
@@ -90,7 +92,7 @@ export default function LearnPanel({ selected, history }) {
               <div key={n} className="learn-history-item">
                 <span>{hi?.flag ?? '🏳️'}</span>
                 <span className="learn-history-name">{n}</span>
-                <span className="learn-history-cap">{CAPITALS[n]?.[0] ?? '—'}</span>
+                <span className="learn-history-cap">{capName(CAPITALS[n]?.[0]) ?? '—'}</span>
               </div>
             )
           })}

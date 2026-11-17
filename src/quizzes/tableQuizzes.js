@@ -22,14 +22,30 @@ import { COUNTRY_LANGUAGES } from '../utils/countryLanguages'
 import { POPULATION } from '../utils/population'
 import { COUNTRY_AREA } from '../utils/countryArea'
 import { ENDONYMS } from '../utils/endonyms'
+// Greek and Cyrillic are readable enough: their romanization only shows once the game is over.
+// Scripts you can't sound out (Arabic, Chinese, Thai, Georgian…) keep it while playing.
+const GREEK_CYRILLIC = /[\u0370-\u03FF\u0400-\u04FF]/
 import { EMOJI_CLUES } from '../utils/emojiClues'
 import { COUNTRY_FACTS } from '../utils/countryFacts'
 import { FLAG_COLORS } from '../utils/flagColors'
-import { ALIASES, roAnswers } from '../utils/aliases'
+import { countryAnswers } from '../utils/aliases'
+import { inSiteLang } from '../utils/answerLang'
+import { capName, capitalAnswers, curName, curSpellings, langName, langSpellings } from '../i18n/names'
 import { LIST_QUIZZES } from './listQuizzes'
 import { ROMANIA_PAGE } from '../data/countryPages/romania'
 import { MOLDOVA_PAGE } from '../data/countryPages/moldova'
 import { USA_PAGE } from '../data/countryPages/usa'
+import { ITALY_PAGE } from '../data/countryPages/italy'
+import { FRANCE_PAGE } from '../data/countryPages/france'
+import { GERMANY_PAGE } from '../data/countryPages/germany'
+import { SPAIN_PAGE } from '../data/countryPages/spain'
+import { JAPAN_PAGE } from '../data/countryPages/japan'
+import { UNITED_KINGDOM_PAGE } from '../data/countryPages/unitedKingdom'
+import { POLAND_PAGE } from '../data/countryPages/poland'
+import { HUNGARY_PAGE } from '../data/countryPages/hungary'
+import { BRAZIL_PAGE } from '../data/countryPages/brazil'
+import { CANADA_PAGE } from '../data/countryPages/canada'
+import { AUSTRALIA_PAGE } from '../data/countryPages/australia'
 import { WAR_QUIZZES } from './warQuizzes'
 import { t, cn, isRo, locale } from '../i18n'
 
@@ -40,12 +56,8 @@ export function norm(s) {
   return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '')
 }
 
-// Country name + every alias that maps to it
-const aliasesByCountry = {}
-for (const [alias, canonical] of Object.entries(ALIASES)) {
-  (aliasesByCountry[canonical] ??= []).push(alias)
-}
-const countryAnswers = (name) => [name, ...(aliasesByCountry[name] ?? []), ...roAnswers(name)]
+// Country answers follow the site language (utils/aliases.js)
+export { countryAnswers }
 
 // Word puzzles use the name in the current language
 const word = (n) => isRo ? cn(n) : n
@@ -75,11 +87,12 @@ function scramble(word, seed) {
 const fmtPop = (m) => m >= 1000 ? `${(m / 1000).toFixed(2)} bn` : m >= 1 ? `${m.toFixed(1)} M` : `${Math.round(m * 1000)} k`
 const fmtArea = (km2) => `${Math.round(km2).toLocaleString(locale)} km²`
 
-// Currency: accept the full name, the ISO code, and the last word when it's unambiguous
-const lastWordCount = {}
-for (const c of Object.values(COUNTRY_CURRENCY)) {
-  const w = c.name.split(' ').pop()
-  lastWordCount[w] = (lastWordCount[w] ?? 0) + 1
+// Currency: accept the full name, the ISO code, and the bare noun when it's unambiguous
+const curNoun = (name) => (isRo ? name.split(' ')[0] : name.split(' ').pop())
+const nounCount = {}
+for (const c of new Set(Object.values(COUNTRY_CURRENCY).map(c => c.name))) {
+  const k = norm(curNoun(curName(c)))
+  nounCount[k] = (nounCount[k] ?? 0) + 1
 }
 
 // ── Catalogue ──────────────────────────────────────────────────────────────
@@ -91,7 +104,7 @@ export const TABLE_QUIZZES = {
     build: ({ countries, region }) => countries
       .filter(n => CAPITALS[n] && inRegion(n, region))
       .sort()
-      .map(n => ({ id: n, country: n, hint: { type: 'text', value: n, flag: COUNTRY_INFO[n]?.flag }, answers: CAPITALS[n], display: CAPITALS[n][0] })),
+      .map(n => ({ id: n, country: n, hint: { type: 'text', value: n, flag: COUNTRY_INFO[n]?.flag }, answers: capitalAnswers(CAPITALS[n]), display: capName(CAPITALS[n][0]) })),
   },
 
   'cap-to-country': {
@@ -100,8 +113,8 @@ export const TABLE_QUIZZES = {
     columns: { hint: t('Capital'), answer: t('Country') },
     build: ({ countries, region }) => countries
       .filter(n => CAPITALS[n] && inRegion(n, region))
-      .sort((a, b) => CAPITALS[a][0].localeCompare(CAPITALS[b][0]))
-      .map(n => ({ id: n, country: n, hint: { type: 'text', value: CAPITALS[n][0] }, answers: countryAnswers(n), display: n })),
+      .sort((a, b) => capName(CAPITALS[a][0]).localeCompare(capName(CAPITALS[b][0]), locale))
+      .map(n => ({ id: n, country: n, hint: { type: 'text', value: capName(CAPITALS[n][0]) }, answers: countryAnswers(n), display: n })),
   },
 
   flag: {
@@ -128,10 +141,11 @@ export const TABLE_QUIZZES = {
       .sort()
       .map(n => {
         const c = COUNTRY_CURRENCY[n]
-        const last = c.name.split(' ').pop()
-        const answers = [c.name, c.code]
-        if (lastWordCount[last] === 1 && last !== c.name) answers.push(last)
-        return { id: n, country: n, hint: { type: 'text', value: n, flag: COUNTRY_INFO[n]?.flag }, answers, display: c.name }
+        const answers = [...curSpellings(c.name), c.code]
+        // the bare noun when it's unambiguous: "lek", "forint" (English: last word, Romanian: first)
+        const noun = curNoun(curName(c.name))
+        if (nounCount[norm(noun)] === 1 && norm(noun) !== norm(curName(c.name))) answers.push(noun)
+        return { id: n, country: n, hint: { type: 'text', value: n, flag: COUNTRY_INFO[n]?.flag }, answers, display: curName(c.name) }
       }),
   },
 
@@ -142,7 +156,7 @@ export const TABLE_QUIZZES = {
     build: ({ countries, region }) => countries
       .filter(n => COUNTRY_LANGUAGES[n]?.length && inRegion(n, region))
       .sort()
-      .map(n => ({ id: n, country: n, hint: { type: 'text', value: n, flag: COUNTRY_INFO[n]?.flag }, answers: [COUNTRY_LANGUAGES[n][0]], display: COUNTRY_LANGUAGES[n][0] })),
+      .map(n => ({ id: n, country: n, hint: { type: 'text', value: n, flag: COUNTRY_INFO[n]?.flag }, answers: langSpellings(COUNTRY_LANGUAGES[n][0]), display: langName(COUNTRY_LANGUAGES[n][0]) })),
   },
 
   endonyms: {
@@ -151,7 +165,7 @@ export const TABLE_QUIZZES = {
     columns: { hint: t('Endonym'), answer: t('Country') },
     build: ({ countries, region }) => ENDONYMS
       .filter(e => countries.includes(e.country) && inRegion(e.country, region))
-      .map(e => ({ id: e.country, country: e.country, hint: { type: 'script', value: e.endonym, sub: e.roman }, answers: countryAnswers(e.country), display: e.country })),
+      .map(e => ({ id: e.country, country: e.country, hint: { type: 'script', value: e.endonym, sub: e.roman, subAlways: !GREEK_CYRILLIC.test(e.endonym) }, answers: countryAnswers(e.country), display: e.country })),
   },
 
   'emoji-quiz': {
@@ -225,9 +239,12 @@ export const TABLE_QUIZZES = {
   },
 }
 
+// Capitals in the site language, for the list quizzes (A to Z…)
+const CAPITALS_LOCAL = Object.fromEntries(Object.entries(CAPITALS).map(([n, caps]) => [n, capitalAnswers(caps)]))
+
 // Merge in the list / smaller-target quizzes (they get the shared helpers via ctx)
 for (const [id, q] of Object.entries({ ...LIST_QUIZZES, ...WAR_QUIZZES })) {
-  TABLE_QUIZZES[id] = { ...q, build: (ctx) => q.build({ ...ctx, countryAnswers, inRegion, currency: COUNTRY_CURRENCY, languages: COUNTRY_LANGUAGES, area: COUNTRY_AREA, population: POPULATION, capitals: CAPITALS }) }
+  TABLE_QUIZZES[id] = { ...q, build: (ctx) => q.build({ ...ctx, countryAnswers, inRegion, currency: COUNTRY_CURRENCY, languages: COUNTRY_LANGUAGES, area: COUNTRY_AREA, population: POPULATION, capitals: CAPITALS_LOCAL }) }
 }
 
 // Country quizzes: 20 questions about one country, typed answers (data/countryPages)
@@ -237,13 +254,24 @@ const countryQuiz = (page, title, prompt) => ({
   build: () => page.questions.map(q => ({
     id: q.id,
     hint: { type: 'text', value: isRo ? q.q.ro : q.q.en, long: true },
-    answers: q.answers,
+    answers: inSiteLang(q.answers, q.show),
     display: isRo ? q.show.ro : q.show.en,
   })),
 })
 TABLE_QUIZZES['ro-quiz'] = countryQuiz(ROMANIA_PAGE, t('Quiz: Romania'), t('Answer 20 questions about Romania'))
 TABLE_QUIZZES['md-quiz'] = countryQuiz(MOLDOVA_PAGE, t('Quiz: Moldova'), t('Answer 20 questions about Moldova'))
 TABLE_QUIZZES['us-quiz'] = countryQuiz(USA_PAGE, t('Quiz: United States'), t('Answer 20 questions about the United States'))
+TABLE_QUIZZES['it-quiz'] = countryQuiz(ITALY_PAGE, t('Quiz: Italy'), t('Answer 20 questions about Italy'))
+TABLE_QUIZZES['fr-quiz'] = countryQuiz(FRANCE_PAGE, t('Quiz: France'), t('Answer 20 questions about France'))
+TABLE_QUIZZES['de-quiz'] = countryQuiz(GERMANY_PAGE, t('Quiz: Germany'), t('Answer 20 questions about Germany'))
+TABLE_QUIZZES['es-quiz'] = countryQuiz(SPAIN_PAGE, t('Quiz: Spain'), t('Answer 20 questions about Spain'))
+TABLE_QUIZZES['jp-quiz'] = countryQuiz(JAPAN_PAGE, t('Quiz: Japan'), t('Answer 20 questions about Japan'))
+TABLE_QUIZZES['gb-quiz'] = countryQuiz(UNITED_KINGDOM_PAGE, t('Quiz: United Kingdom'), t('Answer 20 questions about the United Kingdom'))
+TABLE_QUIZZES['pl-quiz'] = countryQuiz(POLAND_PAGE, t('Quiz: Poland'), t('Answer 20 questions about Poland'))
+TABLE_QUIZZES['hu-quiz'] = countryQuiz(HUNGARY_PAGE, t('Quiz: Hungary'), t('Answer 20 questions about Hungary'))
+TABLE_QUIZZES['br-quiz'] = countryQuiz(BRAZIL_PAGE, t('Quiz: Brazil'), t('Answer 20 questions about Brazil'))
+TABLE_QUIZZES['ca-quiz'] = countryQuiz(CANADA_PAGE, t('Quiz: Canada'), t('Answer 20 questions about Canada'))
+TABLE_QUIZZES['au-quiz'] = countryQuiz(AUSTRALIA_PAGE, t('Quiz: Australia'), t('Answer 20 questions about Australia'))
 
 // Localise country names shown in the tables (keys / ids stay English)
 if (isRo) {

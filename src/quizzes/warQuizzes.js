@@ -7,6 +7,7 @@
  * Each row: [id, English name, Romanian name, side, year entered, modern country | null, extra answers[]]
  */
 import { t, isRo } from '../i18n'
+import { inSiteLang } from '../utils/answerLang'
 
 const WW1 = [
   // Central Powers
@@ -102,7 +103,7 @@ function warQuiz({ title, icon, prompt, rows }) {
         country: null,                                   // historical states don't feed the modern knowledge map
         hint: { type: 'text', value: SIDES[side]() },
         extra: String(year),
-        answers: [en, ro, ...extra, ...(modern ? countryAnswers(modern) : [])],
+        answers: [...inSiteLang([en, ro, ...extra], { en, ro }), ...(modern ? countryAnswers(modern) : [])],
         display: isRo ? ro : en,
       })),
   }

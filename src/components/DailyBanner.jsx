@@ -24,7 +24,7 @@ export default function DailyBanner({ countryNames, onOpen }) {
       </span>
       <span className="daily-banner-body">
         <span className="daily-banner-kicker">{played ? t('Today\'s quiz — done') : t('Quiz of the day')}</span>
-        <span className="daily-banner-title">{info.icon} {info.title}{info.region !== 'World' ? ` · ${continentName(info.region)}` : ''}</span>
+        <span className="daily-banner-title">{info.title}{info.region !== 'World' ? ` · ${continentName(info.region)}` : ''}</span>
         <span className="daily-banner-sub">
           {played
             ? t('You scored {correct}/{total} · next quiz in {h}h {m}m', { correct: played.correct, total: played.total, h: h, m: m })

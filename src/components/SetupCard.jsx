@@ -3,11 +3,17 @@ import { loadResults } from '../utils/results'
 import { GAME_CATALOG } from '../utils/gameCatalog'
 import { setRules } from '../utils/rulesStore'
 import { t } from '../i18n'
+import GameIcon from './GameIcon'
+import { plain } from '../utils/plain'
 
 const storeKey = (mode) => `orbis-setup-${mode}`
 
 function loadSaved(mode) {
   try { return JSON.parse(localStorage.getItem(storeKey(mode))) ?? {} } catch { return {} }
+}
+
+export function saveSetup(mode, values) {
+  try { localStorage.setItem(storeKey(mode), JSON.stringify(values)) } catch { /* private mode */ }
 }
 
 /** Remembered settings for a game (used by "Play again"). */
@@ -77,9 +83,9 @@ export default function SetupCard({ mode, icon, title, desc, options = [], rules
   return (
     <div className="setup">
       <div className="setup-head">
-        <span className="setup-icon">{icon}</span>
+        <span className="setup-icon">{mode ? <GameIcon id={mode} size={30} strokeWidth={1.5} /> : icon}</span>
         <div className="setup-head-text">
-          <h2>{title}</h2>
+          <h2>{plain(title)}</h2>
           <span className="setup-best">{best}</span>
         </div>
       </div>
@@ -98,7 +104,7 @@ export default function SetupCard({ mode, icon, title, desc, options = [], rules
                   className={`setup-seg-btn${values[o.id] === c.value ? ' active' : ''}`}
                   onClick={() => setValues(v => ({ ...v, [o.id]: c.value }))}
                 >
-                  {c.label}
+                  {plain(c.label)}
                 </button>
               ))}
             </div>
@@ -108,7 +114,7 @@ export default function SetupCard({ mode, icon, title, desc, options = [], rules
       })}
 
       <button className="setup-start" onClick={() => start()}>
-        ▶ {t(startLabel)} <kbd>{t('Enter')}</kbd>
+        {t(startLabel)} <kbd>{t('Enter')}</kbd>
       </button>
       {typeToStart && <p className="setup-type-hint">{t('…or just start typing')}</p>}
 
@@ -118,7 +124,7 @@ export default function SetupCard({ mode, icon, title, desc, options = [], rules
             {t('How to play')} {showRules ? '▴' : '▾'}
           </button>
           {showRules && (
-            <ul>{rules.map((r, i) => <li key={i}>{r}</li>)}</ul>
+            <ul>{rules.map((r, i) => <li key={i}>{plain(r)}</li>)}</ul>
           )}
         </div>
       )}
@@ -132,7 +138,7 @@ export const TIMER_OPTION = {
   label: t('Time'),
   default: 'countup',
   choices: [
-    { value: 'countup',   label: t('⏱ Free play'), hint: t('No limit — the clock just tracks your time') },
-    { value: 'countdown', label: t('⏳ 15 min'),    hint: t('Race the clock: name as many as you can in 15 minutes') },
+    { value: 'countup',   label: plain(t('⏱ Free play')), hint: t('No limit — the clock just tracks your time') },
+    { value: 'countdown', label: plain(t('⏳ 15 min')),    hint: t('Race the clock: name as many as you can in 15 minutes') },
   ],
 }

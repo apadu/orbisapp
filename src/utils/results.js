@@ -95,10 +95,21 @@ export function markSession(mode, meta) {
  */
 export function setPoolSize(mode, n) { if (n > 0) poolSizes[mode] = n }
 
-/** Is a game in progress (an open session with at least one answer)? Used to confirm before leaving. */
-export function hasActiveGame() {
-  return Object.values(sessions).some(s => s.total > 0)
+/**
+ * The game in progress worth a "Leave?" question: an open session with at least
+ * MIN_TO_CONFIRM answers (a stray answer or two isn't worth interrupting for).
+ * → { mode, total, correct, score } of the furthest-along one, or null.
+ */
+const MIN_TO_CONFIRM = 3
+export function activeGame() {
+  let best = null
+  for (const s of Object.values(sessions)) {
+    if (s.total >= MIN_TO_CONFIRM && (!best || s.total > best.total)) best = s
+  }
+  // total = the whole game (196 capitals), not just the answers given so far
+  return best && { mode: best.mode, total: Math.max(best.total, poolSizes[best.mode] ?? 0), correct: best.correct, score: best.score }
 }
+export function hasActiveGame() { return !!activeGame() }
 
 export function startSession(mode) {
   if (sessions[mode]?.total > 0) finishGame(mode, { completed: false })

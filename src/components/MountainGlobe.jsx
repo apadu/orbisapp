@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
 import { geoEquirectangular, geoPath } from 'd3-geo'
 import GlobeControls from './GlobeControls'
+import { rangeName } from '../i18n/names'
 
 const CANVAS_W = 4096
 const CANVAS_H = 2048
@@ -122,9 +123,9 @@ function drawMountainRange(ctx, feature, state) {
     if (upsideDown) ctx.rotate(Math.PI)
     ctx.lineWidth = 5
     ctx.strokeStyle = 'rgba(233, 220, 185, 0.9)'
-    ctx.strokeText(NAME, 0, halfW * 1.05)
+    ctx.strokeText(rangeName(NAME), 0, halfW * 1.05)
     ctx.fillStyle = ink
-    ctx.fillText(NAME, 0, halfW * 1.05)
+    ctx.fillText(rangeName(NAME), 0, halfW * 1.05)
   }
 
   ctx.restore()

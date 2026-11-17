@@ -3,6 +3,8 @@ import { distanceLabel } from '../utils/geoUtils'
 import SetupCard from './SetupCard'
 import { t, cn } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import NextGame from './NextGame'
+import { plain } from '../utils/plain'
 
 function scoreLabel(pts) {
   if (pts >= 1000) return { text: t('Perfect!'), color: 'var(--green)' }
@@ -20,8 +22,8 @@ function formatTime(secs) {
 
 export default function LocatePanel({
   current, guessed, clickResult, totalScore, history,
-  gameMode, gameOver,
-  onModeSelect, onNext, onNewGame, onTimeout, onSprintExpired,
+  gameMode, gameOver, finished,
+  onModeSelect, onNext, onNewGame, onTimeout, onSprintExpired, onFinish, onOpen,
 }) {
   const currentName = cn(current?.properties?.NAME ?? '')
 
@@ -109,7 +111,7 @@ export default function LocatePanel({
 
   // ── Setup (one screen, remembers your last mode) ─────────────────────────
   // Phones: key numbers stay visible over the globe
-  useGameHud(current && !gameOver ? [{ icon: '🎯', text: String(totalScore) }, ...(gameMode === 'sprint' ? [{ icon: '⏱', text: formatTime(sprintTime), urgent: sprintTime <= 15 }] : gameMode === 'sudden' ? [{ icon: '💀', text: `${suddenTime}s`, urgent: suddenTime <= 3 }] : [])] : null)
+  useGameHud(current && !gameOver && !finished ? [{ icon: '🎯', text: String(totalScore) }, ...(gameMode === 'sprint' ? [{ icon: '⏱', text: formatTime(sprintTime), urgent: sprintTime <= 15 }] : gameMode === 'sudden' ? [{ icon: '💀', text: `${suddenTime}s`, urgent: suddenTime <= 3 }] : [])] : null)
   if (!current) {
     return (
       <SetupCard
@@ -118,17 +120,17 @@ export default function LocatePanel({
         title={t('Pinpoint Country')}
         desc={t('A name, a globe, one click. Land inside the borders for a perfect 1000.')}
         rules={[
-          t('🎯 Click inside the country for 1000 pts'),
-          t('📏 Close misses still score (within 500 km)'),
-          t('⏱ Sprint: as many as you can in 2 minutes'),
-          t('💀 Sudden death: 10 s per country, under 950 pts ends the run'),
+          plain(t('🎯 Click inside the country for 1000 pts')),
+          plain(t('📏 Close misses still score (within 500 km)')),
+          plain(t('⏱ Sprint: as many as you can in 2 minutes')),
+          plain(t('💀 Sudden death: 10 s per country, under 950 pts ends the run')),
         ]}
         options={[{
           id: 'variant', label: t('Mode'), default: 'classic',
           choices: [
-            { value: 'classic', label: t('🗺️ Classic'),      hint: t('Take your time. Score by accuracy.') },
-            { value: 'sprint',  label: t('⏱ 2-min sprint'),  hint: t('How many can you pin in 2 minutes?') },
-            { value: 'sudden',  label: t('💀 Sudden death'), hint: t('10 seconds per country. Score under 950 and it\'s over.') },
+            { value: 'classic', label: plain(t('🗺️ Classic')),      hint: t('Take your time. Score by accuracy.') },
+            { value: 'sprint',  label: plain(t('⏱ 2-min sprint')),  hint: t('How many can you pin in 2 minutes?') },
+            { value: 'sudden',  label: plain(t('💀 Sudden death')), hint: t('10 seconds per country. Score under 950 and it\'s over.') },
           ],
         }]}
         onStart={(v) => onModeSelect(v.variant)}
@@ -140,7 +142,7 @@ export default function LocatePanel({
   if (gameOver) {
     return (
       <>
-        <div className="panel-header"><h2>{t('📍 Pinpoint Country')}</h2></div>
+        <div className="panel-header"><h2>{plain(t('📍 Pinpoint Country'))}</h2></div>
         <div className="locate-gameover">
           <div className="locate-gameover-icon">💀</div>
           <div className="locate-gameover-title">{t('Game Over')}</div>
@@ -162,8 +164,9 @@ export default function LocatePanel({
           </div>
           <div className="locate-again-row">
             <button className="new-game-btn na-start-default" onClick={playAgain}>{t('▶ Play again')}</button>
-            <button className="new-game-btn" onClick={onNewGame}>{t('⚙ Settings')}</button>
+            <button className="new-game-btn" onClick={onNewGame}>{plain(t('⚙ Settings'))}</button>
           </div>
+          {onOpen && <NextGame mode="locate" accuracy={history.length ? correctCount / history.length : 0} onOpen={onOpen} />}
         </div>
         <HistoryList />
       </>
@@ -174,7 +177,7 @@ export default function LocatePanel({
   if (sprintExpired) {
     return (
       <>
-        <div className="panel-header"><h2>{t('📍 Pinpoint Country')}</h2></div>
+        <div className="panel-header"><h2>{plain(t('📍 Pinpoint Country'))}</h2></div>
         <div className="locate-gameover">
           <div className="locate-gameover-icon">⏱</div>
           <div className="locate-gameover-title">{t('Time\'s Up!')}</div>
@@ -194,8 +197,52 @@ export default function LocatePanel({
           </div>
           <div className="locate-again-row">
             <button className="new-game-btn na-start-default" onClick={playAgain}>{t('▶ Play again')}</button>
-            <button className="new-game-btn" onClick={onNewGame}>{t('⚙ Settings')}</button>
+            <button className="new-game-btn" onClick={onNewGame}>{plain(t('⚙ Settings'))}</button>
           </div>
+          {onOpen && <NextGame mode="locate" accuracy={history.length ? correctCount / history.length : 0} onOpen={onOpen} />}
+        </div>
+        <HistoryList />
+      </>
+    )
+  }
+
+  // ── Classic: the player pressed "Finish" ─────────────────────────────────
+  if (finished && gameMode === 'classic') {
+    const avg = history.length ? Math.round(totalScore / history.length) : 0
+    const best = history.reduce((b, h) => (!b || h.pts > b.pts || (h.pts === b.pts && h.km < b.km) ? h : b), null)
+    const worst = history.reduce((w, h) => (!w || h.km > w.km ? h : w), null)
+    return (
+      <>
+        <div className="panel-header"><h2>{plain(t('📍 Pinpoint Country'))}</h2></div>
+        <div className="locate-gameover">
+          <div className="locate-gameover-icon">🏁</div>
+          <div className="locate-gameover-title">{t('Game finished')}</div>
+          <div className="locate-gameover-country">{scoreLabel(avg).text} · {t('{avg} pts per country on average', { avg })}</div>
+          <div className="locate-gameover-stats">
+            <div className="locate-stat">
+              <span className="locate-stat-num">{history.length}</span>
+              <span className="locate-stat-label">{t('played')}</span>
+            </div>
+            <div className="locate-stat">
+              <span className="locate-stat-num">{correctCount}</span>
+              <span className="locate-stat-label">{t('bullseyes')}</span>
+            </div>
+            <div className="locate-stat">
+              <span className="locate-stat-num">{totalScore}</span>
+              <span className="locate-stat-label">{t('points')}</span>
+            </div>
+          </div>
+          {best && worst && history.length > 1 && (
+            <div className="locate-best">
+              <div className="locate-best-item"><span>{t('Closest')}</span><strong>{cn(best.name)}</strong><small>{best.isHit ? plain(t('✓ inside the borders')) : distanceLabel(best.km)} · +{best.pts}</small></div>
+              <div className="locate-best-item"><span>{t('Furthest off')}</span><strong>{cn(worst.name)}</strong><small>{worst.isHit ? plain(t('✓ inside the borders')) : distanceLabel(worst.km)} · +{worst.pts}</small></div>
+            </div>
+          )}
+          <div className="locate-again-row">
+            <button className="new-game-btn na-start-default" onClick={playAgain}>{t('▶ Play again')}</button>
+            <button className="new-game-btn" onClick={onNewGame}>{plain(t('⚙ Settings'))}</button>
+          </div>
+          {onOpen && <NextGame mode="locate" accuracy={avg / 1000} onOpen={onOpen} />}
         </div>
         <HistoryList />
       </>
@@ -206,7 +253,7 @@ export default function LocatePanel({
   return (
     <>
       <div className="panel-header">
-        <h2>{t('📍 Pinpoint Country')}</h2>
+        <h2>{plain(t('📍 Pinpoint Country'))}</h2>
         {gameMode === 'classic' && (
           <p className="panel-subtitle">{t('Click on the globe to place the country.')}</p>
         )}
@@ -241,7 +288,7 @@ export default function LocatePanel({
           <div className="locate-result">
             <div className="locate-result-name">{currentName}</div>
             <div className="locate-result-dist">
-              {clickResult.isHit ? t('✓ Correct!') : t('{v} away', { v: distanceLabel(clickResult.km) })}
+              {clickResult.isHit ? plain(t('✓ Correct!')) : t('{v} away', { v: distanceLabel(clickResult.km) })}
             </div>
             <div className="locate-result-pts" style={{ color: scoreLabel(clickResult.pts).color }}>
               +{clickResult.pts} {t('pts —')} {scoreLabel(clickResult.pts).text}
@@ -259,15 +306,16 @@ export default function LocatePanel({
       </div>
 
       {/* Next button — classic only */}
-      {guessed && gameMode === 'classic' && (
-        <div className="locate-next-wrap">
-          <button className="new-game-btn" onClick={onNext}>{t('Next →')}</button>
+      {gameMode === 'classic' && (guessed || history.length > 0) && (
+        <div className="locate-next-wrap locate-next-row">
+          {guessed && <button className="new-game-btn" onClick={onNext}>{t('Next →')}</button>}
+          {history.length > 0 && onFinish && <button className="locate-finish-btn" onClick={onFinish}>{plain(t('🏁 Finish'))}</button>}
         </div>
       )}
 
       {/* New Game link */}
-      <div className="locate-next-wrap" style={{ paddingTop: guessed && gameMode === 'classic' ? '0' : '12px' }}>
-        <button className="locate-newgame-link" onClick={onNewGame}>{t('✕ Change mode / new game')}</button>
+      <div className="locate-next-wrap" style={{ paddingTop: gameMode === 'classic' && (guessed || history.length > 0) ? '0' : '12px' }}>
+        <button className="locate-newgame-link" onClick={onNewGame}>{plain(t('✕ Change mode / new game'))}</button>
       </div>
 
       {/* History */}

@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { getDifficulty, COMPLETION_RATE } from '../utils/completionDifficulty'
 import { t, cn } from '../i18n'
+import { plain } from '../utils/plain'
+import { shareText, siteLink } from '../utils/share'
+import { curName, langName, seaName, riverName, rangeName } from '../i18n/names'
+
+// found names are stored in English; show them in the site language
+const NAME_BY_TYPE = { currencies: curName, languages: langName, seas: seaName, rivers: riverName, mountains: rangeName }
 
 /**
  * stats shape:
@@ -28,12 +34,13 @@ export default function CompletionModal({ stats, onClose, onPlayAgain }) {
   const completionRate = COMPLETION_RATE[type] ?? 10
 
   // Share text
-  const shareText = `${icon} I named all ${total} ${game.toLowerCase()} ${timeLabel}! 🌐 orbis.game`
+  const shareMsg = [`Orbis · ${game}`, `${total}/${total} · ${timeLabel}`, siteLink(window.location.pathname)].join('\n')
 
   const handleShare = () => {
-    navigator.clipboard?.writeText(shareText).then(() => {
+    shareText(shareMsg).then((r) => {
+      if (r !== 'copied') return
       const btn = document.getElementById('cm-share-btn')
-      if (btn) { btn.textContent = t('✅ Copied!'); setTimeout(() => { btn.textContent = t('📋 Copy result') }, 2000) }
+      if (btn) { btn.textContent = plain(t('✅ Copied!')); setTimeout(() => { btn.textContent = plain(t('📋 Copy result')) }, 2000) }
     })
   }
 
@@ -74,7 +81,7 @@ export default function CompletionModal({ stats, onClose, onPlayAgain }) {
             <div className="cm-hardest-list">
               {hardest.map(({ name, pct }) => (
                 <div key={name} className="cm-hardest-row">
-                  <span className="cm-hardest-name">{cn(name)}</span>
+                  <span className="cm-hardest-name">{(NAME_BY_TYPE[type] ?? cn)(name)}</span>
                   <div className="cm-hardest-bar-wrap">
                     <div className="cm-hardest-bar" style={{ width: `${pct}%` }} />
                   </div>
@@ -94,7 +101,7 @@ export default function CompletionModal({ stats, onClose, onPlayAgain }) {
         {/* Actions */}
         <div className="cm-actions">
           <button id="cm-share-btn" className="cm-btn cm-btn-share" onClick={handleShare}>
-            {t('📋 Copy result')}
+            {plain(t('📋 Copy result'))}
           </button>
           <button className="cm-btn cm-btn-again" onClick={() => { onClose(); onPlayAgain?.() }}>
             {t('↺ Play again')}

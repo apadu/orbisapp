@@ -8,6 +8,7 @@ import { playCorrect, playWin } from '../utils/sounds'
 import { t, cn } from '../i18n'
 import { setPoolSize } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
 
 const normalize = normalizeInput
 const COUNTDOWN_SECONDS = 15 * 60
@@ -164,10 +165,10 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       title={t('Name All Countries')}
       desc={t('196 countries, one text box. Watch the globe fill in as you type.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('🙈 Optional: start with an empty globe'),
-        t('💡 Alternate spellings and aliases accepted'),
-        t('🌐 All 196 countries included'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('🙈 Optional: start with an empty globe')),
+        plain(t('💡 Alternate spellings and aliases accepted')),
+        plain(t('🌐 All 196 countries included')),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -180,17 +181,17 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       title={t('Name All Countries')}
       desc={t('196 countries, one text box. Watch the globe fill in as you type.')}
       rules={[
-        t('💡 Alternate spellings and aliases accepted'),
-        t('🙈 Empty globe: countries only appear once you name them'),
-        t('🏳️ Give up any time to reveal what you missed'),
-        t('🌐 All 196 countries included'),
+        plain(t('💡 Alternate spellings and aliases accepted')),
+        plain(t('🙈 Empty globe: countries only appear once you name them')),
+        plain(t('🏳️ Give up any time to reveal what you missed')),
+        plain(t('🌐 All 196 countries included')),
       ]}
       options={[
         {
           id: 'map', label: t('Globe'), default: 'normal',
           choices: [
-            { value: 'normal', label: t('🗺️ Normal'), hint: t('Every country is drawn — they light up as you name them') },
-            { value: 'blind',  label: t('🙈 Empty'),  hint: t('Blank globe — countries appear only once you name them') },
+            { value: 'normal', label: plain(t('🗺️ Normal')), hint: t('Every country is drawn — they light up as you name them') },
+            { value: 'blind',  label: plain(t('🙈 Empty')),  hint: t('Blank globe — countries appear only once you name them') },
           ],
         },
         TIMER_OPTION,
@@ -204,7 +205,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     <>
       {/* Header */}
       <div className="panel-header">
-        <h2>{t('🌍 All Countries')}</h2>
+        <h2>{plain(t('🌍 All Countries'))}</h2>
         <p className="panel-subtitle">
           {blindMode
             ? t('Globe starts empty — countries appear as you name them.')
@@ -219,7 +220,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? t('⏳ countdown') : t('⏱ free play')}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ free play'))}
           </span>
           <div className="na-timer-controls">
             {!gameOver && !expired && !allFound && (
@@ -233,7 +234,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       {/* Expired */}
       {expired && (
         <div className="na-expired">
-          {t('⌛ Time\'s up! You found')} <strong>{activeFound.length}</strong> / {total} {t('countries.')}
+          {plain(t('⌛ Time\'s up! You found'))} <strong>{activeFound.length}</strong> / {total} {t('countries.')}
         </div>
       )}
 
@@ -307,7 +308,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
           <ul className="guess-list">
             {[...activeFound].reverse().map(f => (
               <li key={f.name} className="guess-item">
-                <span className="guess-swatch" style={{ background: '#39ff14' }} />
+                <span className="guess-swatch" style={{ background: '#5BD18B' }} />
                 <span className="guess-name">{cn(f.name)}</span>
               </li>
             ))}
@@ -320,7 +321,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
         {(gameOver || expired || allFound) ? (
           <>
             <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>{t('▶ Play again')}</button>
-            <button className="new-game-btn" onClick={handleReset}>{t('⚙ Settings')}</button>
+            <button className="new-game-btn" onClick={handleReset}>{plain(t('⚙ Settings'))}</button>
           </>
         ) : (
           <button className="new-game-btn" onClick={handleReset}>{t('↩ Reset')}</button>

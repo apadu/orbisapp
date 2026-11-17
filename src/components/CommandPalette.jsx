@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ALL_GAMES, GAME_GROUPS, searchGames } from '../utils/gameRegistry'
 import { loadResults } from '../utils/results'
 import { t } from '../i18n'
+import GameIcon from './GameIcon'
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform ?? '')
 export const PALETTE_SHORTCUT = isMac ? '⌘K' : 'Ctrl K'
@@ -37,7 +38,7 @@ export default function CommandPalette({ open, onClose, onSelect }) {
     const rec = recentIds().map(id => ALL_GAMES.find(g => g.id === id))
     return [
       ...(rec.length ? [{ id: 'recent', label: t('Recently played'), items: rec }] : []),
-      ...GAME_GROUPS.map(g => ({ id: g.id, label: `${g.icon} ${g.label}`, items: ALL_GAMES.filter(x => x.group === g.id) })),
+      ...GAME_GROUPS.map(g => ({ id: g.id, label: g.label, items: ALL_GAMES.filter(x => x.group === g.id) })),
     ]
   }, [q, open])
 
@@ -90,7 +91,7 @@ export default function CommandPalette({ open, onClose, onSelect }) {
                     onMouseEnter={() => setIdx(i)}
                     onClick={() => pick(g)}
                   >
-                    <span className="cp-item-icon">{g.icon}</span>
+                    <span className="cp-item-icon"><GameIcon id={g.id} size={18} /></span>
                     <span className="cp-item-text">
                       <span className="cp-item-label">{g.label}</span>
                       <span className="cp-item-desc">{g.desc}</span>

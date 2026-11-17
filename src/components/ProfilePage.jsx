@@ -8,6 +8,9 @@ import KnowledgeMap from './profile/KnowledgeMap'
 import ActivityHeatmap from './profile/ActivityHeatmap'
 import Leaderboard from './profile/Leaderboard'
 import { t, cn, locale } from '../i18n'
+import GameIcon from './GameIcon'
+import { plain } from '../utils/plain'
+import Icon from './Icon'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function useResults() {
@@ -53,11 +56,11 @@ function Sparkline({ values }) {
 }
 
 const TABS = [
-  { id: 'overview',     label: t('📈 Overview') },
-  { id: 'games',        label: t('🎮 Games') },
-  { id: 'map',          label: t('🗺️ Knowledge Map') },
-  { id: 'achievements', label: t('🏅 Achievements') },
-  { id: 'leaderboards', label: t('🏆 Leaderboards') },
+  { id: 'overview',     label: plain(t('📈 Overview')) },
+  { id: 'games',        label: plain(t('🎮 Games')) },
+  { id: 'map',          label: plain(t('🗺️ Knowledge Map')) },
+  { id: 'achievements', label: plain(t('🏅 Achievements')) },
+  { id: 'leaderboards', label: plain(t('🏆 Leaderboards')) },
 ]
 
 // ── Page ───────────────────────────────────────────────────────────────────
@@ -80,7 +83,7 @@ export default function ProfilePage({ countries = [], onBack, onPlay }) {
       {/* ── Guest banner ── */}
       {!auth.user && auth.backendEnabled && (
         <div className="pp-guest-banner">
-          <span>{t('👋 You\'re playing as a guest. Your progress is saved on this device only.')}</span>
+          <span>{plain(t('👋 You\'re playing as a guest. Your progress is saved on this device only.'))}</span>
           <button onClick={auth.openAuth}>{t('Sign in to save it')}</button>
         </div>
       )}
@@ -118,7 +121,7 @@ export default function ProfilePage({ countries = [], onBack, onPlay }) {
       <nav className="pp-tabs">
         {TABS.map(t => (
           <button key={t.id} className={`pp-tab${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>
-            {t.label}
+            {plain(t.label)}
             {t.id === 'achievements' && <span className="pp-tab-count">{unlocked.length}/{p.achievements.length}</span>}
           </button>
         ))}
@@ -214,8 +217,8 @@ function Overview({ p, results, onPlay, goTo }) {
 
       <div className="pp-card">
         <div className="pp-card-head">
-          <h3>{t('📅 Today\'s challenges')}</h3>
-          {dailyStreak > 0 && <span className="pp-chip">🔥 {dailyStreak}</span>}
+          <h3>{plain(t('📅 Today\'s challenges'))}</h3>
+          {dailyStreak > 0 && <span className="pp-chip"><Icon name="flame" size={13} /> {dailyStreak}</span>}
         </div>
         <div className="profile-daily-list">
           {daily.map(ch => {
@@ -238,7 +241,7 @@ function Overview({ p, results, onPlay, goTo }) {
 
       <div className="pp-card">
         <div className="pp-card-head">
-          <h3>{t('🏅 Almost there')}</h3>
+          <h3>{plain(t('🏅 Almost there'))}</h3>
           <button className="pp-link" onClick={() => goTo('achievements')}>{t('All achievements →')}</button>
         </div>
         {nextAch.length === 0
@@ -247,7 +250,7 @@ function Overview({ p, results, onPlay, goTo }) {
       </div>
 
       <div className="pp-card">
-        <div className="pp-card-head"><h3>{t('🕑 Recent games')}</h3></div>
+        <div className="pp-card-head"><h3>{plain(t('🕑 Recent games'))}</h3></div>
         {results.length === 0
           ? <p className="pp-muted">{t('No games yet. Go play something!')}</p>
           : (
@@ -256,7 +259,7 @@ function Overview({ p, results, onPlay, goTo }) {
                 const g = gameMeta(r.mode)
                 return (
                   <button key={r.client_id} className="pp-recent-row" onClick={() => onPlay(r.mode)} title={t('Play {label}', { label: g.label })}>
-                    <span className="pp-recent-icon">{g.icon}</span>
+                    <span className="pp-recent-icon"><GameIcon id={r.mode} size={20} /></span>
                     <span className="pp-recent-name">{g.label}</span>
                     <span className="pp-recent-score">{g.cat === 'quiz' ? `${r.correct}/${r.total}` : r.score.toLocaleString()}</span>
                     <span className="pp-recent-acc">{r.correct}/{r.total}</span>
@@ -286,7 +289,7 @@ function GamesTab({ p, onPlay }) {
                 return (
                   <div key={id} className={`pp-game-card${m ? '' : ' pp-game-unplayed'}`}>
                     <div className="pp-game-head">
-                      <span className="pp-game-icon">{g.icon}</span>
+                      <span className="pp-game-icon"><GameIcon id={id} size={20} /></span>
                       <span className="pp-game-name">{g.label}</span>
                       <button className="pp-play" onClick={() => onPlay(id)}>{t('Play')}</button>
                     </div>
@@ -335,13 +338,13 @@ function MapTab({ p, countries }) {
       </div>
       <div className="pp-map-lists">
         <div className="pp-card">
-          <h3>{t('💪 Strongest')}</h3>
+          <h3>{plain(t('💪 Strongest'))}</h3>
           {strongest.length === 0 ? <p className="pp-muted">{t('Not enough data yet.')}</p> : strongest.map(c => (
             <div key={c.name} className="pp-weak"><span>{cn(c.name)}</span><span className="pp-strong-pct">{pct(c.pct)}</span></div>
           ))}
         </div>
         <div className="pp-card">
-          <h3>{t('🎯 Weakest')}</h3>
+          <h3>{plain(t('🎯 Weakest'))}</h3>
           {p.weakest.length === 0 ? <p className="pp-muted">{t('Nothing below 70% yet.')}</p> : p.weakest.slice(0, 8).map(c => (
             <div key={c.name} className="pp-weak"><span>{cn(c.name)}</span><span className="pp-weak-pct">{pct(c.pct)}</span></div>
           ))}

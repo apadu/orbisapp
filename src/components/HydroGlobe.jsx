@@ -35,7 +35,7 @@ function redrawHydro(canvas, countries, highlightedSea, status) {
     ctx.beginPath()
     path(highlightedSea)
     if (status === 'correct') {
-      ctx.fillStyle = 'rgba(57, 255, 20, 0.55)'
+      ctx.fillStyle = 'rgba(91,209,139, 0.55)'
     } else if (status === 'skipped') {
       ctx.fillStyle = 'rgba(239, 68, 68, 0.45)'
     } else {
@@ -43,7 +43,7 @@ function redrawHydro(canvas, countries, highlightedSea, status) {
     }
     ctx.fill()
     // Bright border around the highlighted sea
-    ctx.strokeStyle = status === 'correct' ? '#39ff14'
+    ctx.strokeStyle = status === 'correct' ? '#5BD18B'
                     : status === 'skipped' ? '#ef4444'
                     : '#f97316'
     ctx.lineWidth = 2.5

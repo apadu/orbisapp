@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { COUNTRY_PAGES, countryGame, countryName } from '../data/countryPages'
 import { loadResults } from '../utils/results'
 import { t, isRo } from '../i18n'
+import GameIcon from './GameIcon'
 
 const pick = (o) => (o == null ? '' : isRo ? o.ro : o.en)
 
@@ -16,7 +17,7 @@ function bestByMode() {
   return best
 }
 
-/** "Countries": pick a country, then one of its games on the country page. */
+/** "Countries": each card lists its games — click one to play it, or the header for the country page. */
 export default function CountriesHub({ onOpen }) {
   const best = useMemo(bestByMode, [])
   const countries = Object.entries(COUNTRY_PAGES)
@@ -25,7 +26,7 @@ export default function CountriesHub({ onOpen }) {
     <div className="chub">
       <header className="chub-head">
         <h1>{t('Countries')}</h1>
-        <p>{t('Pick a country, then a game: its map by county or state, its capitals and a 20-question quiz about it.')}</p>
+        <p>{t('Pick a game and play it right away: a country’s map by county or state, its capitals, or a 20-question quiz. Click the country’s name for its page.')}</p>
       </header>
 
       <div className="chub-grid">
@@ -33,25 +34,28 @@ export default function CountriesHub({ onOpen }) {
           const games = c.games.map(countryGame).filter(Boolean)
           const played = games.filter(g => g.id in best).length
           return (
-            <button key={id} className="chub-card" onClick={() => onOpen(id)}>
-              <div className="chub-card-top">
+            <div key={id} className="chub-card">
+              <button className="chub-card-top" onClick={() => onOpen(id)}>
                 <span className="chub-flag" aria-hidden="true">{c.page.flag}</span>
                 <div className="chub-card-title">
                   <h2>{countryName(id)}</h2>
                   <span className="chub-card-meta">{t('{n} games', { n: games.length })}{played ? ` · ${t('{n} played', { n: played })}` : ''}</span>
                 </div>
-              </div>
+              </button>
               <p className="chub-tagline">{pick(c.page.tagline)}</p>
               <ul className="chub-games">
                 {games.map(g => (
                   <li key={g.id}>
-                    <span aria-hidden="true">{g.icon}</span> {g.label}
-                    {g.id in best && <span className="chub-best">{Math.round(best[g.id] * 100)}%</span>}
+                    <button className="chub-game" onClick={() => onOpen(g.id)}>
+                      <GameIcon id={g.id} size={16} /> <span className="chub-game-label">{g.label}</span>
+                      {g.id in best && <span className="chub-best">{Math.round(best[g.id] * 100)}%</span>}
+                      <span className="chub-play" aria-hidden="true">▸</span>
+                    </button>
                   </li>
                 ))}
               </ul>
-              <span className="chub-cta">{t('Choose a game ▸')}</span>
-            </button>
+              <button className="chub-cta" onClick={() => onOpen(id)}>{t('About {country} ▸', { country: countryName(id) })}</button>
+            </div>
           )
         })}
       </div>

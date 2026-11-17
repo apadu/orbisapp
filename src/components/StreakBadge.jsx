@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useDailyChallenges } from '../utils/useDailyChallenges'
 import { t, locale } from '../i18n'
+import Icon from './Icon'
 
 export default function StreakBadge({ onSelectMode }) {
   const { list, allDone, streak } = useDailyChallenges()
@@ -25,14 +26,14 @@ export default function StreakBadge({ onSelectMode }) {
         onClick={() => setOpen(o => !o)}
         title={t('Daily challenges')}
       >
-        🔥 {streak > 0 ? streak : '0'}
+        <Icon name="flame" size={15} /> {streak > 0 ? streak : '0'}
       </button>
 
       {open && (
         <div className="streak-popover">
           <div className="streak-pop-header">
             <span className="streak-pop-date">{todayLabel}</span>
-            {streak > 0 && <span className="streak-pop-streak">🔥 {streak} {t('day streak')}</span>}
+            {streak > 0 && <span className="streak-pop-streak"><Icon name="flame" size={14} /> {streak} {t('day streak')}</span>}
           </div>
 
           <div className="streak-pop-challenges">

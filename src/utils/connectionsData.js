@@ -128,7 +128,7 @@ export const CONNECTIONS_ROUNDS = [
 
 export const DIFF_COLORS = {
   0: { bg: '#7e5a00', active: '#ffce00', label: 'Easy',   text: '#FFD700' },
-  1: { bg: '#1a4d1a', active: '#39ff14', label: 'Medium', text: '#39ff14' },
+  1: { bg: '#1a4d1a', active: '#5BD18B', label: 'Medium', text: '#5BD18B' },
   2: { bg: '#003380', active: '#5ba3f5', label: 'Hard',   text: '#5ba3f5' },
-  3: { bg: '#4a0050', active: '#c77dff', label: 'Expert', text: '#c77dff' },
+  3: { bg: '#4a0050', active: '#FF7A3D', label: 'Expert', text: '#FF7A3D' },
 }

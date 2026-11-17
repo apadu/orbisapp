@@ -1,4 +1,9 @@
 import { COUNTRY_RO, RO_ALIASES } from '../i18n/countriesRo'
+import { isRo } from '../i18n'
+
+// Answers follow the site language: in English only English names count, in Romanian only
+// Romanian names (plus a couple of international abbreviations). Never a mix — so "Brazil"
+// can't sneak in halfway through typing "Brazilia".
 // Alternate country names → canonical app name (after NAME_OVERRIDES)
 export const ALIASES = {
   'cape verde':                       'Cabo Verde',
@@ -56,30 +61,38 @@ export function normalizeInput(s) {
   return s.toLowerCase().trim().replace(/\s+/g, ' ')
 }
 
-/** Resolve typed input to a canonical country name, or null */
-export function resolveAlias(typed, countryNames) {
-  const q = normalizeInput(typed)
-  // Direct match
-  const direct = countryNames.find(n => normalizeInput(n) === q)
-  if (direct) return direct
-  // Alias match
-  const canonical = ALIASES[q]
-  if (canonical && countryNames.includes(canonical)) return canonical
-  // Romanian names (always accepted, with or without diacritics)
-  const ro = RO_LOOKUP[stripDiacritics(q)]
-  if (ro && countryNames.includes(ro)) return ro
-  return null
+const stripDiacritics = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[ș]/g, 's').replace(/[ț]/g, 't')
+const key = (s) => stripDiacritics(normalizeInput(s))
+
+// Abbreviations everyone uses, accepted in Romanian too
+const RO_INTL = { usa: 'United States of America', uk: 'United Kingdom' }
+
+/** The country's name in the site language (keys stay English everywhere). */
+export const localName = (name) => (isRo ? COUNTRY_RO[name] ?? name : name)
+
+// typed spelling (normalised, no diacritics) → canonical name, for the current language only
+const LOOKUP = {}
+const ALT_BY_COUNTRY = {}
+if (isRo) {
+  for (const [en, ro] of Object.entries(COUNTRY_RO)) LOOKUP[key(ro)] = en
+  for (const [alias, en] of Object.entries({ ...RO_ALIASES, ...RO_INTL })) { LOOKUP[key(alias)] ??= en; (ALT_BY_COUNTRY[en] ??= []).push(alias) }
+} else {
+  for (const [alias, en] of Object.entries(ALIASES)) { LOOKUP[key(alias)] = en; (ALT_BY_COUNTRY[en] ??= []).push(alias) }
 }
 
-const stripDiacritics = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[ș]/g, 's').replace(/[ț]/g, 't')
-// normalised Romanian name / alias → canonical name
-const RO_LOOKUP = {}
-for (const [en, ro] of Object.entries(COUNTRY_RO)) RO_LOOKUP[stripDiacritics(normalizeInput(ro))] = en
-for (const [alias, en] of Object.entries(RO_ALIASES)) RO_LOOKUP[alias] = en
+/** Every spelling accepted for a country in the current language (for engines with their own matching). */
+export function countryAnswers(name) {
+  return [localName(name), ...(ALT_BY_COUNTRY[name] ?? [])]
+}
 
-/** Every Romanian spelling accepted for a country (for engines with their own matching). */
-export function roAnswers(name) {
-  return Object.entries(RO_LOOKUP).filter(([, en]) => en === name).map(([k]) => k)
+/** Resolve typed input to a canonical country name, or null */
+export function resolveAlias(typed, countryNames) {
+  const q = key(typed)
+  if (!q) return null
+  const direct = countryNames.find(n => key(localName(n)) === q)
+  if (direct) return direct
+  const canonical = LOOKUP[q]
+  return canonical && countryNames.includes(canonical) ? canonical : null
 }
 
 /** Levenshtein distance between two strings */
@@ -107,10 +120,7 @@ export function findClosestMatch(typed, countryNames) {
 
   let best = null, bestDist = Infinity
   for (const name of countryNames) {
-    const n = normalizeInput(name)
-    // Also compare with the Romanian name
-    const ro = COUNTRY_RO[name] ? stripDiacritics(normalizeInput(COUNTRY_RO[name])) : null
-    const d = Math.min(levenshtein(q, n), ro ? levenshtein(stripDiacritics(q), ro) : Infinity)
+    const d = levenshtein(stripDiacritics(q), key(localName(name)))
     if (d < bestDist) { bestDist = d; best = name }
   }
 

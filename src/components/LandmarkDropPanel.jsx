@@ -10,6 +10,7 @@ import { startSession, trackAnswer, finishGame, loadResults } from '../utils/res
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn, isRo, continentName, locale } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
 
 const MODE = 'landmark-drop'
 const ROUNDS = 10
@@ -27,16 +28,16 @@ const OPTIONS = [
   {
     id: 'type', label: t('Landmarks'),
     choices: [
-      { value: 'all',    label: t('🌐 All'),         hint: t('Monuments and natural wonders') },
-      { value: 'built',  label: t('🏛️ Monuments'),   hint: t('Buildings, statues, ruins and cities') },
-      { value: 'nature', label: t('🏔️ Nature'),      hint: t('Mountains, waterfalls, lakes and canyons') },
+      { value: 'all',    label: plain(t('🌐 All')),         hint: t('Monuments and natural wonders') },
+      { value: 'built',  label: plain(t('🏛️ Monuments')),   hint: t('Buildings, statues, ruins and cities') },
+      { value: 'nature', label: plain(t('🏔️ Nature')),      hint: t('Mountains, waterfalls, lakes and canyons') },
     ],
   },
   {
     id: 'hint', label: t('Hint'),
     choices: [
-      { value: 'country', label: t('🏳️ Show country'), hint: t('You see which country it is in') },
-      { value: 'none',    label: t('🙈 No hint'),      hint: t('Only the name — much harder') },
+      { value: 'country', label: plain(t('🏳️ Show country')), hint: t('You see which country it is in') },
+      { value: 'none',    label: plain(t('🙈 No hint')),      hint: t('Only the name — much harder') },
     ],
   },
 ]
@@ -47,7 +48,7 @@ const RULES = [
   t('Drag to rotate, scroll to zoom — the click only counts when you don\'t drag.'),
 ]
 
-const verdict = (km) => km <= 25 ? t('🎯 Bullseye!') : km <= 150 ? t('🔥 Very close') : km <= GOOD_KM ? t('👍 Close') : km <= 1000 ? t('🙂 Not bad') : km <= 3000 ? t('😬 Far off') : t('🧭 Way off')
+const verdict = (km) => km <= 25 ? plain(t('🎯 Bullseye!')) : km <= 150 ? plain(t('🔥 Very close')) : km <= GOOD_KM ? plain(t('👍 Close')) : km <= 1000 ? plain(t('🙂 Not bad')) : km <= 3000 ? plain(t('😬 Far off')) : plain(t('🧭 Way off'))
 
 export default function LandmarkDropPanel({ onGlobe }) {
   const [phase, setPhase] = useState('setup')
@@ -122,7 +123,7 @@ export default function LandmarkDropPanel({ onGlobe }) {
     const midLon = guess.lon + ((((lm.lon - guess.lon) + 540) % 360) - 180) / 2
     onGlobe({
       onClick,
-      guesses: [{ name: lm.country, color: '#39ff14' }],
+      guesses: [{ name: lm.country, color: '#5BD18B' }],
       overlay: {
         lines: [{ type: 'arc', from: [guess.lon, guess.lat], to: [lm.lon, lm.lat], color: '#facc15', width: 4, dash: [14, 10] }],
         pins: [
@@ -146,7 +147,7 @@ export default function LandmarkDropPanel({ onGlobe }) {
         <GameHeader icon="🗽" title={t('Landmark Drop')} />
         <div className="gg-over">
           <div className="gg-over-big">{total.toLocaleString(locale)}<small> / {(log.length * 1000).toLocaleString(locale)}</small></div>
-          <div className="gg-sub">{t('avg')} {fmtKm(avg)} {t('off ·')} {total >= bestScore ? t('🎉 Personal best') : t('best {v}', { v: bestScore.toLocaleString(locale) })} · {continentName(setup.region)}</div>
+          <div className="gg-sub">{t('avg')} {fmtKm(avg)} {t('off ·')} {total >= bestScore ? plain(t('🎉 Personal best')) : t('best {v}', { v: bestScore.toLocaleString(locale) })} · {continentName(setup.region)}</div>
           <div className="gg-list">
             {log.map((l, i) => (
               <div key={i} className="gg-list-row">
@@ -188,7 +189,7 @@ export default function LandmarkDropPanel({ onGlobe }) {
           <button className="arc-primary" onClick={next}>{round + 1 >= queue.length ? t('See results') : t('Next')} <kbd>{t('Enter')}</kbd></button>
         </div>
       ) : (
-        <div className="gg-hint">{t('🖱️ Click the globe to drop your pin')}</div>
+        <div className="gg-hint">{plain(t('🖱️ Click the globe to drop your pin'))}</div>
       )}
     </div>
   )

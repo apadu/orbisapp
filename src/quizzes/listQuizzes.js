@@ -4,6 +4,9 @@
  */
 import { COUNTRY_INFO } from '../utils/countryInfo'
 import { t, locale, isRo } from '../i18n'
+import { localName } from '../utils/aliases'
+
+const initial = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')[0]?.toUpperCase() ?? ''
 
 // ── Sets ───────────────────────────────────────────────────────────────────
 const LANDLOCKED = [
@@ -280,13 +283,13 @@ export const LIST_QUIZZES = {
   }),
   landlocked:    listQuiz({ title: t('Landlocked Countries'), icon: '🏔️', prompt: t('Name every country with no coastline'), names: LANDLOCKED }),
   'island-nations': listQuiz({ title: t('Island Nations'), icon: '🏝️', prompt: t('Name every country made up entirely of islands'), names: ISLAND_NATIONS }),
-  'eu-members':  listQuiz({ title: t('EU Members'), icon: '🇪🇺', prompt: t('Name all 27 members of the European Union'), names: Object.keys(EU), hint: n => EU[n], hintLabel: 'Joined', regions: false }),
-  'nato-members': listQuiz({ title: t('NATO Members'), icon: '🛡️', prompt: t('Name all 32 NATO members'), names: Object.keys(NATO), hint: n => NATO[n], hintLabel: 'Joined', regions: false }),
+  'eu-members':  listQuiz({ title: t('EU Members'), icon: '🇪🇺', prompt: t('Name all 27 members of the European Union'), names: Object.keys(EU), hint: n => EU[n], hintLabel: t('Joined'), regions: false }),
+  'nato-members': listQuiz({ title: t('NATO Members'), icon: '🛡️', prompt: t('Name all 32 NATO members'), names: Object.keys(NATO), hint: n => NATO[n], hintLabel: t('Joined'), regions: false }),
   g20:           listQuiz({ title: t('G20 Countries'), icon: '💼', prompt: t('Name the 19 countries in the G20'), names: G20, regions: false }),
   'former-ussr': listQuiz({ title: t('Former Soviet Republics'), icon: '☭', prompt: t('Name the 15 countries that were part of the USSR'), names: FORMER_USSR, regions: false }),
   'former-yugoslavia': listQuiz({ title: t('Former Yugoslavia'), icon: '🧩', prompt: t('Name the 7 countries that came out of Yugoslavia'), names: FORMER_YUGOSLAVIA, regions: false }),
   equator:       listQuiz({ title: t('On the Equator'), icon: '🌐', prompt: t('Name every country the Equator passes through'), names: EQUATOR, regions: false }),
-  stans:         listQuiz({ title: t('The -stans'), icon: '🐎', prompt: t('Name every country ending in "-stan"'), names: STAN, hint: () => '…stan', hintLabel: 'Ends in', sortBy: 'name', regions: false }),
+  stans:         listQuiz({ title: t('The -stans'), icon: '🐎', prompt: t('Name every country ending in "-stan"'), names: STAN, hint: () => '…stan', hintLabel: t('Ends in'), sortBy: 'name', regions: false }),
   'spanish-speaking':    listQuiz({ title: t('Spanish-speaking Countries'), icon: '🇪🇸', prompt: t('Name every country where Spanish is official'), names: SPANISH, regions: false }),
   'portuguese-speaking': listQuiz({ title: t('Portuguese-speaking Countries'), icon: '🇵🇹', prompt: t('Name every country where Portuguese is official'), names: PORTUGUESE, regions: false }),
   'french-speaking':     listQuiz({ title: t('French-speaking Countries'), icon: '🇫🇷', prompt: t('Name every country where French is official'), names: FRENCH }),
@@ -294,7 +297,7 @@ export const LIST_QUIZZES = {
   'flags-cross':    listQuiz({ title: t('Flags with a Cross'), icon: '✝️', prompt: t('Name every country whose flag has a cross or saltire'), names: FLAG_CROSS, regions: false }),
   'flags-sun':      listQuiz({ title: t('Flags with a Sun'), icon: '☀️', prompt: t('Name every country whose flag has a sun'), names: FLAG_SUN, regions: false }),
 
-  'euro-users':   listQuiz({ title: t('Countries Using the Euro'), icon: '💶', prompt: t('Name every country that uses the euro'), names: Object.keys(EURO), hint: n => EURO[n], hintLabel: 'Since', regions: false }),
+  'euro-users':   listQuiz({ title: t('Countries Using the Euro'), icon: '💶', prompt: t('Name every country that uses the euro'), names: Object.keys(EURO), hint: n => EURO[n], hintLabel: t('Since'), regions: false }),
   'dollar-users': {
     title: t('Countries Using a Dollar'), icon: '💵', regions: true,
     prompt: t('Name every country whose currency is a dollar (its own or another country\'s)'),
@@ -323,10 +326,10 @@ export const LIST_QUIZZES = {
       .sort((a, b) => a.hint.value.localeCompare(b.hint.value) || a.display.localeCompare(b.display)),
   },
   'capital-same-name': listQuiz({ title: t('Capital Namesakes'), icon: '🪞', prompt: t('Name every country whose capital (almost) shares its name — e.g. Mexico → Mexico City'), names: CAPITAL_SHARES_NAME, regions: false }),
-  caribbean:         listQuiz({ title: t('Caribbean Countries'), icon: '🌴', prompt: t('Name the 13 island countries of the Caribbean'), names: CARIBBEAN, hint: n => n.length, hintLabel: 'Letters', sortBy: 'name', regions: false }),
-  'central-america': listQuiz({ title: t('Central America'), icon: '🌋', prompt: t('Name the 7 countries of Central America'), names: CENTRAL_AMERICA, hint: n => n.length, hintLabel: 'Letters', sortBy: 'name', regions: false }),
-  nordic:            listQuiz({ title: t('Nordic Countries'), icon: '❄️', prompt: t('Name the 5 Nordic countries'), names: NORDIC, hint: n => n.length, hintLabel: 'Letters', sortBy: 'name', regions: false }),
-  'gulf-states':     listQuiz({ title: t('Gulf States (GCC)'), icon: '🛢️', prompt: t('Name the 6 members of the Gulf Cooperation Council'), names: GULF, hint: n => n.length, hintLabel: 'Letters', sortBy: 'name', regions: false }),
+  caribbean:         listQuiz({ title: t('Caribbean Countries'), icon: '🌴', prompt: t('Name the 13 island countries of the Caribbean'), names: CARIBBEAN, hint: n => n.length, hintLabel: t('Letters'), sortBy: 'name', regions: false }),
+  'central-america': listQuiz({ title: t('Central America'), icon: '🌋', prompt: t('Name the 7 countries of Central America'), names: CENTRAL_AMERICA, hint: n => n.length, hintLabel: t('Letters'), sortBy: 'name', regions: false }),
+  nordic:            listQuiz({ title: t('Nordic Countries'), icon: '❄️', prompt: t('Name the 5 Nordic countries'), names: NORDIC, hint: n => n.length, hintLabel: t('Letters'), sortBy: 'name', regions: false }),
+  'gulf-states':     listQuiz({ title: t('Gulf States (GCC)'), icon: '🛢️', prompt: t('Name the 6 members of the Gulf Cooperation Council'), names: GULF, hint: n => n.length, hintLabel: t('Letters'), sortBy: 'name', regions: false }),
   smallest: {
     title: t('Smallest Countries'), icon: '🔬', ranked: true, regions: false,
     prompt: t('Name the 20 smallest countries by area'),
@@ -380,16 +383,17 @@ export const LIST_QUIZZES = {
       const byLetter = {}
       for (const n of countries) {
         if (!inRegion(n, region)) continue
-        const l = n[0].toUpperCase()
+        const l = initial(localName(n))          // the letter of the name in the site language
+        if (!/[A-Z]/.test(l)) continue
         ;(byLetter[l] ??= []).push(n)
       }
       return Object.keys(byLetter).sort().map(l => ({
         id: `letter-${l}`,
         country: null,
         hint: { type: 'text', value: l, mono: true },
-        answers: byLetter[l].flatMap(n => countryAnswers(n).filter(a => a[0].toUpperCase() === l || a === n)),
-        labels: Object.fromEntries(byLetter[l].flatMap(n => countryAnswers(n).map(a => [a, n]))),
-        display: `${t('e.g.')} ${byLetter[l].sort()[0]}`,
+        answers: byLetter[l].flatMap(n => countryAnswers(n).filter(a => initial(a) === l)),
+        labels: Object.fromEntries(byLetter[l].flatMap(n => countryAnswers(n).map(a => [a, { show: localName(n), country: n }]))),
+        display: `${t('e.g.')} ${byLetter[l].map(localName).sort((a, b) => a.localeCompare(b))[0]}`,
       }))
     },
   },

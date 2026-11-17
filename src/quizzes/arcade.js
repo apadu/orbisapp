@@ -11,6 +11,8 @@ import { COUNTRY_AREA } from '../utils/countryArea'
 import { ALIASES } from '../utils/aliases'
 import { dailyNumber } from './daily'
 import { t, cn, isRo, continentName, locale } from '../i18n'
+import { capName, curName, langName } from '../i18n/names'
+import { siteLink } from '../utils/share'
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 const DISPLAY = isRo ? { 'United States of America': 'SUA' } : { 'United States of America': 'United States' }
@@ -57,6 +59,9 @@ const continentOf = (n) => COUNTRY_INFO[n]?.continent
 // Debatable continent → never used in "X is in <continent>" statements
 const TRANSCONTINENTAL = new Set(['Russia', 'Turkey', 'Cyprus', 'Georgia', 'Armenia', 'Azerbaijan', 'Kazakhstan', 'Egypt', 'Panama', 'Indonesia', 'Papua New Guinea', 'Timor-Leste', 'East Timor', 'Trinidad and Tobago', 'Greenland'])
 
+// Currency inside a sentence: Romanian writes it lower-case ("folosește dolarul american")
+const curInText = (c) => (isRo ? curName(c).toLowerCase() : c)
+
 const GENERATORS = [
   // Capital
   (pool) => {
@@ -64,7 +69,7 @@ const GENERATORS = [
     const truth = Math.random() < 0.5
     const others = sameContinent(n, pool).filter(m => CAPITALS[m])
     const cap = truth || !others.length ? CAPITALS[n][0] : CAPITALS[pick(others)][0]
-    return { country: n, text: t('The capital of {c} is {cap}.', { c: shortName(n), cap }), truth: cap === CAPITALS[n][0], fix: t('Capital of {c}: {cap}', { c: shortName(n), cap: CAPITALS[n][0] }) }
+    return { country: n, text: t('The capital of {c} is {cap}.', { c: shortName(n), cap: capName(cap) }), truth: cap === CAPITALS[n][0], fix: t('Capital of {c}: {cap}', { c: shortName(n), cap: capName(CAPITALS[n][0]) }) }
   },
   // Continent
   (pool) => {
@@ -81,7 +86,7 @@ const GENERATORS = [
     const others = pool.filter(m => COUNTRY_CURRENCY[m] && COUNTRY_CURRENCY[m].name !== real)
     const near = others.filter(m => continentOf(m) === continentOf(n))
     const cur = Math.random() < 0.5 ? real : COUNTRY_CURRENCY[pick(near.length ? near : others)].name
-    return { country: n, text: t('{c} uses the {cur}.', { c: shortName(n), cur }), truth: cur === real, fix: t('{c} uses the {cur}', { c: shortName(n), cur: real }) }
+    return { country: n, text: t('{c} uses the {cur}.', { c: shortName(n), cur: curInText(cur) }), truth: cur === real, fix: t('{c} uses the {cur}', { c: shortName(n), cur: curInText(real) }) }
   },
   // Language
   (pool) => {
@@ -93,7 +98,7 @@ const GENERATORS = [
       const near = sameContinent(n, pool).flatMap(m => COUNTRY_LANGUAGES[m] ?? []).filter(l => !langs.includes(l))
       lang = near.length ? pick(near) : langs[0]
     }
-    return { country: n, text: t('{lang} is an official language of {c}.', { lang, c: shortName(n) }), truth: langs.includes(lang), fix: `${shortName(n)}: ${langs.slice(0, 3).join(', ')}` }
+    return { country: n, text: t('{lang} is an official language of {c}.', { lang: langName(lang), c: shortName(n) }), truth: langs.includes(lang), fix: `${shortName(n)}: ${langs.slice(0, 3).map(langName).join(', ')}` }
   },
   // Population compare
   (pool) => compare(pool, 'population', (a, b) => t('{a} has more people than {b}.', { a: shortName(a), b: shortName(b) })),
@@ -193,7 +198,6 @@ export function scoreGuess(guess, target) {
 
 export function wordleShareText(day, rows, solved) {
   const grid = rows.map(r => r.map(c => c === 'hit' ? '🟩' : c === 'near' ? '🟨' : '⬛').join('')).join('\n')
-  const where = typeof window !== 'undefined' ? (window.location?.origin ?? '') : ''
-  return [`Orbis Wordle #${day} ${solved ? rows.length : 'X'}/${WORDLE_TRIES} 🌍`, grid, where].filter(Boolean).join('\n')
+  return [`Orbis Wordle #${day} · ${solved ? rows.length : 'X'}/${WORDLE_TRIES}`, grid, siteLink('/quiz/country-wordle')].filter(Boolean).join('\n')
 }
 

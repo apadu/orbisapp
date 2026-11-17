@@ -2,23 +2,13 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import GameIntro from './GameIntro'
 import { t } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { seaName, seaSpellings, seaKey, plainKey } from '../i18n/names'
 
-/** Loose sea name matching — accepts partial names without "Sea", "Ocean", etc. */
-function normalizeSea(s) {
-  return s.toLowerCase().trim()
-    .replace(/\b(sea|ocean|gulf|bay|lake|strait|channel|the|of)\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
+/** Sea name check in the site language — partial names without "Sea", "Gulf", "Marea"… are fine. */
 export function checkSea(canonicalName, typed) {
-  const t = typed.toLowerCase().trim()
-  const n = canonicalName.toLowerCase().trim()
-  if (t === n) return true
-  // Exact match after stripping generic words
-  const nt = normalizeSea(t)
-  const nn = normalizeSea(n)
-  return nt.length >= 3 && nt === nn
+  const tp = plainKey(typed), tk = seaKey(typed)
+  return seaSpellings(canonicalName).some(sp => tp === plainKey(sp) || (tk.length >= 3 && tk === seaKey(sp)))
 }
 
 export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGame, score, history, onGameStart }) {
@@ -26,7 +16,8 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
   const [status, setStatus] = useState(null) // 'correct' | 'wrong'
   const inputRef = useRef(null)
 
-  const seaName = current?.properties?.NAME ?? ''
+  const seaNameEn = current?.properties?.NAME ?? ''
+  const shownName = seaName(seaNameEn)
 
   useEffect(() => {
     setInput('')
@@ -36,14 +27,14 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
 
   const submit = useCallback(() => {
     if (!input.trim() || answered) return
-    if (checkSea(seaName, input)) {
+    if (checkSea(seaNameEn, input)) {
       setStatus('correct')
       setTimeout(() => { onCorrect(); setStatus(null) }, 700)
     } else {
       setStatus('wrong')
       setTimeout(() => setStatus(null), 600)
     }
-  }, [input, answered, seaName, onCorrect])
+  }, [input, answered, seaNameEn, onCorrect])
 
   const skip = useCallback(() => {
     if (answered) return
@@ -73,9 +64,9 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
       title={t('Name the Sea')}
       desc={t('A patch of ocean lights up. Sea, gulf or bay — which one is it?')}
       rules={[
-        t('🌍 Oceans, seas, gulfs, and bays are all fair game'),
+        plain(t('🌍 Oceans, seas, gulfs, and bays are all fair game')),
         t('↩ Skip to pass on any question'),
-        t('🗺️ Rotate the globe to get a better view'),
+        plain(t('🗺️ Rotate the globe to get a better view')),
       ]}
       onStart={() => { setStarted(true); onGameStart?.() }}
     />
@@ -85,7 +76,7 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
     <>
       {/* Header */}
       <div className="panel-header">
-        <h2>{t('🌊 Guess the Sea')}</h2>
+        <h2>{plain(t('🌊 Guess the Sea'))}</h2>
         <p className="panel-subtitle">
           {t('The highlighted body of water is shown on the globe.')}<br />
           {t('Type its name to score.')}
@@ -116,7 +107,7 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
           </p>
         ) : answered ? (
           <div className="cap-reveal cap-skipped">
-            ⏭️ {seaName}
+            ⏭️ {shownName}
           </div>
         ) : (
           <div className={`input-wrap cap-input-wrap ${status === 'wrong' ? 'flash-miss' : status === 'correct' ? 'flash-hit' : ''}`}>
@@ -156,9 +147,9 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
           <ul className="guess-list">
             {[...history].reverse().map((h, i) => (
               <li key={i} className="guess-item">
-                <span className="guess-swatch" style={{ background: h.correct ? '#39ff14' : '#ef4444' }} />
-                <span className="guess-name">{h.name}</span>
-                <span className="guess-dist" style={{ color: h.correct ? '#39ff14' : '#ef4444' }}>
+                <span className="guess-swatch" style={{ background: h.correct ? '#5BD18B' : '#ef4444' }} />
+                <span className="guess-name">{seaName(h.name)}</span>
+                <span className="guess-dist" style={{ color: h.correct ? '#5BD18B' : '#ef4444' }}>
                   {h.correct ? '✓' : '✗'}
                 </span>
               </li>
@@ -168,7 +159,7 @@ export default function SeaPanel({ current, answered, onCorrect, onSkip, onNewGa
       )}
 
       <div className="panel-footer">
-        <button className="new-game-btn" onClick={onNewGame}>{t('🔄 New Game')}</button>
+        <button className="new-game-btn" onClick={onNewGame}>{plain(t('🔄 New Game'))}</button>
       </div>
     </>
   )

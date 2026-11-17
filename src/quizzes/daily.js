@@ -6,7 +6,8 @@
  */
 import { TABLE_QUIZZES } from './tableQuizzes'
 import { DAILY_SCHEDULE } from './dailySchedule'
-import { continentName } from '../i18n'
+import { continentName, t } from '../i18n'
+import { siteLink } from '../utils/share'
 
 export const DAILY_EPOCH = Date.UTC(2026, 9, 26)   // 26 Oct 2026 = Daily #1
 const DAY_MS = 86_400_000
@@ -46,12 +47,11 @@ export function dailyShareText({ day, title, region }, { score, total, durationM
   const bar = '🟩'.repeat(filled) + '⬛'.repeat(10 - filled)
   const s = Math.round(durationMs / 1000)
   const time = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-  const where = typeof window !== 'undefined' ? (window.location?.origin ?? '') : ''
   return [
-    `Orbis Daily #${day} 🌍`,
+    `Orbis · ${t('Daily Quiz')} #${day}`,
     `${title}${region && region !== 'World' ? ` · ${continentName(region)}` : ''}`,
     `${score}/${total} · ⏱ ${time}`,
     bar,
-    where,
+    siteLink('/daily'),
   ].filter(Boolean).join('\n')
 }

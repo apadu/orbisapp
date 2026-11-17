@@ -3,6 +3,12 @@ import { COUNTRY_PAGES, countryGame } from '../data/countryPages'
 import { loadResults } from '../utils/results'
 import { useCountryMap, divName } from './countryMap/useCountryMap'
 import { t, isRo } from '../i18n'
+import GameIcon from './GameIcon'
+import Icon from './Icon'
+import { plain } from '../utils/plain'
+
+// The facts' emoji in the data files → line icons
+const FACT_ICON = { '🏛️': 'building', '👥': 'people', '📐': 'ruler', '🗺️': 'map', '⛰️': 'mountain', '💶': 'coin', '💴': 'coin', '💵': 'coin', '🗣️': 'speech', '📅': 'calendar' }
 
 const pick = (o) => (o == null ? '' : typeof o === 'string' ? o : (isRo ? o.ro : o.en) ?? o.en)
 
@@ -38,7 +44,7 @@ export default function CountryPage({ pageId, onOpen }) {
       <section className="ctry-facts">
         {page.facts.map((f, i) => (
           <div key={i} className="ctry-fact">
-            <span className="ctry-fact-icon" aria-hidden="true">{f.icon}</span>
+            <span className="ctry-fact-icon" aria-hidden="true"><Icon name={FACT_ICON[f.icon] ?? 'globe'} size={22} /></span>
             <span className="ctry-fact-label">{pick(f.label)}</span>
             <span className="ctry-fact-value">{pick(f.value)}</span>
           </div>
@@ -48,10 +54,10 @@ export default function CountryPage({ pageId, onOpen }) {
       <div className="ctry-main">
         <section className="ctry-map-card">
           <div className="ctry-map-head">
-            <h2>{t('Explore the map')}</h2>
+            <h2>{plain(t('Explore the map'))}</h2>
             <span className="ctry-map-info" aria-live="polite">
               {h
-                ? <><b>{divName(h)}</b>{h.seat && h.seat !== h.name ? <> · {page.seatLabel ? pick(page.seatLabel) : t('seat')}: {h.seat}</> : null}</>
+                ? <><b>{divName(h)}</b>{h.seat && h.seat !== h.name ? <> · {page.seatLabel ? pick(page.seatLabel) : t('seat')}: {(isRo && h.seatRo) || h.seat}</> : null}</>
                 : (page.mapHint ? pick(page.mapHint) : t('Hover or tap a county'))}
             </span>
           </div>
@@ -61,6 +67,7 @@ export default function CountryPage({ pageId, onOpen }) {
             <svg className="ctry-map" viewBox={`0 0 ${drawn.W} ${drawn.H}`} role="img" aria-label={pick(page.name)} onMouseLeave={() => setHover(null)}>
               <defs><clipPath id={`ctry-clip-${pageId}`}><rect width={drawn.W} height={drawn.H} /></clipPath></defs>
               <g className="cmq-ctx" clipPath={`url(#ctry-clip-${pageId})`}>{drawn.ctx.map(c => <path key={c.key} d={c.d} />)}</g>
+              {drawn.frames.length > 0 && <g className="cmq-frame">{drawn.frames.map(c => <path key={c.key} d={c.d} />)}</g>}
               {[false, true].map(cityLayer => (
                 <g key={String(cityLayer)}>
                   {drawn.subs.filter(s => s.city === cityLayer).map(s => (
@@ -81,15 +88,14 @@ export default function CountryPage({ pageId, onOpen }) {
         </section>
 
         <section className="ctry-games">
-          <h2>{t('Play')}</h2>
+          <h2>{plain(t('Play'))}</h2>
           {gameItems.map(g => {
             const best = bestFor(g.id)
             return (
               <button key={g.id} className="ctry-game" onClick={() => onOpen(g.id)}>
-                <span className="ctry-game-icon" aria-hidden="true">{g.icon}</span>
+                <span className="ctry-game-icon" aria-hidden="true"><GameIcon id={g.id} size={24} /></span>
                 <span className="ctry-game-body">
                   <span className="ctry-game-title">{g.label}</span>
-                  <span className="ctry-game-desc">{g.desc}</span>
                   {best && <span className="ctry-game-best">{t('Best')}: {best}</span>}
                 </span>
                 <span className="ctry-game-go" aria-hidden="true">▸</span>

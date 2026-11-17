@@ -10,6 +10,8 @@ import { startSession, trackAnswer, finishGame, loadResults } from '../utils/res
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn, continentName, locale } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { capName } from '../i18n/names'
 
 const MODE = 'antipodes'
 const ROUNDS = 8
@@ -29,7 +31,7 @@ const RULES = [
   t('Points depend on how far you are from the real antipode; within {GOOD_KM} km counts as a hit.', { GOOD_KM }),
 ]
 
-const verdict = (km) => km <= 50 ? t('🎯 Bullseye!') : km <= 250 ? t('🔥 Very close') : km <= GOOD_KM ? t('👍 Close') : km <= 1500 ? t('🙂 Not bad') : km <= 4000 ? t('😬 Far off') : t('🧭 Way off')
+const verdict = (km) => km <= 50 ? plain(t('🎯 Bullseye!')) : km <= 250 ? plain(t('🔥 Very close')) : km <= GOOD_KM ? plain(t('👍 Close')) : km <= 1500 ? plain(t('🙂 Not bad')) : km <= 4000 ? plain(t('😬 Far off')) : plain(t('🧭 Way off'))
 
 export default function AntipodePanel({ onGlobe }) {
   const [phase, setPhase] = useState('setup')
@@ -42,7 +44,7 @@ export default function AntipodePanel({ onGlobe }) {
   const country = queue[round]
   const from = country ? CAPITAL_COORDS[country] : null
   const target = from ? antipode(from[0], from[1]) : null
-  const capital = country ? CAPITALS[country]?.[0] : ''
+  const capital = country ? capName(CAPITALS[country]?.[0]) : ''
   const total = log.reduce((s, l) => s + l.pts, 0)
 
   const begin = useCallback((values) => {
@@ -113,7 +115,7 @@ export default function AntipodePanel({ onGlobe }) {
         <GameHeader icon="🔄" title={t('Antipodes')} />
         <div className="gg-over">
           <div className="gg-over-big">{total.toLocaleString(locale)}<small> / {(log.length * 1000).toLocaleString(locale)}</small></div>
-          <div className="gg-sub">{total >= best ? t('🎉 Personal best') : t('best {v}', { v: best.toLocaleString(locale) })} · {continentName(setup.region)}</div>
+          <div className="gg-sub">{total >= best ? plain(t('🎉 Personal best')) : t('best {v}', { v: best.toLocaleString(locale) })} · {continentName(setup.region)}</div>
           <div className="gg-list">
             {log.map((l, i) => (
               <div key={i} className="gg-list-row">
@@ -153,7 +155,7 @@ export default function AntipodePanel({ onGlobe }) {
           <button className="arc-primary" onClick={next}>{round + 1 >= queue.length ? t('See results') : t('Next')} <kbd>{t('Enter')}</kbd></button>
         </div>
       ) : (
-        <div className="gg-hint">{t('🖱️ Rotate the globe and click the opposite point')}</div>
+        <div className="gg-hint">{plain(t('🖱️ Rotate the globe and click the opposite point'))}</div>
       )}
     </div>
   )

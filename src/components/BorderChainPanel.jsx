@@ -3,6 +3,7 @@ import GiveUpButton from './GiveUpButton'
 import { resolveAlias } from '../utils/aliases'
 import GameIntro from './GameIntro'
 import { t, cn } from '../i18n'
+import { plain } from '../utils/plain'
 
 /** BFS: shortest path from `start` to `end` using adjacency map. Returns path array or null. */
 function bfs(start, end, adjacency) {
@@ -178,10 +179,10 @@ export default function BorderChainPanel({
       title={t('Border Chain')}
       desc={t('Cross the map neighbour by neighbour. Can you match the shortest path?')}
       rules={[
-        t('🗺️ Each step must share a land border with the previous'),
-        t('⭐ Try to find the shortest chain'),
-        t('💡 The optimal path is calculated — try to match it'),
-        t('🔄 New challenge after each round'),
+        plain(t('🗺️ Each step must share a land border with the previous')),
+        plain(t('⭐ Try to find the shortest chain')),
+        plain(t('💡 The optimal path is calculated — try to match it')),
+        plain(t('🔄 New challenge after each round')),
       ]}
       onStart={() => setStarted(true)}
       disabled={!startCountry || !endCountry}
@@ -191,7 +192,7 @@ export default function BorderChainPanel({
   return (
     <>
       <div className="panel-header">
-        <h2>{t('🔗 Border Chain')}</h2>
+        <h2>{plain(t('🔗 Border Chain'))}</h2>
         <p className="panel-subtitle">
           {t('Connect the two countries by naming a chain of bordering nations.')}
         </p>
@@ -280,7 +281,7 @@ export default function BorderChainPanel({
       {/* Win result */}
       {won && lastResult && (() => {
         const { pts } = lastResult
-        const color = pts === 1000 ? '#39ff14' : pts >= 700 ? '#a3e635' : pts >= 400 ? '#eab308' : '#f97316'
+        const color = pts === 1000 ? '#5BD18B' : pts >= 700 ? '#a3e635' : pts >= 400 ? '#eab308' : '#f97316'
         const label = pts === 1000 ? t('Optimal!') : pts >= 700 ? t('Great!') : pts >= 400 ? t('Good') : t('Could be shorter')
         return (
           <div className="po-result" style={{ color }}>
@@ -307,7 +308,7 @@ export default function BorderChainPanel({
           <button className="new-game-btn" onClick={onNext}>{t('Next →')}</button>
         ) : (
           <>
-            <button className="new-game-btn" onClick={onNext}>{t('🔄 New Pair')}</button>
+            <button className="new-game-btn" onClick={onNext}>{plain(t('🔄 New Pair'))}</button>
             <GiveUpButton compact onConfirm={handleGiveUp} />
           </>
         )}
@@ -319,7 +320,7 @@ export default function BorderChainPanel({
           <h3 className="guesses-title">{t('History')} <span className="guess-count">{history.length}</span></h3>
           <ul className="guess-list">
             {[...history].reverse().map((h, i) => {
-              const color = h.pts === 1000 ? '#39ff14' : h.pts >= 700 ? '#a3e635' : h.pts >= 400 ? '#eab308' : '#f97316'
+              const color = h.pts === 1000 ? '#5BD18B' : h.pts >= 700 ? '#a3e635' : h.pts >= 400 ? '#eab308' : '#f97316'
               return (
                 <li key={i} className="guess-item">
                   <span className="guess-swatch" style={{ background: color }} />

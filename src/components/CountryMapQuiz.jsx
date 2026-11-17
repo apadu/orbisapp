@@ -2,11 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCountryMap, divName, divLabel } from './countryMap/useCountryMap'
 import { COUNTRY_MAP_QUIZZES } from '../data/countryMaps'
 import { norm } from '../quizzes/tableQuizzes'
-import { startSession, trackAnswer, finishGame, markSession } from '../utils/results'
+import { startSession, trackAnswer, finishGame, markSession, setPoolSize } from '../utils/results'
 import { playCorrect, playWin, playWrong } from '../utils/sounds'
-import SetupCard from './SetupCard'
+import { getSavedSetup, saveSetup } from './SetupCard'
+import { ReadyOptions, StartButton, useTypeToStart } from './QuizReady'
+import { setRules } from '../utils/rulesStore'
 import GiveUpButton from './GiveUpButton'
-import { t } from '../i18n'
+import TryNext from './TryNext'
+import QuizComments from './QuizComments'
+import { t, isRo } from '../i18n'
+import { inSiteLang } from '../utils/answerLang'
+import GameIcon from './GameIcon'
+import { plain } from '../utils/plain'
+import ShareButton, { resultText } from './ShareButton'
 
 /**
  * A flat 2D map of one country split into subdivisions (see data/countryMaps).
@@ -15,10 +23,17 @@ import { t } from '../i18n'
 
 const PREFIX_WAIT_MS = 700
 const TIME_S = 5 * 60
+const CLOCK_OPTION = () => ({
+  id: 'time', label: t('Clock'),
+  choices: [
+    { value: '5', label: plain(t('⏱ 5 minutes')), hint: t('Earns XP and counts for the leaderboard') },
+    { value: 'free', label: t('∞ No limit'), hint: t('Take your time — no XP, no leaderboard') },
+  ],
+})
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`
 
-export default function CountryMapQuiz({ quizId }) {
+export default function CountryMapQuiz({ quizId, onOpen }) {
   const quiz = COUNTRY_MAP_QUIZZES[quizId]
   const mode = quizId
   const { map, kind } = quiz
@@ -28,9 +43,12 @@ export default function CountryMapQuiz({ quizId }) {
     .filter(d => kind === 'divisions' || d.seat)
     .map(d => ({
       id: d.id,
-      answer: kind === 'seats' ? d.seat : divName(d),
+      answer: kind === 'seats' ? (isRo && d.seatRo) || d.seat : divName(d),
       county: divName(d),
-      accepts: kind === 'seats' ? [d.seat, ...(d.seatAlt ?? [])] : [d.name, ...(d.ro ? [d.ro] : []), ...(d.alt ?? [])],
+      // only spellings in the site language (plus native / neutral ones)
+      accepts: kind === 'seats'
+        ? inSiteLang([d.seat, ...(d.seatRo ? [d.seatRo] : []), ...(d.seatAlt ?? [])], { en: d.seat, ro: d.seatRo ?? d.seat })
+        : inSiteLang([d.name, ...(d.ro ? [d.ro] : []), ...(d.alt ?? [])], { en: d.name, ro: d.ro ?? d.name }),
     })), [map, kind])
   const index = useMemo(() => {
     const m = new Map()
@@ -43,8 +61,10 @@ export default function CountryMapQuiz({ quizId }) {
   }, [items])
 
   const { drawn, error: loadError } = useCountryMap(map)
-  const [phase, setPhase] = useState('setup')        // setup · playing · done
-  const [timed, setTimed] = useState(true)
+  const options = useMemo(() => [CLOCK_OPTION()], [])
+  const [phase, setPhase] = useState('setup')        // setup (map shown, not started) · playing · done
+  const [setup, setSetup] = useState(() => getSavedSetup(quizId, options))
+  const [timed, setTimed] = useState(() => setup.time !== 'free')
   const [timeLeft, setTimeLeft] = useState(TIME_S)
   const [found, setFound] = useState(() => new Set())
   const [recent, setRecent] = useState(null)
@@ -59,6 +79,7 @@ export default function CountryMapQuiz({ quizId }) {
   // ── Game flow ────────────────────────────────────────────────────────────
   const start = useCallback((values, typed) => {
     const isTimed = values?.time !== 'free'
+    saveSetup(mode, values)
     setTimed(isTimed)
     setTimeLeft(TIME_S)
     const empty = new Set()
@@ -70,9 +91,36 @@ export default function CountryMapQuiz({ quizId }) {
     setPhase('playing')
     startedAt.current = Date.now()
     startSession(mode)
+    setPoolSize(mode, items.length)   // left half-way: 9/42, not 9/9
     if (!isTimed) markSession(mode, { untimed: true })   // free play: no XP, medals or leaderboard
+    inputRef.current?.focus()   // same input as before the start: keep the next keystrokes
     setTimeout(() => inputRef.current?.focus(), 30)
-  }, [mode])
+  }, [mode, items.length])
+
+  // Before the start: the blank map, with the clock option in the answer bar
+  const ready = phase === 'setup'
+  const changeSetup = (v) => { saveSetup(mode, v); setSetup(v); setTimed(v.time !== 'free') }
+  const beginNow = (typed) => start(setup, typed)
+  useTypeToStart(ready, beginNow)
+  const backToStart = () => {
+    const empty = new Set()
+    foundRef.current = empty
+    setFound(empty); setRecent(null); setInput(''); setEndReason(null)
+    setTimeLeft(TIME_S); setTimed(setup.time !== 'free')
+    setPhase('setup')
+  }
+
+  useEffect(() => {
+    setRules({
+      icon: quiz.icon, title: quiz.title, desc: quiz.prompt,
+      rules: [
+        plain(t('⌨️ {prompt} — any order, no Enter needed', { prompt: quiz.prompt })),
+        plain(t('🗺️ Each answer fills in on the map with its name')),
+        ...(quiz.example ? [t('✅ Diacritics optional: "{plain}" works as well as "{exact}"', quiz.example)] : []),
+        plain(t('🏳️ Give up any time to see what you missed')),
+      ],
+    })
+  }, [quizId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const finish = useCallback((reason) => {
     clearTimeout(pendingRef.current)
@@ -132,46 +180,19 @@ export default function CountryMapQuiz({ quizId }) {
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
-  if (phase === 'setup') {
-    return (
-      <div className="tq-setup">
-        <SetupCard
-          mode={mode}
-          icon={quiz.icon}
-          title={quiz.title}
-          desc={quiz.prompt}
-          options={[{
-            id: 'time', label: t('Clock'),
-            choices: [
-              { value: '5', label: t('⏱ 5 minutes'), hint: t('Earns XP and counts for the leaderboard') },
-              { value: 'free', label: t('∞ No limit'), hint: t('Take your time — no XP, no leaderboard') },
-            ],
-          }]}
-          rules={[
-            t('⌨️ {prompt} — any order, no Enter needed', { prompt: quiz.prompt }),
-            t('🗺️ Each answer fills in on the map with its name'),
-            ...(quiz.example ? [t('✅ Diacritics optional: "{plain}" works as well as "{exact}"', quiz.example)] : []),
-            t('🏳️ Give up any time to see what you missed'),
-          ]}
-          typeToStart
-          onStart={start}
-        />
-      </div>
-    )
-  }
-
   const total = items.length
   const score = found.size
   const playing = phase === 'playing'
+  const over = phase === 'done'
   const pct = total ? Math.round((score / total) * 100) : 0
   const itemById = Object.fromEntries(items.map(it => [it.id, it]))
   const missedCount = total - score
 
   return (
-    <div className={`tq cmq cmq-${kind}${playing ? '' : ' tq-done'}`}>
+    <div className={`tq cmq cmq-${kind}${over ? ' tq-done' : ''}${ready ? ' tq-ready' : ''}`}>
       <header className="tq-head">
         <div className="tq-title">
-          <span className="tq-icon">{quiz.icon}</span>
+          <span className="tq-icon"><GameIcon id={quizId} size={24} /></span>
           <div>
             <h2>{quiz.title}</h2>
             <p>{quiz.prompt}</p>
@@ -185,39 +206,44 @@ export default function CountryMapQuiz({ quizId }) {
         </div>
       </header>
 
+      {ready && <ReadyOptions options={options} values={setup} onChange={changeSetup} />}
+
       <div className="tq-bar">
-        {playing ? (
+        {!over ? (
           <>
             <input
               ref={inputRef}
               className="tq-input"
               value={input}
-              onChange={onChange}
-              onKeyDown={onKeyDown}
-              placeholder={quiz.placeholder ?? (kind === 'seats' ? t('Type a county seat…') : t('Type a county…'))}
+              onChange={ready ? (e => { if (/\p{L}/u.test(e.target.value)) beginNow(e.target.value) }) : onChange}
+              onKeyDown={ready ? (e => { if (e.key === 'Enter') { e.preventDefault(); beginNow() } }) : onKeyDown}
+              placeholder={ready ? t('Start typing to begin…') : quiz.placeholder ?? (kind === 'seats' ? t('Type a county seat…') : t('Type a county…'))}
               autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
               aria-label={quiz.prompt}
             />
-            <GiveUpButton onConfirm={() => finish('giveup')} />
+            {ready ? <StartButton onClick={() => beginNow()} /> : <GiveUpButton onConfirm={() => finish('giveup')} />}
           </>
         ) : (
           <div className="tq-result">
             <span className="tq-result-msg">
               {endReason === 'complete'
-                ? t('🎉 All {total} in {time}!', { total, time: fmt(Math.round(elapsed / 1000)) })
-                : endReason === 'time' ? t('⌛ Time\'s up!') : t('🏳️ You gave up.')}
+                ? plain(t('🎉 All {total} in {time}!', { total, time: fmt(Math.round(elapsed / 1000)) }))
+                : endReason === 'time' ? plain(t('⌛ Time\'s up!')) : plain(t('🏳️ You gave up.'))}
               {' '}<strong>{score}/{total}</strong> ({pct}%)
               {endReason !== 'complete' && missedCount > 0 && <span className="cmq-missed-note"> · {t('{n} missed, shown in red', { n: missedCount })}</span>}
             </span>
             <div className="tq-result-btns">
               <button className="tq-btn tq-btn-primary" onClick={() => start({ time: timed ? '5' : 'free' })}>{t('▶ Play again')}</button>
-              <button className="tq-btn" onClick={() => setPhase('setup')}>{t('⚙ Settings')}</button>
+              <button className="tq-btn" onClick={backToStart}>{plain(t('⚙ Settings'))}</button>
+              <ShareButton text={() => resultText({ title: quiz.title, score, total, extra: endReason === 'complete' ? fmt(Math.round(elapsed / 1000)) : null })} />
             </div>
           </div>
         )}
       </div>
 
       <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
+
+      {phase === 'done' && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
 
       <div className="cmq-map-wrap">
         {loadError && <p className="cmq-msg">{t('Could not load the map. Check your connection and try again.')}</p>}
@@ -226,12 +252,13 @@ export default function CountryMapQuiz({ quizId }) {
           <svg className="cmq-map" viewBox={`0 0 ${drawn.W} ${drawn.H}`} role="img" aria-label={quiz.title}>
             <defs><clipPath id={`cmq-clip-${mode}`}><rect width={drawn.W} height={drawn.H} /></clipPath></defs>
             <g className="cmq-ctx" clipPath={`url(#cmq-clip-${mode})`}>{drawn.ctx.map(c => <path key={c.key} d={c.d} />)}</g>
+              {drawn.frames.length > 0 && <g className="cmq-frame">{drawn.frames.map(c => <path key={c.key} d={c.d} />)}</g>}
             {[false, true].map(cityLayer => (
               <g key={String(cityLayer)}>
                 {drawn.subs.filter(s => s.city === cityLayer).map(s => {
                   const ok = found.has(s.id)
                   const inGame = !!itemById[s.id]
-                  const cls = !inGame ? ' off' : ok ? (recent === s.id ? ' hit' : ' ok') : !playing ? ' missed' : ''
+                  const cls = !inGame ? ' off' : ok ? (recent === s.id ? ' hit' : ' ok') : over ? ' missed' : ''
                   return <path key={s.id} d={s.d} className={`cmq-area${cls}`} />
                 })}
               </g>
@@ -241,7 +268,7 @@ export default function CountryMapQuiz({ quizId }) {
                 const it = itemById[s.id]
                 if (!it) return null
                 const ok = found.has(s.id)
-                if (!ok && playing) return null
+                if (!ok && !over) return null
                 const [x, y] = drawn.labelPos[s.id] ?? [s.cx, s.cy]
                 return (
                   <text key={s.id} x={x} y={y} className={`cmq-label${ok ? '' : ' missed'}${s.city || s.small ? ' tiny' : ''}`}>
@@ -253,6 +280,8 @@ export default function CountryMapQuiz({ quizId }) {
           </svg>
         )}
       </div>
+
+      <QuizComments quiz={quizId} unlocked={over} />
     </div>
   )
 }

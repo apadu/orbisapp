@@ -9,6 +9,8 @@ import { startSession, trackAnswer, finishGame, loadResults } from '../utils/res
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn, locale } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { capName } from '../i18n/names'
 
 const MODE = 'distance'
 const ROUNDS = 8
@@ -18,9 +20,9 @@ const MIN_KM = 50, MAX_KM = 20000          // slider range (log scale)
 const OPTIONS = [{
   id: 'range', label: t('Distances'),
   choices: [
-    { value: 'mixed', label: t('🎲 Mixed'),       hint: t('Neighbours and the other side of the world') },
-    { value: 'near',  label: t('📍 Same continent'), hint: t('Both capitals on the same continent') },
-    { value: 'far',   label: t('✈️ Long haul'),    hint: t('Capitals on different continents') },
+    { value: 'mixed', label: plain(t('🎲 Mixed')),       hint: t('Neighbours and the other side of the world') },
+    { value: 'near',  label: plain(t('📍 Same continent')), hint: t('Both capitals on the same continent') },
+    { value: 'far',   label: plain(t('✈️ Long haul')),    hint: t('Capitals on different continents') },
   ],
 }]
 const RULES = [
@@ -112,8 +114,8 @@ export default function DistancePanel({ onGlobe }) {
     if (phase !== 'playing' || !pair) { onGlobe({}); return }
     const [aLat, aLon] = CAPITAL_COORDS[pair.a], [bLat, bLon] = CAPITAL_COORDS[pair.b]
     const pins = [
-      { lat: aLat, lon: aLon, color: '#facc15', label: CAPITALS[pair.a][0] },
-      { lat: bLat, lon: bLon, color: '#38bdf8', label: CAPITALS[pair.b][0] },
+      { lat: aLat, lon: aLon, color: '#facc15', label: capName(CAPITALS[pair.a][0]) },
+      { lat: bLat, lon: bLon, color: '#38bdf8', label: capName(CAPITALS[pair.b][0]) },
     ]
     const midLon = aLon + ((((bLon - aLon) + 540) % 360) - 180) / 2
     onGlobe({
@@ -136,11 +138,11 @@ export default function DistancePanel({ onGlobe }) {
         <GameHeader icon="📏" title={t('How Far?')} />
         <div className="gg-over">
           <div className="gg-over-big">{total.toLocaleString(locale)}<small> / {(log.length * 1000).toLocaleString(locale)}</small></div>
-          <div className="gg-sub">{total >= best ? t('🎉 Personal best') : t('best {v}', { v: best.toLocaleString(locale) })}</div>
+          <div className="gg-sub">{total >= best ? plain(t('🎉 Personal best')) : t('best {v}', { v: best.toLocaleString(locale) })}</div>
           <div className="gg-list">
             {log.map((l, i) => (
               <div key={i} className="gg-list-row">
-                <span>{CAPITALS[l.a][0]} ↔ {CAPITALS[l.b][0]}</span>
+                <span>{capName(CAPITALS[l.a][0])} ↔ {capName(CAPITALS[l.b][0])}</span>
                 <span className="gg-dim">{fmtKm(l.guess)} / {fmtKm(l.km)}</span>
                 <b>{l.pts}</b>
               </div>
@@ -168,9 +170,9 @@ export default function DistancePanel({ onGlobe }) {
       <div className="gg-prompt">
         <span className="gg-prompt-label">{t('How far is it from…')}</span>
         <span className="gg-prompt-big dist-cities">
-          <span style={{ color: '#facc15' }}>{CAPITALS[pair.a][0]}</span>
+          <span style={{ color: '#facc15' }}>{capName(CAPITALS[pair.a][0])}</span>
           <span className="gg-dim"> → </span>
-          <span style={{ color: '#38bdf8' }}>{CAPITALS[pair.b][0]}</span>
+          <span style={{ color: '#38bdf8' }}>{capName(CAPITALS[pair.b][0])}</span>
         </span>
         <span className="gg-prompt-sub">{COUNTRY_INFO[pair.a]?.flag} {cn(pair.a)} · {COUNTRY_INFO[pair.b]?.flag} {cn(pair.b)}</span>
       </div>

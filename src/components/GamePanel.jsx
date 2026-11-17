@@ -6,6 +6,10 @@ import { COUNTRY_INFO } from '../utils/countryInfo'
 import { resolveAlias, findClosestMatch } from '../utils/aliases'
 import { t, cn } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import Icon from './Icon'
+import { shareText, siteLink } from '../utils/share'
+import { capName } from '../i18n/names'
 
 export default function GamePanel({ countries, guesses, mystery, gameWon, onGuess, onNewGame, stats, dateLabel, practiceMode, onTogglePractice, gaveUp, onGiveUp }) {
   const [input,      setInput]      = useState('')
@@ -22,11 +26,13 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
       return '🟦'
     }).join('')
     const n = guesses.length
-    const text = `🌐 Orbis – Mystery Country\n${emojiRow}\nSolved in ${n} ${n === 1 ? 'guess' : 'guesses'}!\norbis.app`
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    const text = [
+      `Orbis · ${t('Mystery Country')}${practiceMode ? ` (${plain(t('🎲 Practice'))})` : dateLabel ? ` · ${dateLabel}` : ''}`,
+      emojiRow,
+      gaveUp ? t('Gave up after {n} guesses', { n }) : n === 1 ? t('Solved in 1 guess!') : t('Solved in {n} guesses!', { n }),
+      siteLink('/play/mystery'),
+    ].join('\n')
+    shareText(text).then(r => { if (r === 'copied') { setCopied(true); setTimeout(() => setCopied(false), 2000) } })
   }
 
   // Sorted country names for autocomplete
@@ -86,7 +92,7 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
   })
 
   const mysteryName    = mystery?.properties?.NAME ?? ''
-  const mysteryCapital = CAPITALS[mysteryName]?.[0] ?? '—'
+  const mysteryCapital = capName(CAPITALS[mysteryName]?.[0]) ?? '—'
   const mysteryInfo    = COUNTRY_INFO[mysteryName]
 
   // Phones: key numbers stay visible over the globe
@@ -96,7 +102,7 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
       {/* Header + mode toggle */}
       <div className="panel-header">
         <div className="mystery-header-row">
-          <h2>{practiceMode ? t('🎲 Practice') : t('🌍 Daily Challenge')}</h2>
+          <h2>{practiceMode ? plain(t('🎲 Practice')) : plain(t('🌍 Daily Challenge'))}</h2>
           <div className="mode-pill-toggle">
             <button
               className={`mpt-btn ${!practiceMode ? 'active' : ''}`}
@@ -143,7 +149,7 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
               <p>{cn(mysteryName)} {t('in')} {guesses.length} {guesses.length === 1 ? t('guess') : t('guesses')}</p>
             </div>
             <button className="share-btn" onClick={handleShare}>
-              {copied ? t('✅ Copied!') : t('📤 Share')}
+              {copied ? plain(t('✅ Copied!')) : plain(t('📤 Share'))}
             </button>
           </div>
           <div className="country-info-card">
@@ -152,7 +158,7 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
               <div className="country-info-name">{cn(mysteryName)}</div>
               <div className="country-info-meta">
                 <span>🏛️ {mysteryCapital}</span>
-                {mysteryInfo?.continent && <span>🌐 {mysteryInfo.continent}</span>}
+                {mysteryInfo?.continent && <span><Icon name="globe" size={14} /> {mysteryInfo.continent}</span>}
               </div>
             </div>
           </div>
@@ -209,7 +215,7 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
                 <span className="guess-swatch" style={{ background: g.color }} />
                 <span className="guess-name">{cn(g.name)}</span>
                 {g.isAdjacent ? (
-                  <span className="guess-adjacent" title={t('Shares a border with the mystery country')}>{t('🔲 adjacent')}</span>
+                  <span className="guess-adjacent" title={t('Shares a border with the mystery country')}>{plain(t('🔲 adjacent'))}</span>
                 ) : (
                   <>
                     <span className="guess-dist">{distanceLabel(g.km)}</span>
@@ -235,12 +241,12 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
         {gaveUp ? (
           <>
             <p className="give-up-reveal">{t('The answer was')} <strong>{cn(mysteryName)}</strong>.</p>
-            <button className="new-game-btn" onClick={onNewGame}>{t('🔄 New Game')}</button>
+            <button className="new-game-btn" onClick={onNewGame}>{plain(t('🔄 New Game'))}</button>
           </>
         ) : (
           <>
             <button className="new-game-btn" onClick={onNewGame}>
-              {gameWon ? t('🔄 Play Again') : t('🔄 New Game')}
+              {gameWon ? plain(t('🔄 Play Again')) : plain(t('🔄 New Game'))}
             </button>
             {!gameWon && (
               <GiveUpButton compact onConfirm={onGiveUp} />

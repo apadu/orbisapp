@@ -1,15 +1,51 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TABLE_QUIZZES, REGIONS, norm, timeLimitFor } from '../quizzes/tableQuizzes'
-import { startSession, trackAnswer, finishGame, markSession } from '../utils/results'
+import { startSession, trackAnswer, finishGame, markSession, setPoolSize } from '../utils/results'
 import { playCorrect, playWin, playWrong } from '../utils/sounds'
-import SetupCard from './SetupCard'
+import { getSavedSetup, saveSetup } from './SetupCard'
+import { ReadyOptions, StartButton, useTypeToStart } from './QuizReady'
+import { setRules } from '../utils/rulesStore'
 import GiveUpButton from './GiveUpButton'
+import TryNext from './TryNext'
+import QuizComments from './QuizComments'
 import FlagImg from './FlagImg'
 import { t, continentName } from '../i18n'
 import { QUIZ_ITEMS } from './QuizHub'
 import { countryGame } from '../data/countryPages'
+import GameIcon from './GameIcon'
+import { plain } from '../utils/plain'
+import ShareButton, { resultText } from './ShareButton'
 
 const MIN_ROWS = 5
+const COL_GAP = 18
+
+/**
+ * Splits the table into equal columns, filled top to bottom. A CSS grid (not CSS columns)
+ * so every row lines up across columns and all columns end on the same line.
+ */
+function useColumns(minWidth) {
+  const [el, setEl] = useState(null)      // callback ref: the table may mount after the first render
+  const [cols, setCols] = useState(1)
+  useEffect(() => {
+    if (!el) return
+    const measure = () => setCols(Math.max(1, Math.floor((el.clientWidth + COL_GAP) / (minWidth + COL_GAP))))
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [el, minWidth])
+  return [setEl, cols]
+}
+
+/** Grid cell of row i when n rows are split as evenly as possible into `cols` columns (top to bottom). */
+function cellOf(i, n, cols) {
+  const base = Math.floor(n / cols), extra = n % cols   // the first `extra` columns get one more row
+  const big = extra * (base + 1)
+  const col = i < big ? Math.floor(i / (base + 1)) : extra + Math.floor((i - big) / Math.max(1, base))
+  const row = i < big ? i % (base + 1) : (i - big) % Math.max(1, base)
+  return { gridColumn: col + 1, gridRow: row + 1 }
+}
+const sizeOf = (v) => (v.size === 'all' ? Infinity : (Number(v.size) || 20))
 const PREFIX_WAIT_MS = 700   // "Niger" waits a moment in case you're typing "Nigeria"
 
 function fmt(secs) {
@@ -27,14 +63,15 @@ function seededRandom(seed) {
   }
 }
 
-function Hint({ hint }) {
+// `reveal`: the game is over — show extras kept hidden while playing (an endonym's romanization)
+function Hint({ hint, reveal = false }) {
   switch (hint.type) {
     case 'flag':   return <FlagImg emoji={hint.value} className="tq-flag" />
     case 'emoji':  return <span className="tq-emoji">{hint.value}</span>
     case 'script': return (
       <span className="tq-script">
         <span>{hint.value}</span>
-        {hint.sub && <small>{hint.sub}</small>}
+        {(reveal || hint.subAlways) && hint.sub && <small>{hint.sub}</small>}
       </span>
     )
     case 'colors': return (
@@ -55,7 +92,7 @@ function Hint({ hint }) {
  * daily: optional { day, region, size, seed, onFinish(result), renderResult(result) }
  *   → plays straight away with a fixed, seeded selection, tracked as mode 'daily-quiz'.
  */
-export default function TableQuiz({ quizId, countryNames, onDaily, daily = null }) {
+export default function TableQuiz({ quizId, countryNames, onDaily, daily = null, onOpen }) {
   const quiz = TABLE_QUIZZES[quizId]
   const mode = daily ? 'daily-quiz' : quizId   // results / XP bucket
 
@@ -88,7 +125,8 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     return opts
   }, [regionChoices.join(), regionCounts, quiz]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [phase,    setPhase]    = useState('setup')      // setup | playing | done
+  const [phase,    setPhase]    = useState('setup')      // setup (board shown, not started) | playing | done
+  const [setup,    setSetup]    = useState(() => getSavedSetup(quizId, setupOptions))
   const [region,   setRegion]   = useState('World')
   const [rows,     setRows]     = useState([])
   const [filled,   setFilled]   = useState(() => new Set())
@@ -117,10 +155,15 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     return m
   }, [rows])
 
+  const longRows = rows.some(r => r.hint.long)
+  const textHint = !!quiz.columns?.extra && quiz.columns?.hint !== '#'
+  const colMin = longRows ? 460 : textHint ? 420 : quiz.columns?.extra ? 340 : 290
+  const [colsRef, cols] = useColumns(colMin)
   const [size, setSize] = useState(20)
   const [untimed, setUntimed] = useState(false)            // clock off for this game — no XP
   const [confirmUntimed, setConfirmUntimed] = useState(false)
-  const start = useCallback((reg, typed, n = size) => {
+  // Lay out a fresh board (not started yet)
+  const prepare = useCallback((reg, n = size) => {
     let built = quiz.build({ countries: countryNames, region: reg })
     if (quiz.sample && built.length > n) {
       // fresh random selection every play
@@ -135,17 +178,30 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     setFilled(new Set())
     setRecent(new Set())
     setLabels({})
-    setInput(typed ?? '')
+    setInput('')
     setTimeLeft(quiz.timeLimit ?? timeLimitFor(built.length))
     setEndReason(null)
     setUntimed(false)
     setConfirmUntimed(false)
+    return built
+  }, [quiz, daily, countryNames, size])
+
+  // Start the clock on the board that's laid out
+  const begin = useCallback((typed, built = rows, reg = region) => {
+    if (!built.length) return
+    setInput(typed ?? '')
     setPhase('playing')
     startedAt.current = Date.now()
     startSession(mode)
+    setPoolSize(mode, built.length)   // left half-way: 9/196, not 9/9
     if (daily) markSession(mode, { day: daily.day, quizId, region: reg })
+    inputRef.current?.focus()   // same input as before the start: keep the next keystrokes
     setTimeout(() => inputRef.current?.focus(), 30)
-  }, [quiz, quizId, mode, daily, countryNames, size])
+  }, [rows, region, mode, daily, quizId])
+
+  const start = useCallback((reg, typed, n = size) => {
+    begin(typed, prepare(reg, n), reg)
+  }, [prepare, begin, size])
 
   const finish = useCallback((reason) => {
     clearTimeout(pendingRef.current)
@@ -262,47 +318,49 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
     if (daily && phase === 'setup' && countryNames.length) start(daily.region, undefined, daily.size ?? 20)
   }, [daily, phase, countryNames.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Setup ────────────────────────────────────────────────────────────────
-  if (phase === 'setup') {
-    if (daily) return <div className="game-intro-wait">{t('Loading today\'s quiz…')}</div>
-    return (
-      <div className="tq-setup">
-        <SetupCard
-          mode={quizId}
-          icon={quiz.icon}
-          title={quiz.title}
-          desc={(QUIZ_ITEMS.find(q => q.id === quizId) ?? countryGame(quizId))?.desc ?? quiz.prompt}
-          rules={[
-            t('⌨️ {prompt} — any order, no Enter needed', { prompt: quiz.prompt }),
-            t('⏱ The clock depends on how many answers there are'),
-            t('🏳️ Give up any time to see what you missed'),
-            t('✨ XP only for answers you haven\'t got before'),
-          ]}
-          options={setupOptions}
-          typeToStart
-          onStart={(v, typed) => {
-            const n = v.size === 'all' ? Infinity : (Number(v.size) || 20)
-            setSize(n)
-            start(v.region ?? 'World', typed, n)
-          }}
-        />
-      </div>
-    )
-  }
+  // Board first: lay out the (empty) quiz with the saved options; Start / typing begins it
+  useEffect(() => {
+    if (daily || phase !== 'setup' || !countryNames.length) return
+    const n = sizeOf(setup)
+    setSize(n)
+    prepare(setup.region ?? 'World', n)
+  }, [phase, setup, countryNames.length]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (daily) return
+    setRules({
+      icon: quiz.icon, title: quiz.title,
+      desc: (QUIZ_ITEMS.find(q => q.id === quizId) ?? countryGame(quizId))?.desc ?? quiz.prompt,
+      rules: [
+        plain(t('⌨️ {prompt} — any order, no Enter needed', { prompt: quiz.prompt })),
+        plain(t('⏱ The clock depends on how many answers there are')),
+        plain(t('🏳️ Give up any time to see what you missed')),
+        plain(t('✨ XP only for answers you haven\'t got before')),
+      ],
+    })
+  }, [quizId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const ready = phase === 'setup' && !daily
+  const changeSetup = (v) => { saveSetup(quizId, v); setSetup(v) }
+  const beginNow = (typed) => { saveSetup(quizId, setup); begin(typed) }
+  useTypeToStart(ready && rows.length > 0, beginNow)
+
+  if (phase === 'setup' && daily) return <div className="game-intro-wait">{t('Loading today\'s quiz…')}</div>
 
   // ── Play / results ─────────────────────────────────────────────────────────
   const total = rows.length
   const score = filled.size
   const playing = phase === 'playing'
+  const over = phase === 'done'
   const danger = playing && timeLeft <= 30
   const pct = total ? Math.round((score / total) * 100) : 0
   const activeRow = quiz.focus ? rows.find(r => r.id === activeId) : null
 
   return (
-    <div className={`tq${playing ? '' : ' tq-done'}`}>
+    <div className={`tq${over ? ' tq-done' : ''}${ready ? ' tq-ready' : ''}`}>
       <header className="tq-head">
         <div className="tq-title">
-          <span className="tq-icon">{quiz.icon}</span>
+          <span className="tq-icon"><GameIcon id={daily ? 'daily-quiz' : quizId} size={24} /></span>
           <div>
             <h2>{quiz.title}{region !== 'World' && <span className="tq-region"> · {continentName(region)}</span>}</h2>
             <p>{quiz.prompt}</p>
@@ -329,9 +387,9 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
             <div className="tq-modal-icon">∞</div>
             <h3>{t('Play untimed?')}</h3>
             <ul>
-              <li>{t('⏸ The clock stops for the rest of this game.')}</li>
-              <li>{t('🔒 You can\'t turn it back on until you start a new game.')}</li>
-              <li>{t('🚫 This game earns')} <strong>{t('no XP')}</strong> {t('— including answers you\'ve already given — and won\'t count for medals or leaderboards.')}</li>
+              <li>{plain(t('⏸ The clock stops for the rest of this game.'))}</li>
+              <li>{plain(t('🔒 You can\'t turn it back on until you start a new game.'))}</li>
+              <li>{plain(t('🚫 This game earns'))} <strong>{t('no XP')}</strong> {t('— including answers you\'ve already given — and won\'t count for leaderboards.')}</li>
             </ul>
             <div className="tq-modal-btns">
               <button className="tq-btn" onClick={() => setConfirmUntimed(false)}>{t('Keep the timer')}</button>
@@ -341,10 +399,12 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
         </div>
       )}
 
+      {ready && <ReadyOptions options={setupOptions} values={setup} onChange={changeSetup} />}
+
       <div className="tq-bar">
-        {playing ? (
+        {!over ? (
           <>
-            {quiz.focus && activeRow && (
+            {playing && quiz.focus && activeRow && (
               <span className="tq-active-preview" title={t('Name this flag')}>
                 <Hint hint={activeRow.hint} />
               </span>
@@ -353,24 +413,25 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
               ref={inputRef}
               className="tq-input"
               value={input}
-              onChange={onChange}
-              onKeyDown={onKeyDown}
-              placeholder={quiz.focus ? t('Which country is this?  (Tab = skip)') : t('Enter answer…')}
+              onChange={ready ? (e => { if (/\p{L}/u.test(e.target.value)) beginNow(e.target.value) }) : onChange}
+              onKeyDown={ready ? (e => { if (e.key === 'Enter') { e.preventDefault(); beginNow() } }) : onKeyDown}
+              placeholder={ready ? t('Start typing to begin…') : quiz.focus ? t('Which country is this?  (Tab = skip)') : t('Enter answer…')}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
             />
-            <GiveUpButton onConfirm={() => finish('giveup')} />
+            {ready ? <StartButton onClick={() => beginNow()} /> : <GiveUpButton onConfirm={() => finish('giveup')} />}
           </>
         ) : (
           daily && result ? daily.renderResult(result) : <div className="tq-result">
             <span className="tq-result-msg">
-              {endReason === 'complete' ? t('🎉 Perfect — you got them all!') : endReason === 'time' ? t('⌛ Time\'s up!') : t('🏳️ You gave up.')}
+              {endReason === 'complete' ? plain(t('🎉 Perfect — you got them all!')) : endReason === 'time' ? plain(t('⌛ Time\'s up!')) : plain(t('🏳️ You gave up.'))}
               {' '}<strong>{score}/{total}</strong> ({pct}%)
             </span>
             <div className="tq-result-btns">
               <button className="tq-btn tq-btn-primary" onClick={() => start(region)}>{t('▶ Play again')}</button>
-              <button className="tq-btn" onClick={() => setPhase('setup')}>{t('⚙ Settings')}</button>
+              <button className="tq-btn" onClick={() => setPhase('setup')}>{plain(t('⚙ Settings'))}</button>
+              <ShareButton text={() => resultText({ title: quiz.title + (region !== 'World' ? ` · ${continentName(region)}` : ''), score, total })} />
             </div>
           </div>
         )}
@@ -378,11 +439,13 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
 
       <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
 
+      {phase === 'done' && !daily && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
+
       {quiz.layout === 'grid' ? (
         <div className="tq-grid">
           {rows.map(r => {
             const ok = filled.has(r.id)
-            const cls = ok ? (recent.has(r.id) ? ' hit' : ' ok') : !playing ? ' missed' : ''
+            const cls = ok ? (recent.has(r.id) ? ' hit' : ' ok') : over ? ' missed' : ''
             return (
               <div
                 key={r.id}
@@ -390,30 +453,38 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null 
                 className={`tq-cell${cls}${quiz.focus && playing && r.id === activeId ? ' active' : ''}${quiz.focus && playing && !ok ? ' clickable' : ''}`}
                 onClick={quiz.focus && playing && !ok ? () => { setActiveId(r.id); setInput(''); inputRef.current?.focus() } : undefined}
               >
-                <Hint hint={r.hint} />
-                <span className="tq-cell-answer" title={ok || !playing ? (labels[r.id] ?? r.display) : undefined}>{ok ? (labels[r.id] ?? r.display) : !playing ? r.display : ''}</span>
+                <Hint hint={r.hint} reveal={over} />
+                <span className="tq-cell-answer" title={ok || over ? (labels[r.id] ?? r.display) : undefined}>{ok ? (labels[r.id] ?? r.display) : over ? r.display : ''}</span>
               </div>
             )
           })}
         </div>
       ) : (
-        <div className={`tq-table${quiz.columns.extra ? ' has-extra' : ''}${rows.some(r => r.hint.long) ? ' long' : ''}`}>
+        <div className={`tq-table${quiz.columns.extra ? ' has-extra' : ''}${quiz.columns.extra && quiz.columns.hint !== '#' ? ' text-hint' : ''}${rows.some(r => r.hint.long) ? ' long' : ''}`}>
           <div className="tq-table-label">
             {quiz.columns.hint}{quiz.columns.extra ? ` · ${quiz.columns.extra}` : ''} <span>→</span> {quiz.columns.answer}
           </div>
-          {rows.map(r => {
+          <div
+            ref={colsRef}
+            className="tq-cols"
+            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          >
+          {rows.map((r, i) => {
             const ok = filled.has(r.id)
-            const cls = ok ? (recent.has(r.id) ? ' hit' : ' ok') : !playing ? ' missed' : ''
+            const cls = ok ? (recent.has(r.id) ? ' hit' : ' ok') : over ? ' missed' : ''
             return (
-              <div key={r.id} className={`tq-row${cls}`}>
-                <span className="tq-hint"><Hint hint={r.hint} /></span>
+              <div key={r.id} className={`tq-row${cls}`} style={cellOf(i, rows.length, cols)}>
+                <span className="tq-hint"><Hint hint={r.hint} reveal={over} /></span>
                 {quiz.columns.extra && <span className="tq-extra">{r.extra}</span>}
-                <span className="tq-answer">{ok ? (labels[r.id] ?? r.display) : !playing ? r.display : ''}</span>
+                <span className="tq-answer">{ok ? (labels[r.id] ?? r.display) : over ? r.display : ''}</span>
               </div>
             )
           })}
+          </div>
         </div>
       )}
+
+      {!daily && <QuizComments quiz={quizId} unlocked={phase === 'done'} />}
     </div>
   )
 }

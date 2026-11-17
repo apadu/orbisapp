@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getRules, subscribeRules } from '../utils/rulesStore'
 import { t } from '../i18n'
+import { plain } from '../utils/plain'
 
 /** ⓘ button that pops up the current game's rules. */
 export default function RulesHint({ className = '' }) {
@@ -25,9 +26,9 @@ export default function RulesHint({ className = '' }) {
       <button className="rules-hint-btn" onClick={() => setOpen(o => !o)} aria-expanded={open} title={t('How to play')}>ⓘ</button>
       {open && (
         <div className="rules-hint-pop" role="dialog">
-          <div className="rules-hint-head">{rules.icon} {rules.title}</div>
+          <div className="rules-hint-head">{plain(rules.title)}</div>
           {rules.desc && <p className="rules-hint-desc">{rules.desc}</p>}
-          <ul>{rules.rules.map((r, i) => <li key={i}>{r}</li>)}</ul>
+          <ul>{rules.rules.map((r, i) => <li key={i}>{plain(r)}</li>)}</ul>
         </div>
       )}
     </div>

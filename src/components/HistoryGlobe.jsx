@@ -49,7 +49,7 @@ function redrawHistory(canvas, features, targetNames, foundNames, missedNames) {
     if (!foundNames.has(f.properties.NAME)) continue
     ctx.beginPath()
     path(f)
-    ctx.fillStyle = '#39ff14'
+    ctx.fillStyle = '#5BD18B'
     ctx.fill()
     ctx.strokeStyle = '#071a42'
     ctx.lineWidth = 0.8

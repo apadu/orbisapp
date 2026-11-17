@@ -9,6 +9,7 @@ import { playCorrect, playWrong, playStreak } from '../utils/sounds'
 import { geoCentroid } from 'd3-geo'
 import { t, cn } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
 
 const MODE = 'silhouette'
 const LIVES = 3
@@ -17,8 +18,8 @@ const START_S = 12, MIN_S = 4, STEP_S = 0.5
 const OPTIONS = [{
   id: 'pool', label: t('Countries'),
   choices: [
-    { value: 'big', label: t('🌍 Well known'), hint: t('Countries larger than 100,000 km²') },
-    { value: 'all', label: t('🔬 All'), hint: t('Every country — tiny islands included') },
+    { value: 'big', label: plain(t('🌍 Well known')), hint: t('Countries larger than 100,000 km²') },
+    { value: 'all', label: plain(t('🔬 All')), hint: t('Every country — tiny islands included') },
   ],
 }]
 const RULES = [
@@ -62,7 +63,7 @@ export default function SilhouettePanel({ gameCountries, onGlobe }) {
     onGlobe({
       soloMode: true,
       highlighted: reveal ? null : show,
-      guesses: reveal && current ? [{ name: current.properties.NAME, color: reveal.ok ? '#39ff14' : '#ef4444' }] : [],
+      guesses: reveal && current ? [{ name: current.properties.NAME, color: reveal.ok ? '#5BD18B' : '#ef4444' }] : [],
       missed: phase === 'over' ? missed : [],
       flyTo: current && phase === 'playing' ? { lon, lat, zoom: 2.6, hold: 60000, _k: idx } : null,
       spin: false,
@@ -176,7 +177,7 @@ export default function SilhouettePanel({ gameCountries, onGlobe }) {
             disabled={!!reveal}
           />
           <div className="gg-reveal">
-            {reveal && (reveal.ok ? <span className="ok">✓ {cn(reveal.name)}</span> : <span className="bad">{t('✗ It was')} {cn(reveal.name)}</span>)}
+            {reveal && (reveal.ok ? <span className="ok">✓ {cn(reveal.name)}</span> : <span className="bad">{plain(t('✗ It was'))} {cn(reveal.name)}</span>)}
           </div>
           <button className="gg-link" onClick={finishEarly}>{t('End run')}</button>
         </>
@@ -185,7 +186,7 @@ export default function SilhouettePanel({ gameCountries, onGlobe }) {
       {phase === 'over' && (
         <div className="gg-over">
           <div className="gg-over-big">{score}<small> {t('named')}</small></div>
-          <div className="gg-sub">{score > record ? t('🎉 New personal best!') : t('Your best: {record}', { record: record })}</div>
+          <div className="gg-sub">{score > record ? plain(t('🎉 New personal best!')) : t('Your best: {record}', { record: record })}</div>
           {missed.length > 0 && <div className="gg-missed">{t('Missed:')} {missed.map(f => cn(f.properties.NAME)).join(', ')}</div>}
           <div className="gg-btns">
             <button className="arc-primary" onClick={() => begin(setup)}>{t('▶ Play again')}</button>

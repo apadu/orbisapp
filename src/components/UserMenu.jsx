@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
 import { levelForXp, computeXp } from '../utils/profileData'
 import { t, lang, setLang, LANGS } from '../i18n'
+import { plain } from '../utils/plain'
 
 function useLevel() {
   const [results, setResults] = useState(loadResults)
@@ -59,8 +60,8 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
             <strong>{displayName}</strong>
             <span>{auth.user ? auth.user.email : t('Playing as guest')}</span>
           </div>
-          <button role="menuitem" onClick={item(onProfile)}>{t('👤 Profile & stats')}</button>
-          <button role="menuitem" onClick={item(onToggleSound)}>{soundEnabled ? t('🔊 Sound on') : t('🔇 Sound off')}</button>
+          <button role="menuitem" onClick={item(onProfile)}>{plain(t('👤 Profile & stats'))}</button>
+          <button role="menuitem" onClick={item(onToggleSound)}>{plain(soundEnabled ? plain(t('🔊 Sound on')) : plain(t('🔇 Sound off')))}</button>
           <div className="um-lang" role="group" aria-label={t('Language')}>
             {LANGS.map(l => (
               <button key={l.id} className={lang === l.id ? 'active' : ''} onClick={() => { if (lang !== l.id) setLang(l.id) }}>
@@ -68,12 +69,12 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
               </button>
             ))}
           </div>
-          {onOpenInfo && <button role="menuitem" onClick={item(() => onOpenInfo('privacy'))}>{t('🔒 Privacy & terms')}</button>}
-          <a role="menuitem" href="https://forms.gle/hDpMyhns9PD7ghdBA" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>{t('🐛 Report a bug')}</a>
+          {onOpenInfo && <button role="menuitem" onClick={item(() => onOpenInfo('privacy'))}>{plain(t('🔒 Privacy & terms'))}</button>}
+          <a role="menuitem" href="https://forms.gle/hDpMyhns9PD7ghdBA" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>{plain(t('🐛 Report a bug'))}</a>
           <div className="um-sep" />
           {auth.user
-            ? <button role="menuitem" onClick={item(auth.signOut)}>{t('↩ Sign out')}</button>
-            : auth.backendEnabled && <button role="menuitem" onClick={item(auth.openAuth)}>{t('🔑 Sign in')}</button>}
+            ? <button role="menuitem" onClick={item(auth.signOut)}>{plain(t('↩ Sign out'))}</button>
+            : auth.backendEnabled && <button role="menuitem" onClick={item(auth.openAuth)}>{plain(t('🔑 Sign in'))}</button>}
         </div>
       )}
     </div>

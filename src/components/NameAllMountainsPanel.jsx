@@ -6,6 +6,8 @@ import GameSummary from './GameSummary'
 import { t } from '../i18n'
 import { setPoolSize } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { rangeName, rangeSpellings, plainKey } from '../i18n/names'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -16,8 +18,8 @@ function formatTime(secs) {
 }
 
 function normMountain(str) {
-  return str.trim().toLowerCase()
-    .replace(/\b(mountains?|range|ranges|hills?|peak|peaks|massif|sierra|cordillera|alps?)\b/g, '')
+  return str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\b(mountains?|range|ranges|hills?|peak|peaks|massif|sierra|cordillera|alps?|muntii|muntii|munti|podisul|masivul|lantul|alpii|alpi)\b/g, '')
     .replace(/[^a-z0-9]/g, '')
     .trim()
 }
@@ -45,10 +47,11 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
     for (const f of ranges) {
       const name = f.properties.NAME
       if (!name) continue
-      map[normMountain(name)] = f
-      // Also index without stripping — plain normalized
-      const plain = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
-      if (!map[plain]) map[plain] = f
+      for (const sp of rangeSpellings(name)) {      // site language only
+        const k = normMountain(sp)
+        if (k) map[k] ??= f
+        map[plainKey(sp)] ??= f                      // plain full name
+      }
     }
     return map
   }, [ranges])
@@ -135,8 +138,8 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
     if (expired || gameOver) return
     if (!raw.trim()) return
     const q = normMountain(raw)
-    const q2 = raw.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
-    const entry = rangeMap[q] || rangeMap[q2]
+    const q2 = plainKey(raw)
+    const entry = (q && rangeMap[q]) || rangeMap[q2]
     if (!entry) return
     if (foundRef.current.some(f => f.properties.NAME === entry.properties.NAME)) return
 
@@ -155,7 +158,7 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
   const onKeyDown     = e => { if (e.key === 'Enter') tryGuess(input) }
 
   const countdownDanger = timerMode === 'countdown' && remaining < 120
-  const sortedRanges    = useMemo(() => [...ranges].sort((a, b) => a.properties.NAME.localeCompare(b.properties.NAME)), [ranges])
+  const sortedRanges    = useMemo(() => [...ranges].sort((a, b) => rangeName(a.properties.NAME).localeCompare(rangeName(b.properties.NAME))), [ranges])
 
   const [started, setStarted] = useState(false)
   if (!started) return (
@@ -164,9 +167,9 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
       title={t('Name All Mountain Ranges')}
       desc={t('40 mountain ranges, from the Himalayas to the Andes. Name them all.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('🏔️ All major ranges across all continents'),
-        t('💡 Abbreviations and nicknames accepted'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('🏔️ All major ranges across all continents')),
+        plain(t('💡 Abbreviations and nicknames accepted')),
       ]}
       onStart={() => setStarted(true)}
     />
@@ -179,9 +182,9 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
       title={t('Name All Mountain Ranges')}
       desc={t('40 mountain ranges, from the Himalayas to the Andes. Name them all.')}
       rules={[
-        t('⏱ Choose countdown or free play'),
-        t('🏔️ All major ranges across all continents'),
-        t('💡 Abbreviations and nicknames accepted'),
+        plain(t('⏱ Choose countdown or free play')),
+        plain(t('🏔️ All major ranges across all continents')),
+        plain(t('💡 Abbreviations and nicknames accepted')),
       ]}
       options={[TIMER_OPTION]}
       typeToStart
@@ -192,7 +195,7 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
   return (
     <>
       <div className="panel-header">
-        <h2>{t('⛰️ Name All Mountain Ranges')}</h2>
+        <h2>{plain(t('⛰️ Name All Mountain Ranges'))}</h2>
         <p className="panel-subtitle">
           {t('Type every mountain range. They light up on the globe as you find them.')}
         </p>
@@ -205,7 +208,7 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? t('⏳ countdown') : t('⏱ count up')}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ count up'))}
           </span>
           <div className="na-timer-controls">
             {!gameOver && !expired && !allFound && (
@@ -219,7 +222,7 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
       {/* Time's up */}
       {expired && (
         <div className="na-expired">
-          {t('⌛ Time\'s up! You found')} <strong>{found.length}</strong> / {total} {t('mountain ranges.')}
+          {plain(t('⌛ Time\'s up! You found'))} <strong>{found.length}</strong> / {total} {t('mountain ranges.')}
         </div>
       )}
 
@@ -277,8 +280,8 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
           noun={t('ranges')}
           total={total}
           timeLabel={timerMode === 'countdown' ? t('{v} used', { v: formatTime(COUNTDOWN_SECONDS - remaining) }) : formatTime(elapsed)}
-          found={found.map(f => ({ label: f.properties.NAME }))}
-          missed={sortedRanges.filter(f => !foundSet.has(f.properties.NAME)).map(f => ({ label: f.properties.NAME }))}
+          found={found.map(f => ({ label: rangeName(f.properties.NAME) }))}
+          missed={sortedRanges.filter(f => !foundSet.has(f.properties.NAME)).map(f => ({ label: rangeName(f.properties.NAME) }))}
         />
       )}
 
@@ -289,8 +292,8 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
           <ul className="guess-list">
             {[...found].reverse().map(f => (
               <li key={f.properties.NAME} className="guess-item">
-                <span className="guess-swatch" style={{ background: '#39ff14' }} />
-                <span className="guess-name">{f.properties.NAME}</span>
+                <span className="guess-swatch" style={{ background: '#5BD18B' }} />
+                <span className="guess-name">{rangeName(f.properties.NAME)}</span>
               </li>
             ))}
           </ul>
@@ -301,10 +304,10 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
         {(gameOver || expired || allFound) ? (
           <>
             <button className="new-game-btn na-start-default" onClick={() => startTimer(timerMode)}>{t('▶ Play again')}</button>
-            <button className="new-game-btn" onClick={handleReset}>{t('⚙ Settings')}</button>
+            <button className="new-game-btn" onClick={handleReset}>{plain(t('⚙ Settings'))}</button>
           </>
         ) : (
-          <button className="new-game-btn" onClick={handleReset}>{t('🔄 Reset')}</button>
+          <button className="new-game-btn" onClick={handleReset}>{plain(t('🔄 Reset'))}</button>
         )}
       </div>
     </>

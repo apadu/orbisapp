@@ -32,7 +32,7 @@ const vertex = /* glsl */`
 `
 
 /** Adds limb haze (on the globe's edge) and a soft outer glow. */
-export function addAtmosphere(scene, color = '#5fb0ff') {
+export function addAtmosphere(scene, color = '#8FB8DE') {
   const glowColor = { value: new THREE.Color(color) }
 
   // 1. Haze hugging the limb — transparent in the middle, bright at the rim
@@ -82,23 +82,23 @@ export function addAtmosphere(scene, color = '#5fb0ff') {
 /** Ocean: deep at the poles, brighter tropical blue at the equator. */
 export function oceanGradient(ctx, H) {
   const g = ctx.createLinearGradient(0, 0, 0, H)
-  g.addColorStop(0.00, '#0b3a86')
-  g.addColorStop(0.22, '#0f57c4')
-  g.addColorStop(0.50, '#1a78ec')
-  g.addColorStop(0.78, '#0f57c4')
-  g.addColorStop(1.00, '#0b3a86')
+  g.addColorStop(0.00, '#132C4A')
+  g.addColorStop(0.22, '#1A3B60')
+  g.addColorStop(0.50, '#22507E')
+  g.addColorStop(0.78, '#1A3B60')
+  g.addColorStop(1.00, '#132C4A')
   return g
 }
 
 /** Light turquoise "shallow water" ring around coastlines. */
-export const SHALLOW_OUTER = 'rgba(80, 185, 255, 0.35)'
-export const SHALLOW_INNER = 'rgba(130, 220, 255, 0.45)'
+export const SHALLOW_OUTER = 'rgba(120, 165, 210, 0.30)'
+export const SHALLOW_INNER = 'rgba(160, 195, 225, 0.38)'
 
 /**
  * One uniform land green for every country — a deeper forest tone, so guessed
- * countries (neon #39ff14) and other highlights stand out clearly.
+ * countries (neon #5BD18B) and other highlights stand out clearly.
  */
-export const LAND_COLOR = '#2b7a4b'
+export const LAND_COLOR = '#BFA06A'
 export function landColor() {
   return LAND_COLOR
 }

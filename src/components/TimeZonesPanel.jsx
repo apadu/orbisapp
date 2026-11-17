@@ -10,6 +10,8 @@ import { startSession, trackAnswer, finishGame, loadResults } from '../utils/res
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t, cn } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
+import { capName } from '../i18n/names'
 
 const MODE = 'time-zones'
 const ROUNDS = 10
@@ -113,12 +115,12 @@ export default function TimeZonesPanel({ gameCountries, onGlobe }) {
   useEffect(() => {
     if (phase !== 'playing' || !round) { onGlobe({}); return }
     const [la, lo] = CAPITAL_COORDS[round.ref]
-    const pin = { lat: la, lon: lo, color: '#facc15', label: `${CAPITALS[round.ref][0]} ${clockAt(round.refOff, now)}` }
+    const pin = { lat: la, lon: lo, color: '#facc15', label: `${capName(CAPITALS[round.ref][0])} ${clockAt(round.refOff, now)}` }
     if (!answer) { onGlobe({ onClick, spin: false, overlay: { pins: [pin] }, flyTo: { lon: lo, lat: la, zoom: 3.6, hold: 600000, _k: idx } }); return }
     onGlobe({
       onClick, spin: false,
       guesses: [
-        ...correctSet.map(n => ({ name: n, color: '#39ff14' })),
+        ...correctSet.map(n => ({ name: n, color: '#5BD18B' })),
         ...(answer.ok ? [] : [{ name: answer.name, color: '#ef4444' }]),
       ],
       overlay: { pins: [pin] },
@@ -138,7 +140,7 @@ export default function TimeZonesPanel({ gameCountries, onGlobe }) {
         <GameHeader icon="🕰️" title={t('Time Zones')} />
         <div className="gg-over">
           <div className="gg-over-big">{score}<small> / {log.length}</small></div>
-          <div className="gg-sub">{score >= best ? t('🎉 Personal best') : t('best {best}/{ROUNDS}', { best: best, ROUNDS: ROUNDS })} · {setup.level === 'easy' ? t('Easy') : t('Hard')}</div>
+          <div className="gg-sub">{score >= best ? plain(t('🎉 Personal best')) : t('best {best}/{ROUNDS}', { best: best, ROUNDS: ROUNDS })} · {setup.level === 'easy' ? t('Easy') : t('Hard')}</div>
           <div className="gg-btns">
             <button className="arc-primary" onClick={() => begin(setup)}>{t('▶ Play again')} <kbd>{t('Enter')}</kbd></button>
             <button className="arc-secondary" onClick={() => setPhase('setup')}>{t('Settings')}</button>
@@ -160,7 +162,7 @@ export default function TimeZonesPanel({ gameCountries, onGlobe }) {
       </div>
       <div className="gg-clocks">
         <div className="gg-clock">
-          <span className="gg-clock-place">{COUNTRY_INFO[round.ref]?.flag} {CAPITALS[round.ref][0]}</span>
+          <span className="gg-clock-place">{COUNTRY_INFO[round.ref]?.flag} {capName(CAPITALS[round.ref][0])}</span>
           <span className="gg-clock-time">{clockAt(round.refOff, now)}</span>
           <span className="gg-clock-off">{fmtOffset(round.refOff)}</span>
         </div>
@@ -176,11 +178,11 @@ export default function TimeZonesPanel({ gameCountries, onGlobe }) {
           <div className="gg-result-txt">
             {answer.ok ? '✓' : '✗'} {cn(answer.name)}: {answer.offs.map(o => clockAt(o, now)).join(' / ')}
           </div>
-          <div className="gg-sub">{t('Answer:')} {fmtOffset(round.tgtOff)} ({diffLabel(diff)} {t('from')} {CAPITALS[round.ref][0]}) · {t(correctSet.length === 1 ? '{n} country lit up' : '{n} countries lit up', { n: correctSet.length })}</div>
+          <div className="gg-sub">{t('Answer:')} {fmtOffset(round.tgtOff)} ({diffLabel(diff)} {t('from')} {capName(CAPITALS[round.ref][0])}) · {t(correctSet.length === 1 ? '{n} country lit up' : '{n} countries lit up', { n: correctSet.length })}</div>
           <button className="arc-primary" onClick={next}>{idx + 1 >= rounds.length ? t('See results') : t('Next')} <kbd>{t('Enter')}</kbd></button>
         </div>
       ) : (
-        <div className="gg-hint">{t('🖱️ Click a country where it\'s')} {clockAt(round.tgtOff, now)} {t('right now')}</div>
+        <div className="gg-hint">{plain(t('🖱️ Click a country where it\'s'))} {clockAt(round.tgtOff, now)} {t('right now')}</div>
       )}
     </div>
   )

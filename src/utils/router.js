@@ -7,6 +7,7 @@
  *   /quiz              Quiz Hub
  *   /quiz/<mode>       a quiz (capital, ww2, country-wordle…)
  *   /daily             Quiz of the day
+ *   /globe /name-all   section pages (globe games · Name them all)
  *   /countries         Countries (pick a country)
  *   /countries/<slug>  a country page (Romania, Moldova…) with its games
  *   /profile           Profile
@@ -23,6 +24,8 @@ export function routeFor(page, mode, quizModes) {
   if (page === 'quiz') {
     if (mode === 'daily-quiz') return '/daily'
     if (mode === 'countries') return '/countries'
+    if (mode === 'globe-hub') return '/globe'
+    if (mode === 'nameall-hub') return '/name-all'
     if (COUNTRY_PAGES[mode]) return `/countries/${COUNTRY_PAGES[mode].slug}`
     return quizModes.has(mode) ? `/quiz/${mode}` : '/quiz'
   }
@@ -37,6 +40,8 @@ export function parseRoute(pathname, { quizModes, globeModes }) {
   if (head === 'profile' && !id) return { page: 'profile' }
   if (INFO_PAGES.has(head) && !id) return { page: head }
   if (head === 'daily' && !id) return { page: 'quiz', mode: 'daily-quiz' }
+  if (head === 'globe' && !id) return { page: 'quiz', mode: 'globe-hub' }
+  if (head === 'name-all' && !id) return { page: 'quiz', mode: 'nameall-hub' }
   if (head === 'countries') {
     if (!id) return { page: 'quiz', mode: 'countries' }
     const pageId = pageIdForSlug(id)

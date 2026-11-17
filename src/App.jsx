@@ -3,14 +3,16 @@ import Globe, { FIXED_ELLIPSE_CENTERS } from './components/Globe'
 import GamePanel from './components/GamePanel'
 import CommandPalette, { PALETTE_SHORTCUT } from './components/CommandPalette'
 import RailNav from './components/RailNav'
+import Icon, { SECTION_ICON } from './components/Icon'
+import GameIcon from './components/GameIcon'
 import MobileNav from './components/MobileNav'
 import GameHud from './components/GameHud'
 import { useIsMobile, useKeyboardInset, useTypingBar, SheetHandle, useSheet, snapHeights } from './components/MobileSheet'
-import { GAME_GROUPS, gamesInGroup } from './utils/gameRegistry'
+import { GAME_GROUPS, SECTION_HUBS, gamesInGroup, groupOf, menuGames } from './utils/gameRegistry'
 import { setSoundEnabled, playCorrect, playWrong, playWin } from './utils/sounds'
 import StreakBadge from './components/StreakBadge'
 import QuizHub from './components/QuizHub'
-import { getDistanceInfo, computeAdjacency } from './utils/geoUtils'
+import { getDistanceInfo, computeAdjacency, distanceLabel } from './utils/geoUtils'
 import { resolveAlias } from './utils/aliases'
 import { geoDistance, geoCentroid, geoContains, geoBounds } from 'd3-geo'
 import { union } from '@turf/union'
@@ -21,7 +23,7 @@ import { COUNTRY_INFO } from './utils/countryInfo'
 import { pickDailyCountry, todayLabel } from './utils/daily'
 import { getStats, recordWin, recordGiveUp } from './utils/stats'
 import { useAuth } from './auth/AuthContext'
-import { startSession, trackAnswer, finishGame, flushSessions, hasActiveGame } from './utils/results'
+import { startSession, trackAnswer, finishGame, flushSessions, hasActiveGame, activeGame } from './utils/results'
 import { routeFor, parseRoute, INFO_PAGES } from './utils/router'
 import { GAME_CATALOG } from './utils/gameCatalog'
 import ConfirmLeave from './components/ConfirmLeave'
@@ -31,6 +33,7 @@ import UserMenu from './components/UserMenu'
 import RulesHint from './components/RulesHint'
 import { TABLE_QUIZ_IDS, TABLE_QUIZZES } from './quizzes/tableQuizzes'
 import { COUNTRY_MAP_QUIZZES, COUNTRY_MAP_IDS } from './data/countryMaps'
+import { TRIPOINT_QUIZZES, TRIPOINT_IDS } from './quizzes/tripointQuizzes'
 import { COUNTRY_PAGES, COUNTRY_PAGE_IDS, COUNTRY_GAME_HOME, countryName } from './data/countryPages'
 import { clearRules } from './utils/rulesStore'
 import HomePage from './components/HomePage'
@@ -75,8 +78,10 @@ const ProfilePage = lazy(() => import('./components/ProfilePage'))
 const InfoPage = lazy(() => import('./components/InfoPage'))
 const TableQuiz = lazy(() => import('./components/TableQuiz'))
 const CountryMapQuiz = lazy(() => import('./components/CountryMapQuiz'))
+const TripointQuiz = lazy(() => import('./components/TripointQuiz'))
 const CountryPage = lazy(() => import('./components/CountryPage'))
 const CountriesHub = lazy(() => import('./components/CountriesHub'))
+const GamesSection = lazy(() => import('./components/GamesSection'))
 const DailyQuiz = lazy(() => import('./components/DailyQuiz'))
 const HigherLower = lazy(() => import('./components/HigherLower'))
 const TrueFalse = lazy(() => import('./components/TrueFalse'))
@@ -134,6 +139,9 @@ const NAME_OVERRIDES = {
   'Micronesia':               'Federated States of Micronesia',
 }
 
+// Pages that list games (no game running) — no rules hint, no "back to hub", bottom nav shown
+const SECTION_PAGES = new Set(['countries', 'globe-hub', 'nameall-hub'])
+
 // Quiz modes that render on the dedicated quiz page (no globe)
 const QUIZ_MODES = new Set([
   'scramble', 'flag', 'capital', 'cap-to-country',
@@ -141,8 +149,9 @@ const QUIZ_MODES = new Set([
   'missing-vowels', 'flag-colors', 'connections', 'emoji-quiz', 'country-fact', 'endonyms',
   ...TABLE_QUIZ_IDS,
   ...COUNTRY_MAP_IDS,
+  ...TRIPOINT_IDS,
   ...COUNTRY_PAGE_IDS,
-  'countries',
+  'countries', 'globe-hub', 'nameall-hub',
   'daily-quiz',
   'higher-lower', 'true-false', 'country-wordle',
 ])
@@ -861,6 +870,16 @@ export default function App() {
     }
   }, [locateGuessed, locateCurrent, locateGameOver, locateExpired, locateMode, countries])
 
+  // A miss: dashed line from your pin to the country, with the distance on the target dot
+  const locateOverlay = useMemo(() => {
+    if (mode !== 'locate' || !locateGuessed || !locateMarker || !locateResult || locateResult.isHit || !locateCurrent) return null
+    const [lon, lat] = geoCentroid(locateCurrent)
+    return {
+      lines: [{ type: 'arc', from: [locateMarker.lon, locateMarker.lat], to: [lon, lat], color: '#ff3366', width: 4, dash: [14, 10] }],
+      pins: [{ lon, lat, color: '#22c55e', ring: 18, label: distanceLabel(locateResult.km) }],
+    }
+  }, [mode, locateGuessed, locateMarker, locateResult, locateCurrent])
+
   const handleLocateNext = useCallback(() => {
     const newUsed = new Set(locateUsedSet)
     if (locateCurrent) newUsed.add(locateCurrent.properties.NAME)
@@ -1000,6 +1019,14 @@ export default function App() {
     applyRoute(id === 'quiz-hub' ? { page: 'quiz', mode: 'quiz-hub' } : { page: QUIZ_MODES.has(id) ? 'quiz' : 'game', mode: id })
   }), [guard, applyRoute])
   const goHome = useCallback(() => guard(() => setPage('home')), [guard])
+  // In a game (globe or quiz page, not a list of games)? → the "✕ Leave" button in the top bar
+  const playing = page === 'game' || (page === 'quiz' && QUIZ_MODES.has(mode) && !SECTION_PAGES.has(mode) && !COUNTRY_PAGE_IDS.has(mode))
+  // Leaving a game goes back to where you picked it: its country, its section, or Home
+  const exitGame = useCallback(() => {
+    const back = COUNTRY_GAME_HOME[mode] ?? GAME_GROUPS.find(g => g.id === groupOf(mode))?.page
+    if (!back || back === mode) goHome()
+    else openGame(back)
+  }, [mode, goHome, openGame])
   const openInfo = useCallback((doc) => guard(() => setPage(doc)), [guard])
   // Back from the profile: reopen the previous screen as a fresh game
   const backFromProfile = () => (prevPage === 'game' || prevPage === 'quiz') ? applyRoute({ page: prevPage, mode }) : setPage(prevPage)
@@ -1034,6 +1061,7 @@ export default function App() {
       : page === 'privacy' ? t('Privacy Policy') : page === 'terms' ? t('Terms of Use') : page === 'credits' ? t('Credits')
       : mode === 'quiz-hub' ? t('Quiz Hub') : mode === 'learn' ? t('Learn')
       : mode === 'countries' ? t('Countries') : COUNTRY_PAGES[mode] ? countryName(mode)
+      : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all')
       : GAME_CATALOG[mode]?.label ?? null
     document.title = name ? `${name} · Orbis` : t('Orbis — Geography Games on a 3D Globe')
     if (window.location.pathname !== path) {
@@ -1122,40 +1150,40 @@ export default function App() {
   // ── Derive guesses + highlighted for globe ───────────────────────────────
   const missingGuesses = missingFound.map(name => {
     const f = countries.find(c => c.properties.NAME === name)
-    return f ? { name, color: '#39ff14', feature: f } : null
+    return f ? { name, color: '#5BD18B', feature: f } : null
   }).filter(Boolean)
 
   const globeGuesses = mode === 'name-all-currencies'
-    ? currenciesFound.flatMap(c => c.countries.map(({ name, feature }) => ({ name, color: '#39ff14', feature })))
+    ? currenciesFound.flatMap(c => c.countries.map(({ name, feature }) => ({ name, color: '#5BD18B', feature })))
     : mode === 'name-all-languages'
     ? (() => {
         const seen = new Set()
-        return languagesFound.flatMap(l => l.countries.map(({ name, feature }) => ({ name, color: '#39ff14', feature })))
+        return languagesFound.flatMap(l => l.countries.map(({ name, feature }) => ({ name, color: '#5BD18B', feature })))
           .filter(g => { if (seen.has(g.name)) return false; seen.add(g.name); return true })
       })()
     : mode === 'name-all-caps'
-    ? capsFound.map(f => ({ name: f.name, color: '#39ff14', feature: f.feature }))
+    ? capsFound.map(f => ({ name: f.name, color: '#5BD18B', feature: f.feature }))
     : mode === 'spotlight'
     ? spotlightFoundNames.map(n => {
         const f = countries.find(c => c.properties.NAME === n)
-        return f ? { name: n, color: '#39ff14', feature: f } : null
+        return f ? { name: n, color: '#5BD18B', feature: f } : null
       }).filter(Boolean)
     : mode === 'missing'
     ? missingGuesses
     : mode === 'mystery'
     ? mysteryGuesses
     : mode === 'name-all'
-      ? found.map(f => ({ name: f.name, color: '#39ff14', feature: f.feature }))
+      ? found.map(f => ({ name: f.name, color: '#5BD18B', feature: f.feature }))
       : mode === 'locate' && locateGuessed && locateCurrent
-        ? [{ name: locateCurrent.properties.NAME, color: '#39ff14', feature: locateCurrent }]
+        ? [{ name: locateCurrent.properties.NAME, color: '#5BD18B', feature: locateCurrent }]
         : mode === 'border-chain' && bcStart && bcEnd
           ? [
-              { name: bcStart.properties.NAME, color: '#39ff14', feature: bcStart },
+              { name: bcStart.properties.NAME, color: '#5BD18B', feature: bcStart },
               { name: bcEnd.properties.NAME,   color: '#f97316', feature: bcEnd },
             ]
           : mode === 'neighbor'
           ? [
-              ...neighborFound.map(n => { const f = gameCountries.find(c => c.properties.NAME === n); return f ? { name: n, color: '#39ff14', feature: f } : null }).filter(Boolean),
+              ...neighborFound.map(n => { const f = gameCountries.find(c => c.properties.NAME === n); return f ? { name: n, color: '#5BD18B', feature: f } : null }).filter(Boolean),
               ...neighborMissed.map(n => { const f = gameCountries.find(c => c.properties.NAME === n); return f ? { name: n, color: '#ef4444', feature: f } : null }).filter(Boolean),
             ]
           : []
@@ -1173,7 +1201,7 @@ export default function App() {
   // ── Render ───────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="loading-screen">
-      <div className="loading-globe">🌐</div>
+      <div className="loading-globe"><Icon name="globe" size={56} strokeWidth={1.3} /></div>
       <h1 className="loading-title">{t('Orbis')}</h1>
       <div className="loading-spinner-wrap"><div className="spinner" /></div>
       <p className="loading-text">{t('Loading the globe…')}</p>
@@ -1200,14 +1228,19 @@ export default function App() {
             ☰
           </button>
           <div className="topbar-brand" onClick={goHome} style={{ cursor: 'pointer' }}>
-            <span className="topbar-logo">🌐</span>
+            <span className="topbar-logo"><Icon name="globe" size={24} strokeWidth={1.6} /></span>
             <span className="topbar-name">{t('Orbis')}</span>
             <span className="topbar-tagline">{t('Geography Games')}</span>
           </div>
+          {playing && (
+            <button className="topbar-exit" onClick={exitGame} title={t('Leave this game')}>
+              <span aria-hidden="true">✕</span> {t('Leave')}
+            </button>
+          )}
         </div>
         <div className="topbar-auth">
           <button className="topbar-search" onClick={() => setPaletteOpen(true)} title={t('Search games')}>
-            <span>🔎</span><span className="topbar-search-text">{t('Search games')}</span><kbd>{PALETTE_SHORTCUT}</kbd>
+            <Icon name="search" size={16} /><span className="topbar-search-text">{t('Search games')}</span><kbd>{PALETTE_SHORTCUT}</kbd>
           </button>
           <StreakBadge
             onSelectMode={openGame}
@@ -1238,8 +1271,6 @@ export default function App() {
         <HomePage
           onEnter={() => openGame(mode === 'quiz-hub' || QUIZ_MODES.has(mode) ? 'mystery' : mode)}
           onSelectMode={openGame}
-          onEnterQuiz={() => { setMode('quiz-hub'); setPage('quiz') }}
-          onEnterCountries={() => openGame('countries')}
           onProfile={openProfile}
           countryNames={gameCountryNames}
           onDailyQuiz={() => { switchMode('daily-quiz'); setPage('quiz') }}
@@ -1251,27 +1282,16 @@ export default function App() {
       {page === 'quiz' && (
         <div className="quiz-shell">
           <div className="quiz-nav-bar">
-            <button className="quiz-nav-back" onClick={goHome}>
-              {t('← Home')}
-            </button>
-            {/* Back one level: country game → its country · country → all countries · quiz → Quiz Hub */}
-            {QUIZ_MODES.has(mode) && mode !== 'countries' && (
-              COUNTRY_GAME_HOME[mode] ? (
-                <button className="quiz-nav-hub" onClick={() => openGame(COUNTRY_GAME_HOME[mode])}>
-                  ← {COUNTRY_PAGES[COUNTRY_GAME_HOME[mode]].page.flag} {countryName(COUNTRY_GAME_HOME[mode])}
-                </button>
-              ) : COUNTRY_PAGE_IDS.has(mode) ? (
-                <button className="quiz-nav-hub" onClick={() => openGame('countries')}>{t('← All countries')}</button>
-              ) : (
-                <button className="quiz-nav-hub" onClick={() => guard(() => setMode('quiz-hub'))}>
-                  {t('← All Quizzes')}
-                </button>
-              )
+            {/* Lists of games: back one level (a game has "✕ Leave" in the top bar instead) */}
+            {!playing && (
+              COUNTRY_PAGE_IDS.has(mode)
+                ? <button className="quiz-nav-back" onClick={() => openGame('countries')}>{t('← All countries')}</button>
+                : <button className="quiz-nav-back" onClick={goHome}>{t('← Home')}</button>
             )}
             <span className="quiz-nav-title">
-              {mode === 'daily-quiz' ? t('📅 Daily Quiz') : mode === 'countries' ? t('🗺️ Countries') : COUNTRY_PAGE_IDS.has(mode) ? `${COUNTRY_PAGES[mode].page.flag} ${isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en}` : COUNTRY_MAP_IDS.has(mode) ? `${COUNTRY_MAP_QUIZZES[mode].icon} ${COUNTRY_MAP_QUIZZES[mode].title}` : TABLE_QUIZ_IDS.has(mode) ? `${TABLE_QUIZZES[mode].icon} ${TABLE_QUIZZES[mode].title}` : QUIZ_MODES.has(mode) ? t(QUIZ_LABELS[mode]) : t('🎯 Quiz Hub')}
+              {mode === 'daily-quiz' ? t('Daily Quiz') : mode === 'countries' ? t('Countries') : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all') : COUNTRY_PAGE_IDS.has(mode) ? (isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en) : COUNTRY_MAP_IDS.has(mode) ? COUNTRY_MAP_QUIZZES[mode].title : TRIPOINT_IDS.has(mode) ? TRIPOINT_QUIZZES[mode].title : TABLE_QUIZ_IDS.has(mode) ? TABLE_QUIZZES[mode].title : QUIZ_MODES.has(mode) ? GAME_CATALOG[mode]?.label ?? t(QUIZ_LABELS[mode]) : t('Quiz Hub')}
             </span>
-            {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && !COUNTRY_PAGE_IDS.has(mode) && mode !== 'countries' && <RulesHint className="rules-hint-quiz" />}
+            {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && !COUNTRY_PAGE_IDS.has(mode) && !SECTION_PAGES.has(mode) && <RulesHint className="rules-hint-quiz" />}
           </div>
 
           <div className="quiz-content"><Suspense fallback={null}>
@@ -1289,10 +1309,14 @@ export default function App() {
               <CountryPage key={mode} pageId={mode} onOpen={openGame} />
             ) : mode === 'countries' ? (
               <CountriesHub onOpen={openGame} />
+            ) : SECTION_HUBS[mode] ? (
+              <GamesSection key={mode} section={SECTION_HUBS[mode]} onOpen={openGame} />
             ) : COUNTRY_MAP_IDS.has(mode) ? (
-              <CountryMapQuiz key={mode} quizId={mode} />
+              <CountryMapQuiz key={mode} quizId={mode} onOpen={openGame} />
+            ) : TRIPOINT_IDS.has(mode) ? (
+              <TripointQuiz key={mode} quizId={mode} onOpen={openGame} />
             ) : TABLE_QUIZ_IDS.has(mode) ? (
-              <TableQuiz key={mode} quizId={mode} countryNames={gameCountryNames} />
+              <TableQuiz key={mode} quizId={mode} countryNames={gameCountryNames} onOpen={openGame} />
             ) : (
               <div className="quiz-panel-wrap">
                 <div className="panel quiz-panel-inner">
@@ -1326,28 +1350,50 @@ export default function App() {
         <div className="mobile-drawer-backdrop" onClick={() => setDrawerOpen(false)}>
           <nav className="mobile-drawer" onClick={e => e.stopPropagation()}>
             <div className="drawer-header">
-              <span className="drawer-title">{t('🌐 Orbis')}</span>
+              <span className="drawer-title">Orbis</span>
               <button className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
             </div>
-            <div className="drawer-scroll">
-              <button className="sidebar-btn" onClick={() => { setDrawerOpen(false); setPaletteOpen(true) }}>
-                <span className="sidebar-icon">🔎</span><span className="sidebar-label">{t('Search games')}</span>
-              </button>
-              {GAME_GROUPS.map(g => (
-                <div key={g.id}>
-                  <div className="sidebar-section">{g.icon} {g.label}</div>
-                  {gamesInGroup(g.id).map(item => (
-                    <button
-                      key={item.id}
-                      className={`sidebar-btn ${mode === item.id ? 'active' : ''}`}
-                      onClick={() => { setDrawerOpen(false); openGame(item.id) }}
-                    >
-                      <span className="sidebar-icon">{item.icon}</span>
-                      <span className="sidebar-label">{item.label}</span>
+            <div className="drawer-scroll md">
+              <div className="md-top">
+                <button className={`md-top-btn${page === 'home' ? ' active' : ''}`} onClick={() => { setDrawerOpen(false); goHome() }}><Icon name="home" size={16} /> {t('Home')}</button>
+                <button className="md-top-btn" onClick={() => { setDrawerOpen(false); setPaletteOpen(true) }}><Icon name="search" size={16} /> {t('Search games')}</button>
+              </div>
+              {GAME_GROUPS.map(g => {
+                const shown = menuGames(g.id)
+                const more = g.id === 'quizzes' ? gamesInGroup('quizzes').length - 2 : 0
+                const inGame = page === 'game' || page === 'quiz'
+                return (
+                  <section key={g.id} className="md-sec" style={{ '--cat': g.color }}>
+                    <button className={`md-sec-head${inGame && mode === g.page ? ' active' : ''}`} onClick={() => { setDrawerOpen(false); openGame(g.page) }}>
+                      <span className="md-sec-icon"><Icon name={SECTION_ICON[g.id]} size={24} strokeWidth={1.5} /></span>
+                      <span className="md-sec-text">
+                        <span className="md-sec-title">{g.label}</span>
+                        <span className="md-sec-desc">{g.desc}</span>
+                      </span>
+                      <span className="md-sec-go">›</span>
                     </button>
-                  ))}
-                </div>
-              ))}
+                    {shown.length > 0 && (
+                      <div className="md-games">
+                        {shown.map(item => (
+                          <button
+                            key={item.id}
+                            className={`md-game${inGame && mode === item.id ? ' active' : ''}`}
+                            onClick={() => { setDrawerOpen(false); openGame(item.id) }}
+                          >
+                            <span className="md-game-icon"><GameIcon id={item.id} size={17} /></span>
+                            <span className="md-game-label">{item.label}</span>
+                          </button>
+                        ))}
+                        {more > 0 && (
+                          <button className="md-game md-game-more" onClick={() => { setDrawerOpen(false); openGame(g.page) }}>
+                            {t('All {n} quizzes →', { n: more })}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </section>
+                )
+              })}
             </div>
           </nav>
         </div>
@@ -1357,7 +1403,7 @@ export default function App() {
 
         {/* ── Left rail: categories + flyouts ── */}
         {page === 'game' && (
-          <RailNav mode={mode} onOpen={openGame} onSearch={() => setPaletteOpen(true)} onHome={goHome} />
+          <RailNav page={page} mode={mode} onOpen={openGame} onSearch={() => setPaletteOpen(true)} onHome={goHome} />
         )}
 
         {/* ── Globe pane ── */}
@@ -1435,6 +1481,7 @@ export default function App() {
                 onGlobeClick={mode === 'locate' ? handleLocateClick : mode === 'learn' ? handleLearnClick : null}
                 confirmTap={mode !== 'learn'}
                 locateMarker={mode === 'locate' ? locateMarker : null}
+                overlay={locateOverlay}
                 locateCorrectMarker={
                   mode === 'locate' && locateGuessed && locateResult && !locateResult.isHit && locateCurrent
                     ? (([lon, lat]) => ({ lon, lat }))(geoCentroid(locateCurrent))
@@ -1567,6 +1614,9 @@ export default function App() {
             onNewGame={() => handleLocateNewGame(null)}
             onTimeout={() => setLocateGameOver(true)}
             onSprintExpired={() => setLocateExpired(true)}
+            finished={locateExpired}
+            onFinish={() => setLocateExpired(true)}
+            onOpen={openGame}
           />
         )}
         {mode === 'neighbor' && (
@@ -1636,7 +1686,7 @@ export default function App() {
     <Confetti active={(mode === 'mystery' && gameWon) || missingComplete || !!completionStats} />
     <Analytics />
     {/* hidden while playing (globe game or a quiz) — the game needs the bottom of the screen */}
-    {isMobile && page !== 'game' && !(page === 'quiz' && mode !== 'quiz-hub' && mode !== 'countries' && !COUNTRY_PAGE_IDS.has(mode)) && (
+    {isMobile && page !== 'game' && !(page === 'quiz' && mode !== 'quiz-hub' && !SECTION_PAGES.has(mode) && !COUNTRY_PAGE_IDS.has(mode)) && (
       <MobileNav
         page={page} mode={mode}
         onHome={goHome}
@@ -1646,7 +1696,7 @@ export default function App() {
         onProfile={() => page === 'profile' ? undefined : guard(openProfile)}
       />
     )}
-    <ConfirmLeave open={!!pendingNav} onStay={() => setPendingNav(null)} onLeave={() => { const fn = pendingNav; setPendingNav(null); fn?.() }} />
+    <ConfirmLeave open={!!pendingNav} game={pendingNav ? activeGame() : null} onStay={() => setPendingNav(null)} onLeave={() => { const fn = pendingNav; setPendingNav(null); fn?.() }} />
     <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onSelect={openGame} />
     {completionStats && (
       <CompletionModal

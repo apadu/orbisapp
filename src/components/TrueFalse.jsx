@@ -5,6 +5,7 @@ import { tfStatement } from '../quizzes/arcade'
 import { startSession, trackAnswer, finishGame, loadResults } from '../utils/results'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
 import { t } from '../i18n'
+import { plain } from '../utils/plain'
 
 const MODE = 'true-false'
 const OPTIONS = [{
@@ -12,7 +13,7 @@ const OPTIONS = [{
   choices: [
     { value: '60', label: '⏱ 60 s', hint: t('Classic sprint') },
     { value: '30', label: '⚡ 30 s', hint: t('Short and frantic') },
-    { value: '120', label: t('🧘 2 min'), hint: t('More time, more statements') },
+    { value: '120', label: plain(t('🧘 2 min')), hint: t('More time, more statements') },
   ],
 }]
 const RULES = [
@@ -120,7 +121,7 @@ export default function TrueFalse({ countryNames = [] }) {
         <div className="arc-over">
           <div className="arc-over-big">{correct}<small> {t('correct')}</small></div>
           <div className="arc-over-sub">
-            {log.length} {t('answered ·')} {acc}{t('% accuracy ·')} {correct > best ? t('🎉 New personal best!') : t('best {best}', { best: best })}
+            {log.length} {t('answered ·')} {acc}{t('% accuracy ·')} {correct > best ? plain(t('🎉 New personal best!')) : t('best {best}', { best: best })}
           </div>
           <div className="arc-over-btns">
             <button className="arc-primary" onClick={() => begin(setup)}>{t('▶ Play again')} <kbd>{t('Enter')}</kbd></button>
@@ -159,15 +160,15 @@ export default function TrueFalse({ countryNames = [] }) {
       </div>
 
       <div className="tf-btns">
-        <button className="tf-btn tf-false" onClick={() => answer(false)}>{t('✗ False')} <kbd>←</kbd></button>
-        <button className="tf-btn tf-true" onClick={() => answer(true)}>{t('✓ True')} <kbd>→</kbd></button>
+        <button className="tf-btn tf-false" onClick={() => answer(false)}>{plain(t('✗ False'))} <kbd>←</kbd></button>
+        <button className="tf-btn tf-true" onClick={() => answer(true)}>{plain(t('✓ True'))} <kbd>→</kbd></button>
       </div>
 
       <div className="tf-last">
         {last && !last.ok && (
           <span className="tf-last-bad">✗ −3s · {last.truth ? t('That was true') : (last.fix ?? t('That was false'))}</span>
         )}
-        {last && last.ok && <span className="tf-last-ok">{t('✓ Correct')}</span>}
+        {last && last.ok && <span className="tf-last-ok">{plain(t('✓ Correct'))}</span>}
       </div>
     </div>
   )

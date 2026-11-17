@@ -7,10 +7,12 @@ import { levelForXp, levelTitle, computeXp } from '../utils/profileData'
 import { gameMeta } from '../utils/gameCatalog'
 import { useDailyChallenges } from '../utils/useDailyChallenges'
 import DailyBanner from './DailyBanner'
+import Icon, { SECTION_ICON } from './Icon'
 import { InfoLinks } from './InfoPage'
 import { t } from '../i18n'
 
-import { GLOBE_ROWS as ROWS } from '../utils/gameRegistry'
+import { GLOBE_ROWS as ROWS, GAME_GROUPS } from '../utils/gameRegistry'
+import GameIcon from './GameIcon'
 
 const ALL_PLAYABLE = [...ROWS.flatMap(r => r.items.map(i => i.id)), ...QUIZ_ITEMS.map(q => q.id)]
 
@@ -20,7 +22,7 @@ function useResults() {
   return results
 }
 
-export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCountries, onProfile, onDailyQuiz, onOpenInfo, countryNames = [] }) {
+export default function HomePage({ onEnter, onSelectMode, onProfile, onDailyQuiz, onOpenInfo, countryNames = [] }) {
   const { list: daily, streak: dailyStreak } = useDailyChallenges()
   const auth = useAuth()
   const results = useResults()
@@ -28,6 +30,18 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCo
   const [dailyOpen, setDailyOpen] = useState(false)
 
   const xp = useMemo(() => computeXp(results), [results])
+
+  // Section cards: Globe · Name them all · Quizzes · Countries
+  const sections = useMemo(() => {
+    const ids = (g) => g.id === 'quizzes' ? QUIZ_ITEMS.map(q => q.id)
+      : ROWS.filter(r => g.rows?.includes(r.id)).flatMap(r => r.items.map(i => i.id))
+    return ['globe', 'nameall', 'quizzes', 'countries'].map(id => {
+      const g = GAME_GROUPS.find(x => x.id === id)
+      if (id === 'countries') return { ...g, count: t('{n} countries', { n: COUNTRY_PAGE_IDS.size }), total: 0 }
+      const list = ids(g)
+      return { ...g, count: t('{n} games', { n: list.length }), total: list.length, played: list.filter(m => stats[m]).length }
+    })
+  }, [stats])
   const level = levelForXp(xp)
   const name = auth.profile?.username
   const isNew = results.length === 0
@@ -45,7 +59,6 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCo
     return results.some(r => r.mode === 'mystery' && r.correct > 0 && !r.details?.practice && new Date(r.played_at).toDateString() === today)
   }, [results])
 
-  const quizPlayed = QUIZ_ITEMS.filter(q => stats[q.id]).length
 
   const quickPlay = () => onSelectMode(ALL_PLAYABLE[Math.floor(Math.random() * ALL_PLAYABLE.length)])
 
@@ -56,7 +69,7 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCo
         <div className="hp-hero-text">
           <p className="hp-greet">
             {name ? t('Welcome back, {name}', { name: name }) : isNew ? t('Welcome to Orbis') : t('Welcome back, explorer')}
-            {dailyStreak > 0 && <span className="hp-greet-streak">🔥 {dailyStreak} {t('day')}{dailyStreak === 1 ? '' : 's'}</span>}
+            {dailyStreak > 0 && <span className="hp-greet-streak"><Icon name="flame" size={14} /> {dailyStreak} {t('day')}{dailyStreak === 1 ? '' : 's'}</span>}
           </p>
           <h1 className="hp-title">{t('How well do you')}<br /><span>{t('know the world?')}</span></h1>
           <p className="hp-tagline">
@@ -64,12 +77,32 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCo
           </p>
           <div className="hp-ctas">
             <button className="hp-cta-primary" onClick={() => onSelectMode('mystery')}>
-              {mysteryDone ? t('✓ Daily mystery solved — play again') : t('🔍 Today\'s mystery country')}
+              {mysteryDone ? <><Icon name="check" size={18} /> {t('Daily mystery solved — play again')}</> : <>{t('Today\'s mystery country')} <Icon name="arrow" size={18} /></>}
             </button>
-            <button className="hp-cta-secondary" onClick={quickPlay}>{t('🎲 Quick play')}</button>
+            <button className="hp-cta-secondary" onClick={quickPlay}><Icon name="dice" size={18} /> {t('Quick play')}</button>
             <button className="hp-cta-ghost" onClick={onEnter}>{t('Explore globe →')}</button>
           </div>
         </div>
+      </section>
+
+      {/* ── The four sections ── */}
+      <section className="hp-sections" aria-label={t('Sections')}>
+        {sections.map((sec, i) => (
+          <button key={sec.id} className="hp-sec" style={{ '--cat': sec.color, animationDelay: `${0.05 + i * 0.06}s` }} onClick={() => onSelectMode(sec.page)}>
+            <span className="hp-sec-top">
+              <span className="hp-sec-icon"><Icon name={SECTION_ICON[sec.id]} size={34} strokeWidth={1.4} /></span>
+              <span className="hp-sec-count">{sec.count}</span>
+            </span>
+            <span className="hp-sec-title">{sec.label}</span>
+            <span className="hp-sec-desc">{sec.desc}</span>
+            {sec.total > 0 && (
+              <span className="hp-sec-progress">
+                <span className="hp-sec-bar"><span style={{ width: `${(sec.played / sec.total) * 100}%` }} /></span>
+                <span className="hp-sec-played">{t('{played}/{n} played', { played: sec.played, n: sec.total })}</span>
+              </span>
+            )}
+          </button>
+        ))}
       </section>
 
       {/* ── Quiz of the day ── */}
@@ -89,7 +122,7 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCo
           <div className="hp-card hp-continue">
             <button className="hp-continue-main" onClick={() => onSelectMode(last.result.mode)}>
               <span className="hp-card-kicker">{t('Jump back in')}</span>
-              <span className="hp-card-title">{last.meta.icon} {last.meta.label}</span>
+              <span className="hp-card-title"><GameIcon id={last.result.mode} size={20} /> {last.meta.label}</span>
               <span className="hp-card-sub">
                 {last.result.correct}/{last.result.total} {t('correct ·')} {timeAgo(last.result.played_at)}
               </span>
@@ -98,7 +131,7 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCo
               <div className="hp-continue-more">
                 {recent.slice(1).map(m => {
                   const meta = gameMeta(m)
-                  return <button key={m} className="hp-continue-chip" onClick={() => onSelectMode(m)} title={meta.label}>{meta.icon} {meta.label}</button>
+                  return <button key={m} className="hp-continue-chip" onClick={() => onSelectMode(m)} title={meta.label}><GameIcon id={m} size={15} /> {meta.label}</button>
                 })}
               </div>
             )}
@@ -121,7 +154,7 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCo
             <div className="hp-daily-list">
               {daily.map(d => (
                 <button key={d.id} className={`hp-daily-item${d.done ? ' done' : ''}`} onClick={() => onSelectMode(d.mode)}>
-                  <span>{d.icon}</span>
+                  <GameIcon id={d.mode} size={16} />
                   <span className="hp-daily-task">{d.task}</span>
                   <span className="hp-daily-count">{d.done ? '✓' : `${d.value}/${d.target}`}</span>
                 </button>
@@ -138,44 +171,10 @@ export default function HomePage({ onEnter, onSelectMode, onEnterQuiz, onEnterCo
         </button>
       </section>
 
-      {/* ── Globe game rows ── */}
-      {ROWS.map((row, ri) => {
-        const played = row.items.filter(i => stats[i.id]).length
-        return (
-          <section key={row.id} className="hp-row qh-section" style={{ '--cat': row.color, animationDelay: `${0.1 + ri * 0.08}s` }}>
-            <div className="qh-section-head">
-              <span className="qh-section-icon">{row.icon}</span>
-              <h2>{row.label}</h2>
-              <span className="qh-section-count">{played}/{row.items.length}</span>
-            </div>
-            <div className="qh-grid">
-              {row.items.map(it => <QuizTile key={it.id} item={it} st={stats[it.id]} onSelect={onSelectMode} />)}
-            </div>
-          </section>
-        )
-      })}
-
-      {/* ── Quiz Hub + Learn ── */}
-      <section className="hp-bottom">
-        <button className="hp-banner hp-banner-quiz" onClick={onEnterQuiz}>
-          <span className="hp-banner-icon">🎯</span>
-          <span className="hp-banner-body">
-            <span className="hp-banner-title">{t('Quiz Hub')}</span>
-            <span className="hp-banner-sub">{QUIZ_ITEMS.length} {t('quizzes, from flags to forgotten empires ·')} {quizPlayed}/{QUIZ_ITEMS.length} {t('played')}</span>
-            <span className="hp-banner-bar"><span style={{ width: `${(quizPlayed / QUIZ_ITEMS.length) * 100}%` }} /></span>
-          </span>
-          <span className="hp-banner-cta">{t('Open ▸')}</span>
-        </button>
-        <button className="hp-banner hp-banner-countries" onClick={onEnterCountries}>
-          <span className="hp-banner-icon">🗺️</span>
-          <span className="hp-banner-body">
-            <span className="hp-banner-title">{t('Countries')}</span>
-            <span className="hp-banner-sub">{t('Maps by county and state, capitals and quizzes ·')} {t('{n} countries', { n: COUNTRY_PAGE_IDS.size })}</span>
-          </span>
-          <span className="hp-banner-cta">{t('Open ▸')}</span>
-        </button>
+      {/* ── Learn ── */}
+      <section className="hp-bottom hp-bottom-single">
         <button className="hp-banner hp-banner-learn" onClick={() => onSelectMode('learn')}>
-          <span className="hp-banner-icon">🎓</span>
+          <span className="hp-banner-icon"><Icon name="book" size={30} strokeWidth={1.4} /></span>
           <span className="hp-banner-body">
             <span className="hp-banner-title">{t('Learn mode')}</span>
             <span className="hp-banner-sub">{t('Spin the globe, click a country, learn something you didn\'t know.')}</span>

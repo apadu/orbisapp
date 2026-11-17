@@ -5,6 +5,7 @@ import GameIntro from './GameIntro'
 import { playCorrect, playWrong } from '../utils/sounds'
 import { t, cn } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
+import { plain } from '../utils/plain'
 
 function norm(s) {
   return s.trim().toLowerCase().replace(/[^a-z]/g, '')
@@ -52,10 +53,10 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
       title={t('Neighbor Challenge')}
       desc={t('One country lights up. Name every neighbour it shares a land border with.')}
       rules={[
-        t('🗺️ Countries that share a land border count'),
-        t('❌ Missed ones revealed in red'),
-        t('🔄 New country every round'),
-        t('💯 100 points for every neighbour you name'),
+        plain(t('🗺️ Countries that share a land border count')),
+        plain(t('❌ Missed ones revealed in red')),
+        plain(t('🔄 New country every round')),
+        plain(t('💯 100 points for every neighbour you name')),
       ]}
       onStart={() => { setStarted(true); onGameStart?.() }}
       disabled={!target}
@@ -64,7 +65,7 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
 
   if (!target) return (
     <div className="panel-header">
-      <h2>{t('📌 Neighbor Challenge')}</h2>
+      <h2>{plain(t('📌 Neighbor Challenge'))}</h2>
       <p className="panel-subtitle">{t('Loading…')}</p>
     </div>
   )
@@ -74,7 +75,7 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
   return (
     <>
       <div className="panel-header">
-        <h2>{t('📌 Neighbor Challenge')}</h2>
+        <h2>{plain(t('📌 Neighbor Challenge'))}</h2>
         <p className="panel-subtitle">{t('Name all countries that share a border with it.')}</p>
       </div>
 
@@ -161,9 +162,9 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
           <ul className="guess-list">
             {[...found].reverse().map(n => (
               <li key={n} className="guess-item">
-                <span className="guess-swatch" style={{ background: '#39ff14' }} />
+                <span className="guess-swatch" style={{ background: '#5BD18B' }} />
                 <span className="guess-name">{n}</span>
-                <span className="guess-dist" style={{ color: '#39ff14' }}>+100</span>
+                <span className="guess-dist" style={{ color: '#5BD18B' }}>+100</span>
               </li>
             ))}
           </ul>
@@ -177,7 +178,7 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
           <ul className="guess-list">
             {[...history].reverse().map((h, i) => (
               <li key={i} className="guess-item">
-                <span className="guess-swatch" style={{ background: h.found === h.total ? '#39ff14' : '#f97316' }} />
+                <span className="guess-swatch" style={{ background: h.found === h.total ? '#5BD18B' : '#f97316' }} />
                 <span className="guess-name">{h.target}</span>
                 <span className="guess-dist">{h.found}/{h.total}</span>
               </li>
