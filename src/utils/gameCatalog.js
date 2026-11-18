@@ -143,6 +143,8 @@ export const GAME_CATALOG = {
 }
 
 for (const q of Object.values(TRIPOINT_QUIZZES)) GAME_CATALOG[q.id] = { label: q.title, icon: '⨯', cat: 'quiz' }
+GAME_CATALOG.islands = { label: t('Famous Islands'), icon: '🏝️', cat: 'quiz', timed: true }
+GAME_CATALOG.peninsulas = { label: t('Famous Peninsulas'), icon: '🗺️', cat: 'quiz', timed: true }
 
 export const CAT_LABELS = { globe: 'Globe Games', nameall: 'Name All', quiz: 'Quizzes' }
 

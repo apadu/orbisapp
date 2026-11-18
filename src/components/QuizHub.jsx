@@ -7,6 +7,8 @@ import { gameTag, isNewGame } from '../utils/gameTags'
 import GameIcon from './GameIcon'
 import Icon from './Icon'
 import { TRIPOINT_QUIZZES } from '../quizzes/tripointQuizzes'
+import { useQuizOverview, rankScore } from '../utils/quizOverview'
+import StateNote from './StateNote'
 
 // ── Catalogue ──────────────────────────────────────────────────────────────
 export const QUIZ_CATEGORIES = [
@@ -18,6 +20,7 @@ export const QUIZ_CATEGORIES = [
   { id: 'lists',    label: t('Lists & groups'),  icon: '📋', color: '#8CC18F' },
   { id: 'arcade',   label: t('Arcade'),          icon: '🕹️', color: '#FF7A3D' },
   { id: 'puzzles',  label: t('Puzzles'),         icon: '🧩', color: '#9BB3CF' },
+  { id: 'maps',     label: t('Maps'),            icon: '🗺️', color: '#7FB0C9' },
 ]
 
 export const QUIZ_ITEMS = [
@@ -73,6 +76,8 @@ export const QUIZ_ITEMS = [
   { id: 'country-wordle', cat: 'puzzles',  icon: '🟩', label: t('Country Wordle'),       desc: t('One country a day, six tries, and colour clues for every letter.') },
   { id: 'connections',    cat: 'puzzles',  icon: '🧩', label: t('Country Connections'),          desc: t('16 countries, 4 hidden links. "One away!" means you\'re close.') },
   { id: 'border-chain',   cat: 'puzzles',  icon: '🔗', label: t('Border Chain'),         desc: t('Cross the map neighbour by neighbour. Can you match the shortest path?') },
+  { id: 'islands',        cat: 'maps',     icon: '🏝️', label: t('Famous Islands'),       desc: t('30 famous islands lit up on the world map, from Greenland to Mallorca.') },
+  { id: 'peninsulas',     cat: 'maps',     icon: '🗺️', label: t('Famous Peninsulas'),    desc: t('21 famous peninsulas lit up on the world map, from Iberia to Kamchatka.') },
   ...Object.values(TRIPOINT_QUIZZES).map(q => ({
     id: q.id, cat: 'puzzles', icon: '⨯', label: q.title,
     desc: q.num === 1 ? t('Three countries meet at one point. Zoomed-in maps, 10 points per quiz — name all three.') : t('10 more points where three countries meet.'),
@@ -178,6 +183,10 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
   const [filter, setFilter] = useState('all') // 'all' | 'unplayed'
   const [cat,    setCat]    = useState(() => { try { return sessionStorage.getItem('orbis-qh-cat') ?? 'all' } catch { return 'all' } })
   const [openGroup, setOpenGroup] = useState(null)
+  const [sort, setSort] = useState('default')   // default | rated | popular
+  const overview = useQuizOverview()
+  const hasRatings = Object.values(overview).some(o => o.ratings > 0)
+  const hasPlays = Object.values(overview).some(o => o.playsWeek > 0)
   const chooseCat = (c) => { setCat(c); setOpenGroup(null); try { sessionStorage.setItem('orbis-qh-cat', c) } catch { /* private mode */ } }
   const searchRef = useRef(null)
 
@@ -281,6 +290,17 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
             onClick={() => setFilter(f => (f === 'unplayed' ? 'all' : 'unplayed'))}>
             {t('Not played ({v})', { v: QUIZ_ITEMS.length - played })}
           </button>
+          {(hasRatings || hasPlays) && <span className="qh-chip-sep" aria-hidden="true" />}
+          {hasRatings && (
+            <button className={`qh-chip${sort === 'rated' ? ' active' : ''}`} aria-pressed={sort === 'rated'} onClick={() => setSort(v => (v === 'rated' ? 'default' : 'rated'))}>
+              ★ {t('Top rated')}
+            </button>
+          )}
+          {hasPlays && (
+            <button className={`qh-chip${sort === 'popular' ? ' active' : ''}`} aria-pressed={sort === 'popular'} onClick={() => setSort(v => (v === 'popular' ? 'default' : 'popular'))}>
+              {t('Popular this week')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -295,12 +315,23 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
         ))}
       </div>
 
-      {/* ── Category rows ── */}
-      {visible.length === 0 ? (
-        <div className="qh-empty">
-          <span>{t('No quizzes match.')}</span>
-          <button onClick={() => { setQuery(''); setFilter('all') }}>{t('Clear filters')}</button>
-        </div>
+      {/* ── Category rows (or one sorted list) ── */}
+      {sort !== 'default' && visible.length > 0 ? (
+        <section className="qh-section">
+          <div className="qh-section-head">
+            <h2>{sort === 'rated' ? t('Top rated') : t('Popular this week')}</h2>
+            <span className="qh-section-count">{cat === 'all' ? t('All') : QUIZ_CATEGORIES.find(c => c.id === cat)?.label}</span>
+          </div>
+          <div className="qh-grid">
+            {visible
+              .filter(it => cat === 'all' || it.cat === cat)
+              .map((it, i) => ({ it, i, key: sort === 'rated' ? rankScore(overview[it.id]) : (overview[it.id]?.playsWeek ?? 0) }))
+              .sort((a, b) => b.key - a.key || a.i - b.i)
+              .map(({ it }) => <QuizTile key={it.id} item={it} st={stats[it.id]} onSelect={onSelect} rating={overview[it.id]} />)}
+          </div>
+        </section>
+      ) : visible.length === 0 ? (
+        <StateNote action={{ label: t('Clear filters'), onClick: () => { setQuery(''); setFilter('all') } }}>{t('No quizzes match.')}</StateNote>
       ) : QUIZ_CATEGORIES.filter(c => cat === 'all' || c.id === cat).map(c => {
         const catAll = QUIZ_ITEMS.filter(it => it.cat === c.id)
         const catPlayed = catAll.filter(it => stats[it.id]).length
@@ -322,7 +353,7 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
             </div>
             <div className="qh-grid">
               {shown.map(e => e.type === 'quiz'
-                ? <QuizTile key={e.item.id} item={e.item} st={stats[e.item.id]} onSelect={onSelect} />
+                ? <QuizTile key={e.item.id} item={e.item} st={stats[e.item.id]} onSelect={onSelect} rating={overview[e.item.id]} />
                 : <QuizGroupTile key={e.group.id} group={e.group} stats={stats} open={openGroup === e.group.id}
                     onToggle={() => setOpenGroup(o => (o === e.group.id ? null : e.group.id))} />)}
             </div>
@@ -334,13 +365,14 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
   )
 }
 
-export function QuizTile({ item, st, onSelect }) {
+export function QuizTile({ item, st, onSelect, rating = null }) {
   const fresh = !st && isNewGame(item.id)
   return (
     <button className={`qh-tile${fresh ? ' qh-tile-new' : ''}`} onClick={() => onSelect(item.id)}>
       <span className="qh-tile-top">
         <span className="qh-tile-icon"><GameIcon id={item.id} size={26} /></span>
-        {fresh && <span className="qh-tile-new-badge">{t('New')}</span>}
+        {rating?.ratings > 0 ? <span className="qh-tile-rating" title={t(rating.ratings === 1 ? '{r} average · 1 rating' : '{r} average · {n} ratings', { r: rating.rating.toLocaleString(locale), n: rating.ratings })}>★ {rating.rating.toLocaleString(locale, { maximumFractionDigits: 1 })}</span>
+          : fresh && <span className="qh-tile-new-badge">{t('New')}</span>}
       </span>
       <span className="qh-tile-name">{item.label}</span>
       <span className="qh-tile-foot">

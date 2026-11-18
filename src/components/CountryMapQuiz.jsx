@@ -7,6 +7,7 @@ import { playCorrect, playWin, playWrong } from '../utils/sounds'
 import { getSavedSetup, saveSetup } from './SetupCard'
 import { ReadyOptions, StartButton, useTypeToStart } from './QuizReady'
 import { setRules } from '../utils/rulesStore'
+import { AttemptNote, QuizResultStats, pastRounds } from './QuizStats'
 import GiveUpButton from './GiveUpButton'
 import TryNext from './TryNext'
 import QuizComments from './QuizComments'
@@ -15,6 +16,7 @@ import { inSiteLang } from '../utils/answerLang'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import ShareButton, { resultText } from './ShareButton'
+import StateNote from './StateNote'
 
 /**
  * A flat 2D map of one country split into subdivisions (see data/countryMaps).
@@ -55,7 +57,7 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
     for (const it of items) for (const a of it.accepts) {
       const k = norm(a)
       if (!m.has(k)) m.set(k, [])
-      m.get(k).push(it.id)
+      if (!m.get(k).includes(it.id)) m.get(k).push(it.id)   // "Varșovia" and "Varsovia" are one key
     }
     return m
   }, [items])
@@ -73,6 +75,8 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
   const [elapsed, setElapsed] = useState(0)
   const foundRef = useRef(found)
   const inputRef = useRef(null)
+  const [lastRow, setLastRow] = useState(null)
+  const prevRef = useRef([])
   const pendingRef = useRef(null)
   const startedAt = useRef(0)
 
@@ -90,6 +94,8 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
     setEndReason(null)
     setPhase('playing')
     startedAt.current = Date.now()
+    prevRef.current = pastRounds(mode)
+    setLastRow(null)
     startSession(mode)
     setPoolSize(mode, items.length)   // left half-way: 9/42, not 9/9
     if (!isTimed) markSession(mode, { untimed: true })   // free play: no XP, medals or leaderboard
@@ -126,7 +132,7 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
     clearTimeout(pendingRef.current)
     const done = foundRef.current
     for (const it of items) if (!done.has(it.id)) trackAnswer(mode, null, false, 0, it.id, { silent: true })
-    finishGame(mode, { completed: true, meta: { map: map.id, kind } })
+    setLastRow(finishGame(mode, { completed: true, meta: { map: map.id, kind } }))
     setElapsed(Date.now() - startedAt.current)
     setEndReason(reason)
     setPhase('done')
@@ -188,6 +194,16 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
   const itemById = Object.fromEntries(items.map(it => [it.id, it]))
   const missedCount = total - score
 
+  // timer · untimed · score: in the sticky answer bar while playing, in the header once it's over
+  const statsBlock = (
+    <div className="tq-stats">
+      {timed
+        ? <span className={`tq-timer${playing && timeLeft <= 30 ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
+        : <span className="tq-timer tq-untimed" title={t('Untimed — this game earns no XP')}>{t('∞ Untimed · no XP')}</span>}
+      <span className="tq-score"><strong>{score}</strong> / {total}</span>
+    </div>
+  )
+
   return (
     <div className={`tq cmq cmq-${kind}${over ? ' tq-done' : ''}${ready ? ' tq-ready' : ''}`}>
       <header className="tq-head">
@@ -198,15 +214,11 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
             <p>{quiz.prompt}</p>
           </div>
         </div>
-        <div className="tq-stats">
-          {timed
-            ? <span className={`tq-timer${playing && timeLeft <= 30 ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
-            : <span className="tq-timer tq-untimed" title={t('Untimed — this game earns no XP')}>{t('∞ Untimed · no XP')}</span>}
-          <span className="tq-score"><strong>{score}</strong> / {total}</span>
-        </div>
+        {over && statsBlock}
       </header>
 
       {ready && <ReadyOptions options={options} values={setup} onChange={changeSetup} />}
+      {ready && <AttemptNote mode={quizId} />}
 
       <div className="tq-bar">
         {!over ? (
@@ -221,6 +233,7 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
               autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
               aria-label={quiz.prompt}
             />
+            {statsBlock}
             {ready ? <StartButton onClick={() => beginNow()} /> : <GiveUpButton onConfirm={() => finish('giveup')} />}
           </>
         ) : (
@@ -243,11 +256,11 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
 
       <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
 
-      {phase === 'done' && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
+      {(phase === 'done') && <QuizResultStats mode={quizId} row={lastRow} prev={prevRef.current} record={timed} />}
 
       <div className="cmq-map-wrap">
-        {loadError && <p className="cmq-msg">{t('Could not load the map. Check your connection and try again.')}</p>}
-        {!drawn && !loadError && <p className="cmq-msg">{t('Loading map…')}</p>}
+        {loadError && <StateNote kind="error">{t('Could not load the map. Check your connection and try again.')}</StateNote>}
+        {!drawn && !loadError && <StateNote kind="loading">{t('Loading map…')}</StateNote>}
         {drawn && (
           <svg className="cmq-map" viewBox={`0 0 ${drawn.W} ${drawn.H}`} role="img" aria-label={quiz.title}>
             <defs><clipPath id={`cmq-clip-${mode}`}><rect width={drawn.W} height={drawn.H} /></clipPath></defs>
@@ -280,6 +293,7 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
           </svg>
         )}
       </div>
+      {phase === 'done' && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
 
       <QuizComments quiz={quizId} unlocked={over} />
     </div>

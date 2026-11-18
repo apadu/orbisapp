@@ -3,6 +3,7 @@ import { fetchLeaderboard } from '../../utils/results'
 import { GAME_CATALOG, CAT_LABELS } from '../../utils/gameCatalog'
 import { useAuth } from '../../auth/AuthContext'
 import { t } from '../../i18n'
+import StateNote from '../StateNote'
 
 const PERIODS = [
   { id: 'today', label: t('Today') },
@@ -22,6 +23,7 @@ export default function Leaderboard({ initialMode = 'flag' }) {
   const [period, setPeriod] = useState('week')
   const [rows,   setRows]   = useState([])
   const [state,  setState]  = useState('idle') // idle | loading | error
+  const [tries,  setTries]  = useState(0)
 
   useEffect(() => {
     if (!backendEnabled) return
@@ -33,10 +35,10 @@ export default function Leaderboard({ initialMode = 'flag' }) {
       setState(error ? 'error' : 'idle')
     })
     return () => { live = false }
-  }, [mode, period, backendEnabled])
+  }, [mode, period, backendEnabled, tries])
 
   if (!backendEnabled) {
-    return <div className="lb-empty">{t('Leaderboards need the online backend — it isn\'t configured yet.')}</div>
+    return <StateNote>{t('Leaderboards need the online backend — it isn\'t configured yet.')}</StateNote>
   }
 
   const timed = GAME_CATALOG[mode]?.timed
@@ -71,9 +73,9 @@ export default function Leaderboard({ initialMode = 'flag' }) {
         </div>
       )}
 
-      {state === 'loading' && <div className="lb-empty">{t('Loading…')}</div>}
-      {state === 'error'   && <div className="lb-empty">{t('Couldn\'t load the leaderboard. Try again in a moment.')}</div>}
-      {state === 'idle' && rows.length === 0 && <div className="lb-empty">{t('No scores yet — be the first!')}</div>}
+      {state === 'loading' && <StateNote kind="loading" compact>{t('Loading…')}</StateNote>}
+      {state === 'error'   && <StateNote kind="error" compact action={{ label: t('Try again'), onClick: () => setTries(n => n + 1) }}>{t('Couldn\'t load the leaderboard. Try again in a moment.')}</StateNote>}
+      {state === 'idle' && rows.length === 0 && <StateNote compact>{t('No scores yet — be the first!')}</StateNote>}
 
       {state === 'idle' && rows.length > 0 && (
         <div className="lb-table">

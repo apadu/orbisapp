@@ -5,6 +5,7 @@ import { setRules } from '../utils/rulesStore'
 import { t } from '../i18n'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
+import { ReadyOptions, StartButton, carryKeystrokes } from './QuizReady'
 
 const storeKey = (mode) => `orbis-setup-${mode}`
 
@@ -65,6 +66,7 @@ export default function SetupCard({ mode, icon, title, desc, options = [], rules
 
   const start = (typed) => {
     try { localStorage.setItem(storeKey(mode), JSON.stringify(values)) } catch {}
+    if (typeToStart) carryKeystrokes()   // the game's own answer box takes over the next keys
     onStart(values, typed)
   }
 
@@ -80,43 +82,34 @@ export default function SetupCard({ mode, icon, title, desc, options = [], rules
     return () => window.removeEventListener('keydown', onKey)
   }) // re-bind each render so `values` is fresh
 
+  // Same layout as the quiz pages before the start: title, compact options, then the answer
+  // bar itself (typing games) — so the first keystroke is already the first answer.
   return (
-    <div className="setup">
+    <div className="setup setup-ready">
       <div className="setup-head">
-        <span className="setup-icon">{mode ? <GameIcon id={mode} size={30} strokeWidth={1.5} /> : icon}</span>
+        <span className="setup-icon">{mode ? <GameIcon id={mode} size={26} strokeWidth={1.5} /> : icon}</span>
         <div className="setup-head-text">
           <h2>{plain(title)}</h2>
           <span className="setup-best">{best}</span>
         </div>
       </div>
 
-      {options.map(o => {
-        const sel = o.choices.find(c => c.value === values[o.id])
-        return (
-          <div key={o.id} className="setup-opt">
-            <span className="setup-opt-label">{o.label}</span>
-            <div className="setup-seg" role="radiogroup" aria-label={o.label}>
-              {o.choices.map(c => (
-                <button
-                  key={c.value}
-                  role="radio"
-                  aria-checked={values[o.id] === c.value}
-                  className={`setup-seg-btn${values[o.id] === c.value ? ' active' : ''}`}
-                  onClick={() => setValues(v => ({ ...v, [o.id]: c.value }))}
-                >
-                  {plain(c.label)}
-                </button>
-              ))}
-            </div>
-            {sel?.hint && <span className="setup-hint">{sel.hint}</span>}
-          </div>
-        )
-      })}
+      <ReadyOptions options={options} values={values} onChange={setValues} />
 
-      <button className="setup-start" onClick={() => start()}>
-        {t(startLabel)} <kbd>{t('Enter')}</kbd>
-      </button>
-      {typeToStart && <p className="setup-type-hint">{t('…or just start typing')}</p>}
+      <div className="setup-bar">
+        {typeToStart && (
+          <input
+            className="tq-input setup-input"
+            placeholder={t('Start typing to begin…')}
+            value=""
+            onChange={e => { if (/\p{L}/u.test(e.target.value)) start(e.target.value) }}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); start() } }}
+            autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+            aria-label={plain(title)}
+          />
+        )}
+        <StartButton onClick={() => start()} label={startLabel} />
+      </div>
 
       {rules.length > 0 && (
         <div className="setup-rules">

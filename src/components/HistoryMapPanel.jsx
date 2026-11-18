@@ -6,6 +6,7 @@ import GiveUpButton from './GiveUpButton'
 import GameSummary from './GameSummary'
 import { t } from '../i18n'
 import { plain } from '../utils/plain'
+import StateNote from './StateNote'
 
 const COUNTDOWN_SECONDS = 15 * 60
 
@@ -426,10 +427,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
 
       {/* Loading state */}
       {era && loadState === 'loading' && (
-        <div className="history-loading">
-          <div className="history-loading-spinner" />
-          <span>{t('Loading')} {era.year} {t('map…')}</span>
-        </div>
+        <StateNote kind="loading" compact>{t('Loading')} {era.year} {t('map…')}</StateNote>
       )}
 
       {/* Error state */}

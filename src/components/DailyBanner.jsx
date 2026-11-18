@@ -28,7 +28,7 @@ export default function DailyBanner({ countryNames, onOpen }) {
         <span className="daily-banner-sub">
           {played
             ? t('You scored {correct}/{total} · next quiz in {h}h {m}m', { correct: played.correct, total: played.total, h: h, m: m })
-            : t('{size} answers · one attempt · same quiz for everyone', { size: info.size })}
+            : t('One attempt · new quiz in {h}h {m}m', { h: h, m: m })}
         </span>
       </span>
       <span className="daily-banner-cta">{played ? t('Results ▸') : t('Play ▸')}</span>

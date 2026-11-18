@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 import * as THREE from 'three'
 import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
-import { geoEquirectangular, geoPath, geoCentroid, geoBounds } from 'd3-geo'
+import { geoEquirectangular, geoPath, geoCentroid } from 'd3-geo'
 import GlobeControls from './GlobeControls'
 import { t } from '../i18n'
 import { plain } from '../utils/plain'
@@ -89,16 +89,106 @@ const ELLIPSE_COUNTRIES = new Set([
   'Federated States of Micronesia', 'Micronesia', 'Samoa',
 ])
 
-// Canvas is 4096×2048 covering 360°×180° → 1 px ≈ 0.0879°
-// Exposed so App.jsx can use the same centers for click detection
-export const FIXED_ELLIPSE_CENTERS = {
-  'Malta':                          { lon:  14.4, lat:  35.9, rx: 14, ry: 11 },
-  'Fiji':                           { lon: 178,   lat: -18,   rx: 32, ry: 20 },
-  'Kiribati':                       { lon: 173,   lat:   1,   rx: 24, ry: 14 },
-  'Federated States of Micronesia': { lon: 153,   lat:   7,   rx: 44, ry: 14 },
-  'Tuvalu':                         { lon: 179,   lat:  -8,   rx: 10, ry: 24 },
-  'Marshall Islands':               { lon: 168,   lat:   7,   rx: 18, ry: 26 },
-  'Samoa':                          { lon: -172,  lat: -13.5, rx: 16, ry: 12 },
+// ── Island ellipses ──────────────────────────────────────────────────────────
+// Each island group of a country gets its own ellipse (Fiji: main islands + Rotuma,
+// Kiribati: Gilbert / Phoenix / Line Islands…). Computed from the geometry in degrees,
+// antimeridian-aware, so nothing is cut at ±180°.
+const PX_PER_DEG = CANVAS_W / 360
+const ELL_GAP = 3       // islands closer than this (°) share one ellipse
+const ELL_SPECK = 0.06  // a lone reef this small (°) is dropped when the country has real islands
+const ELL_PAD = 0.55    // padding around a group (°, ≈ 6 px on the canvas)
+const ELL_MIN = 1.05    // minimum half-axis (°, ≈ 12 px) so single islets stay visible
+const ELL_MAX = 2       // maximum half-axis (°, ≈ 23 px) — a marker, not a territory map
+// Groups the 1:50m data barely draws (Tuvalu is a single dot there): real extent instead
+const ELLIPSE_OVERRIDES = {
+  'Tuvalu': [{ lon: 177.9, lat: -8.2, rlon: 1.4, rlat: 2 }],
+}
+
+// Where the marker goes when the country's biggest island isn't its heart (Kiritimati is
+// Kiribati's largest atoll, but the country is Tarawa and the Gilbert Islands)
+const ELLIPSE_MAIN = { 'Kiribati': [173, 1.4] }
+
+const wrapLon = (x) => ((x + 540) % 360) - 180
+const ELL_CACHE = new WeakMap()
+/** [{ lon, lat, rlon, rlat }] in degrees — one ellipse, over the country's main island group. */
+export function islandEllipses(feature) {
+  let out = ELL_CACHE.get(feature)
+  if (out) return out
+  const name = feature.properties?.NAME
+  if (ELLIPSE_OVERRIDES[name]) { ELL_CACHE.set(feature, ELLIPSE_OVERRIDES[name]); return ELLIPSE_OVERRIDES[name] }
+  const g = feature.geometry
+  const polys = !g ? [] : g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : []
+  // bbox per island, longitudes unwrapped around the island's first point
+  let boxes = polys.map(p => {
+    const ring = p[0], ref = ring[0][0]
+    let w = Infinity, e = -Infinity, s = Infinity, n = -Infinity
+    for (const [x, y] of ring) {
+      let u = x
+      while (u - ref > 180) u -= 360
+      while (u - ref < -180) u += 360
+      if (u < w) w = u; if (u > e) e = u; if (y < s) s = y; if (y > n) n = y
+    }
+    let area = 0
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) area += (ring[j][0] - ring[i][0]) * (ring[j][1] + ring[i][1])
+    return Object.assign([w, s, e, n], { area: Math.abs(area) / 2 })
+  })
+  // reefs / specks: they group with each other (Phoenix Islands), but join a real island
+  // only when very close — a lone far-off reef doesn't stretch the main ellipse
+  const isSpeck = ([w, s, e, n]) => e - w < ELL_SPECK && n - s < ELL_SPECK
+  boxes = boxes.map(b => Object.assign(b, { speck: isSpeck(b), count: 1, area: b.area }))
+  const shiftOf = (A, B) => {   // ±360 that brings B next to A
+    const ca = (A[0] + A[2]) / 2, cb = (B[0] + B[2]) / 2
+    return [-360, 0, 360].reduce((best, t) => Math.abs(cb + t - ca) < Math.abs(cb + best - ca) ? t : best, 0)
+  }
+  const gap = (A, B) => {
+    const t = shiftOf(A, B)
+    const dx = Math.max(0, B[0] + t - A[2], A[0] - (B[2] + t))
+    const dy = Math.max(0, B[1] - A[3], A[1] - B[3])
+    return Math.hypot(dx, dy)
+  }
+  for (let merged = true; merged;) {
+    merged = false
+    for (let i = 0; i < boxes.length && !merged; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const A = boxes[i], B = boxes[j]
+        if (gap(A, B) >= (A.speck === B.speck ? ELL_GAP : ELL_GAP / 2)) continue
+        const t = shiftOf(A, B)
+        boxes[i] = Object.assign([Math.min(A[0], B[0] + t), Math.min(A[1], B[1]), Math.max(A[2], B[2] + t), Math.max(A[3], B[3])],
+          { speck: A.speck && B.speck, count: A.count + B.count, area: A.area + B.area })
+        boxes.splice(j, 1)
+        merged = true
+        break
+      }
+    }
+  }
+  // one marker per country: the group with the most land (Fiji's main islands, Kiribati's
+  // Gilbert Islands with Tarawa, Pohnpei for Micronesia…)
+  const main = ELLIPSE_MAIN[name]
+  const near = (b) => main && main[0] >= b[0] - 1 && main[0] <= b[2] + 1 && main[1] >= b[1] - 1 && main[1] <= b[3] + 1
+  if (boxes.length > 1) boxes = [boxes.find(near) ?? boxes.reduce((a, b) => (b.area > a.area ? b : a))]
+  out = boxes.map(([w, s, e, n]) => {
+    const lat = (s + n) / 2
+    // a degree of longitude shrinks with cos(lat) on the sphere: pad / minimum in true
+    // distance, so the ellipse looks round on the globe (not squashed)
+    const k = Math.max(0.3, Math.cos(lat * Math.PI / 180))
+    return {
+      lon: wrapLon((w + e) / 2), lat,
+      rlon: Math.min(ELL_MAX / k, Math.max(ELL_MIN / k, (e - w) / 2 + ELL_PAD / k)),
+      rlat: Math.min(ELL_MAX, Math.max(ELL_MIN, (n - s) / 2 + ELL_PAD)),
+    }
+  })
+  ELL_CACHE.set(feature, out)
+  return out
+}
+
+/** Is (lon, lat) inside one of the feature's island ellipses (with some slack for clicks)? */
+export function hitsIslandEllipse(feature, lon, lat, slack = 1.4) {
+  if (!ELLIPSE_COUNTRIES.has(feature.properties?.NAME)) return false
+  return islandEllipses(feature).some(e => {
+    const dx = wrapLon(lon - e.lon) / e.rlon
+    const dy = (lat - e.lat) / e.rlat
+    return dx * dx + dy * dy <= slack * slack
+  })
 }
 
 export const HULL_COUNTRY_NAMES = new Set([
@@ -115,22 +205,6 @@ const DISPLAY_MERGE = {
   'W. Sahara': 'Mauritania',
 }
 
-// Countries where geoBounds is unreliable (antimeridian crossers or weirdly shaped).
-// lon/lat = visual center to project; rx/ry = canvas pixels.
-// Note: keys here use the raw GeoJSON names (pre-override) for the rendering pass.
-const FIXED_ELLIPSE = {
-  'Malta':            { lon:  14.4, lat:  35.9, rx: 14, ry: 11 },
-  'Fiji':             { lon: 178,   lat: -18,  rx: 32, ry: 20 },
-  'Kiribati':         { lon: 173,   lat:   1,  rx: 24, ry: 14 },
-  'Federated States of Micronesia': { lon: 153, lat: 7, rx: 44, ry: 14 },
-  'Micronesia':       { lon: 153,   lat:   7,  rx: 44, ry: 14 },
-  'Tuvalu':           { lon: 179,   lat:  -8,  rx: 10, ry: 24 },
-  'Marshall Is.':    { lon: 168,   lat:   7,  rx: 18, ry: 26 },
-  'Samoa':           { lon: -172,  lat: -13.5, rx: 16, ry: 12 },
-}
-
-const PAD   = 6   // extra px padding around the bounding box
-const MIN_R = 8   // minimum radius
 
 const PATH_CACHE = new WeakMap()   // feature → Path2D in canvas pixels
 function projectedPath(feature, proj) {
@@ -376,38 +450,6 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     const name = feature.properties.NAME
     if (!ELLIPSE_COUNTRIES.has(name)) continue
 
-    let rx, ry, cx, cy
-
-    if (FIXED_ELLIPSE[name]) {
-      // Antimeridian-crossing: use hardcoded visual center + size
-      const { lon, lat, rx: frx, ry: fry } = FIXED_ELLIPSE[name]
-      const cp = proj([lon, lat])
-      if (!cp) continue
-      ;[cx, cy] = cp
-      rx = frx
-      ry = fry
-    } else {
-      // Derive ellipse size from the projected bounding box
-      let bounds
-      try { bounds = geoBounds(feature) } catch { continue }
-      const [[minLon, minLat], [maxLon, maxLat]] = bounds
-
-      // Project the four corners and take the pixel extent
-      const p1 = proj([minLon, minLat])
-      const p2 = proj([maxLon, maxLat])
-      if (!p1 || !p2) continue
-
-      const pxW = Math.abs(p2[0] - p1[0])
-      const pxH = Math.abs(p2[1] - p1[1])
-
-      rx = Math.max(MIN_R, pxW / 2 + PAD)
-      ry = Math.max(MIN_R, pxH / 2 + PAD)
-
-      // Center on the midpoint of the bounding box (better than centroid for archipelagos)
-      cx = (p1[0] + p2[0]) / 2
-      cy = (p1[1] + p2[1]) / 2
-    }
-
     // Ellipse color: guess color when guessed, white semi-transparent otherwise
     const linkedName = LINKED_COUNTRIES[name]
     const guessColor = guessMap[name] ?? (linkedName ? guessMap[linkedName] : null)
@@ -418,34 +460,40 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     // ocean gradient here would be offset by the translate() below and show a ghost ellipse.
     if (isEllipseHidden) continue
 
-    ctx.save()
-    ctx.translate(cx, cy)
-    ctx.beginPath()
-    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
-    if (isWinner) {
-      ctx.fillStyle = '#5BD18B'
-    } else if (name === highlightedName) {
-      ctx.fillStyle = '#f97316'
-    } else if (guessColor) {
-      ctx.fillStyle = guessColor
-    } else if (missedSet?.has(name)) {
-      ctx.fillStyle = '#ef4444'
-    } else {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
-    }
+    // Fill / outline for this country's state
+    let fill
+    if (isWinner) fill = '#5BD18B'
+    else if (name === highlightedName) fill = '#f97316'
+    else if (guessColor) fill = guessColor
+    else if (missedSet?.has(name)) fill = '#ef4444'
+    else fill = 'rgba(255, 255, 255, 0.45)'
     const tinted = isWinner || name === highlightedName || guessColor || missedSet?.has(name)
+
+    ctx.beginPath()
+    for (const e of islandEllipses(feature)) {
+      const c = proj([e.lon, e.lat])
+      if (!c) continue
+      const rx = e.rlon * PX_PER_DEG, ry = e.rlat * PX_PER_DEG
+      // Draw a wrapped copy when the ellipse crosses the texture edge (±180°)
+      for (const dx of [0, -CANVAS_W, CANVAS_W]) {
+        const x = c[0] + dx
+        if (x + rx < 0 || x - rx > CANVAS_W) continue
+        ctx.moveTo(x + rx, c[1])
+        ctx.ellipse(x, c[1], rx, ry, 0, 0, Math.PI * 2)
+      }
+    }
+    ctx.fillStyle = fill
     if (tinted) {
       // Coloured states: translucent fill + crisp outline, so the islands stay visible underneath
       ctx.globalAlpha = 0.38
       ctx.fill()
       ctx.globalAlpha = 1
-      ctx.strokeStyle = ctx.fillStyle
+      ctx.strokeStyle = fill
       ctx.lineWidth = 2.5
       ctx.stroke()
     } else {
       ctx.fill()
     }
-    ctx.restore()
   }
 
   // Lines + pins (drawn under the locate pin, so the pin stays on top)

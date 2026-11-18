@@ -24,6 +24,33 @@ export function useTypeToStart(enabled, begin) {
   }) // re-bind each render so `begin` sees fresh state
 }
 
+/**
+ * A game that starts on the first keystroke swaps its start screen for its own answer box a moment
+ * later. Keys typed in between would be lost, so this hands them to that box once it appears.
+ */
+export function carryKeystrokes(ms = 1500) {
+  const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+  const target = () => [...document.querySelectorAll('input[type="text"], input:not([type])')]
+    .find(el => !el.classList.contains('setup-input') && el.offsetParent !== null && !el.disabled)
+  const onKey = (e) => {
+    const el = target()
+    if (!el || document.activeElement === el || e.metaKey || e.ctrlKey || e.altKey) return
+    if (e.key.length === 1) {
+      e.preventDefault()
+      el.focus()
+      setValue.call(el, el.value + e.key)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+    } else if (e.key === 'Backspace') {
+      e.preventDefault()
+      el.focus()
+      setValue.call(el, el.value.slice(0, -1))
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+  }
+  window.addEventListener('keydown', onKey, true)
+  setTimeout(() => window.removeEventListener('keydown', onKey, true), ms)
+}
+
 /** Compact option toggles shown above the answer bar before a game starts. */
 export function ReadyOptions({ options, values, onChange }) {
   if (!options.length) return null
@@ -55,10 +82,10 @@ export function ReadyOptions({ options, values, onChange }) {
   )
 }
 
-export function StartButton({ onClick }) {
+export function StartButton({ onClick, label = 'Start' }) {
   return (
     <button className="tq-btn tq-btn-primary qr-start" onClick={onClick}>
-      {t('Start')} <kbd>{t('Enter')}</kbd>
+      {t(label)} <kbd>{t('Enter')}</kbd>
     </button>
   )
 }

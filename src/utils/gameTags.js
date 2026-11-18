@@ -47,6 +47,7 @@ const ADDED = {
   'it-regions': '2026-11-16', 'it-capitals': '2026-11-16', 'it-quiz': '2026-11-16', 'country-it': '2026-11-16', 'fr-regions': '2026-11-16', 'fr-capitals': '2026-11-16', 'fr-quiz': '2026-11-16', 'country-fr': '2026-11-16', 'de-states': '2026-11-16', 'de-capitals': '2026-11-16', 'de-quiz': '2026-11-16', 'country-de': '2026-11-16', 'es-regions': '2026-11-16', 'es-capitals': '2026-11-16', 'es-quiz': '2026-11-16', 'country-es': '2026-11-16', 'jp-prefectures': '2026-11-16', 'jp-capitals': '2026-11-16', 'jp-quiz': '2026-11-16', 'country-jp': '2026-11-16',
   ...Object.fromEntries([...TRIPOINT_IDS].map(id => [id, '2026-11-17'])),
   'gb-regions': '2026-11-17', 'gb-quiz': '2026-11-17', 'country-gb': '2026-11-17', 'pl-voivodeships': '2026-11-17', 'pl-capitals': '2026-11-17', 'pl-quiz': '2026-11-17', 'country-pl': '2026-11-17', 'hu-counties': '2026-11-17', 'hu-seats': '2026-11-17', 'hu-quiz': '2026-11-17', 'country-hu': '2026-11-17', 'br-states': '2026-11-17', 'br-capitals': '2026-11-17', 'br-quiz': '2026-11-17', 'country-br': '2026-11-17', 'ca-provinces': '2026-11-17', 'ca-capitals': '2026-11-17', 'ca-quiz': '2026-11-17', 'country-ca': '2026-11-17', 'au-states': '2026-11-17', 'au-capitals': '2026-11-17', 'au-quiz': '2026-11-17', 'country-au': '2026-11-17',
+  islands: '2026-11-18', peninsulas: '2026-11-18',
 }
 const NEW_DAYS = 21
 export function isNewGame(id, now = Date.now()) {

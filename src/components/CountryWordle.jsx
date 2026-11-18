@@ -12,6 +12,7 @@ import { t, isRo, continentName } from '../i18n'
 import { plain } from '../utils/plain'
 import Icon from './Icon'
 import { shareText } from '../utils/share'
+import StateNote from './StateNote'
 
 const MODE = 'country-wordle'
 const KEYS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']
@@ -151,7 +152,7 @@ export default function CountryWordle({ countryNames = [] }) {
     if (await shareText(text) === 'copied') { setCopied(true); setTimeout(() => setCopied(false), 2000) }
   }
 
-  if (!game) return <div className="arc-wrap"><div className="game-intro-wait">{t('Loading…')}</div></div>
+  if (!game) return <div className="arc-wrap"><StateNote kind="loading">{t('Loading…')}</StateNote></div>
 
   const info = COUNTRY_INFO[game.country]
   const streak = game.daily ? wordleStreak(game.day) : 0

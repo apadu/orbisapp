@@ -5,6 +5,7 @@ import { startSession, trackAnswer, finishGame, setPoolSize } from '../utils/res
 import { playCorrect, playWin, playWrong } from '../utils/sounds'
 import { StartButton, useTypeToStart } from './QuizReady'
 import { setRules } from '../utils/rulesStore'
+import { AttemptNote, QuizResultStats, pastRounds } from './QuizStats'
 import GiveUpButton from './GiveUpButton'
 import TryNext from './TryNext'
 import QuizComments from './QuizComments'
@@ -12,6 +13,7 @@ import GameIcon from './GameIcon'
 import ShareButton, { resultText } from './ShareButton'
 import { t, cn } from '../i18n'
 import { plain } from '../utils/plain'
+import StateNote from './StateNote'
 
 /**
  * Tripoints: a grid of small atlas-style maps, each centred on a point where three countries meet.
@@ -75,6 +77,8 @@ export default function TripointQuiz({ quizId, onOpen }) {
   const foundRef = useRef(found)
   foundRef.current = found
   const inputRef = useRef(null)
+  const [lastRow, setLastRow] = useState(null)
+  const prevRef = useRef([])
   const pendingRef = useRef(null)
   const playing = phase === 'playing'
   const over = phase === 'done'
@@ -101,6 +105,8 @@ export default function TripointQuiz({ quizId, onOpen }) {
     setTimeLeft(TIME_S)
     setEndReason(null)
     setPhase('playing')
+    prevRef.current = pastRounds(mode)
+    setLastRow(null)
     startSession(mode)
     setPoolSize(mode, total)
     inputRef.current?.focus()
@@ -111,7 +117,7 @@ export default function TripointQuiz({ quizId, onOpen }) {
     clearTimeout(pendingRef.current)
     const done = foundRef.current
     points.forEach((tp, i) => tp.countries.forEach(n => { if (!done[i].includes(n)) trackAnswer(mode, n, false, 0, null, { silent: true }) }))
-    finishGame(mode, { completed: true, meta: { set: quiz.num } })
+    setLastRow(finishGame(mode, { completed: true, meta: { set: quiz.num } }))
     setEndReason(reason)
     setPhase('done')
     if (reason === 'complete') playWin(); else playWrong()
@@ -170,6 +176,14 @@ export default function TripointQuiz({ quizId, onOpen }) {
   const pct = Math.round((score / total) * 100)
   const missed = total - score
 
+  // timer · untimed · score: in the sticky answer bar while playing, in the header once it's over
+  const statsBlock = (
+    <div className="tq-stats">
+      <span className={`tq-timer${playing && timeLeft <= 30 ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
+      <span className="tq-score"><strong>{score}</strong> / {total}</span>
+    </div>
+  )
+
   return (
     <div className={`tq tpq${over ? ' tq-done' : ''}${ready ? ' tq-ready' : ''}`}>
       <header className="tq-head">
@@ -180,10 +194,7 @@ export default function TripointQuiz({ quizId, onOpen }) {
             <p>{quiz.prompt}</p>
           </div>
         </div>
-        <div className="tq-stats">
-          <span className={`tq-timer${playing && timeLeft <= 30 ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
-          <span className="tq-score"><strong>{score}</strong> / {total}</span>
-        </div>
+        {over && statsBlock}
       </header>
 
       <div className="tq-bar">
@@ -199,6 +210,7 @@ export default function TripointQuiz({ quizId, onOpen }) {
               autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
               aria-label={quiz.prompt}
             />
+            {statsBlock}
             {ready ? <StartButton onClick={() => begin()} /> : <GiveUpButton onConfirm={() => finish('giveup')} />}
           </>
         ) : (
@@ -218,10 +230,12 @@ export default function TripointQuiz({ quizId, onOpen }) {
 
       <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
 
-      {over && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
+      {ready && <AttemptNote mode={quizId} />}
 
-      {mapError ? <p className="cmq-msg">{t('Could not load the map. Check your connection and try again.')}</p>
-        : !maps ? <p className="cmq-msg">{t('Loading map…')}</p> : (
+      {(phase === 'done') && <QuizResultStats mode={quizId} row={lastRow} prev={prevRef.current} record={true} />}
+
+      {mapError ? <StateNote kind="error">{t('Could not load the map. Check your connection and try again.')}</StateNote>
+        : !maps ? <StateNote kind="loading">{t('Loading map…')}</StateNote> : (
         <div className="tpq-grid">
           {points.map((tp, i) => {
             const got = found[i]
@@ -244,6 +258,7 @@ export default function TripointQuiz({ quizId, onOpen }) {
           })}
         </div>
       )}
+      {over && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
 
       <QuizComments quiz={quizId} unlocked={over} />
     </div>

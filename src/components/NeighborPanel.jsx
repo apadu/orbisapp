@@ -6,6 +6,7 @@ import { playCorrect, playWrong } from '../utils/sounds'
 import { t, cn } from '../i18n'
 import { useGameHud } from '../utils/hudStore'
 import { plain } from '../utils/plain'
+import StateNote from './StateNote'
 
 function norm(s) {
   return s.trim().toLowerCase().replace(/[^a-z]/g, '')
@@ -66,7 +67,7 @@ export default function NeighborPanel({ target, neighbors, found, missed, done, 
   if (!target) return (
     <div className="panel-header">
       <h2>{plain(t('📌 Neighbor Challenge'))}</h2>
-      <p className="panel-subtitle">{t('Loading…')}</p>
+      <StateNote kind="loading" compact>{t('Loading…')}</StateNote>
     </div>
   )
 

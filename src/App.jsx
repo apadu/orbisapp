@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
-import Globe, { FIXED_ELLIPSE_CENTERS } from './components/Globe'
+import Globe, { hitsIslandEllipse } from './components/Globe'
 import GamePanel from './components/GamePanel'
 import CommandPalette, { PALETTE_SHORTCUT } from './components/CommandPalette'
 import RailNav from './components/RailNav'
@@ -34,6 +34,7 @@ import RulesHint from './components/RulesHint'
 import { TABLE_QUIZ_IDS, TABLE_QUIZZES } from './quizzes/tableQuizzes'
 import { COUNTRY_MAP_QUIZZES, COUNTRY_MAP_IDS } from './data/countryMaps'
 import { TRIPOINT_QUIZZES, TRIPOINT_IDS } from './quizzes/tripointQuizzes'
+import { LANDFORM_QUIZZES, LANDFORM_IDS } from './quizzes/landformQuizzes'
 import { COUNTRY_PAGES, COUNTRY_PAGE_IDS, COUNTRY_GAME_HOME, countryName } from './data/countryPages'
 import { clearRules } from './utils/rulesStore'
 import HomePage from './components/HomePage'
@@ -79,6 +80,7 @@ const InfoPage = lazy(() => import('./components/InfoPage'))
 const TableQuiz = lazy(() => import('./components/TableQuiz'))
 const CountryMapQuiz = lazy(() => import('./components/CountryMapQuiz'))
 const TripointQuiz = lazy(() => import('./components/TripointQuiz'))
+const LandformQuiz = lazy(() => import('./components/LandformQuiz'))
 const CountryPage = lazy(() => import('./components/CountryPage'))
 const CountriesHub = lazy(() => import('./components/CountriesHub'))
 const GamesSection = lazy(() => import('./components/GamesSection'))
@@ -150,6 +152,7 @@ const QUIZ_MODES = new Set([
   ...TABLE_QUIZ_IDS,
   ...COUNTRY_MAP_IDS,
   ...TRIPOINT_IDS,
+  ...LANDFORM_IDS,
   ...COUNTRY_PAGE_IDS,
   'countries', 'globe-hub', 'nameall-hub',
   'daily-quiz',
@@ -744,18 +747,10 @@ export default function App() {
 
   // ── Learn mode handler ──────────────────────────────────────────────────
   const handleLearnClick = useCallback((lon, lat) => {
-    // Canvas is 4096×2048 for 360°×180° → 1px ≈ 0.0879°; use 1.8× slack for click tolerance
-    const PX_TO_DEG = (180 / 2048) * 1.8
 
     // 1. Fixed-ellipse countries (Fiji, Kiribati, Micronesia, etc.) — check by
     //    proximity to their known visual center, scaled from canvas pixel radii
-    let hit = countries.find(f => {
-      const fe = FIXED_ELLIPSE_CENTERS[f.properties.NAME]
-      if (!fe) return false
-      const dLon = Math.abs(lon - fe.lon)
-      const dLat = Math.abs(lat - fe.lat)
-      return dLon < fe.rx * PX_TO_DEG && dLat < fe.ry * PX_TO_DEG
-    })
+    let hit = countries.find(f => hitsIslandEllipse(f, lon, lat))
 
     // 2. geoContains — with bbox pre-filter to block wrongly-wound polygons
     //    from claiming clicks thousands of km from their actual territory
@@ -815,16 +810,10 @@ export default function App() {
 
   const handleLocateClick = useCallback((lon, lat) => {
     if (locateGuessed || !locateCurrent || locateGameOver || locateExpired) return
-    const PX_TO_DEG = (180 / 2048) * 1.8
 
     // ── Identify which country was actually clicked (same 4-step logic as Learn mode) ──
     // Step 1: fixed-ellipse countries (Fiji, Kiribati, Micronesia, etc.)
-    let clicked = countries.find(f => {
-      const fe = FIXED_ELLIPSE_CENTERS[f.properties.NAME]
-      if (!fe) return false
-      return Math.abs(lon - fe.lon) < fe.rx * PX_TO_DEG &&
-             Math.abs(lat - fe.lat) < fe.ry * PX_TO_DEG
-    })
+    let clicked = countries.find(f => hitsIslandEllipse(f, lon, lat))
     // Step 2: geoContains with bbox pre-filter
     if (!clicked) {
       clicked = countries.find(f => {
@@ -1289,7 +1278,7 @@ export default function App() {
                 : <button className="quiz-nav-back" onClick={goHome}>{t('← Home')}</button>
             )}
             <span className="quiz-nav-title">
-              {mode === 'daily-quiz' ? t('Daily Quiz') : mode === 'countries' ? t('Countries') : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all') : COUNTRY_PAGE_IDS.has(mode) ? (isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en) : COUNTRY_MAP_IDS.has(mode) ? COUNTRY_MAP_QUIZZES[mode].title : TRIPOINT_IDS.has(mode) ? TRIPOINT_QUIZZES[mode].title : TABLE_QUIZ_IDS.has(mode) ? TABLE_QUIZZES[mode].title : QUIZ_MODES.has(mode) ? GAME_CATALOG[mode]?.label ?? t(QUIZ_LABELS[mode]) : t('Quiz Hub')}
+              {mode === 'daily-quiz' ? t('Daily Quiz') : mode === 'countries' ? t('Countries') : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all') : COUNTRY_PAGE_IDS.has(mode) ? (isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en) : COUNTRY_MAP_IDS.has(mode) ? COUNTRY_MAP_QUIZZES[mode].title : TRIPOINT_IDS.has(mode) ? TRIPOINT_QUIZZES[mode].title : LANDFORM_IDS.has(mode) ? LANDFORM_QUIZZES[mode].title : TABLE_QUIZ_IDS.has(mode) ? TABLE_QUIZZES[mode].title : QUIZ_MODES.has(mode) ? GAME_CATALOG[mode]?.label ?? t(QUIZ_LABELS[mode]) : t('Quiz Hub')}
             </span>
             {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && !COUNTRY_PAGE_IDS.has(mode) && !SECTION_PAGES.has(mode) && <RulesHint className="rules-hint-quiz" />}
           </div>
@@ -1315,6 +1304,8 @@ export default function App() {
               <CountryMapQuiz key={mode} quizId={mode} onOpen={openGame} />
             ) : TRIPOINT_IDS.has(mode) ? (
               <TripointQuiz key={mode} quizId={mode} onOpen={openGame} />
+            ) : LANDFORM_IDS.has(mode) ? (
+              <LandformQuiz key={mode} quizId={mode} onOpen={openGame} />
             ) : TABLE_QUIZ_IDS.has(mode) ? (
               <TableQuiz key={mode} quizId={mode} countryNames={gameCountryNames} onOpen={openGame} />
             ) : (

@@ -5,6 +5,7 @@ import { playCorrect, playWin, playWrong } from '../utils/sounds'
 import { getSavedSetup, saveSetup } from './SetupCard'
 import { ReadyOptions, StartButton, useTypeToStart } from './QuizReady'
 import { setRules } from '../utils/rulesStore'
+import { AttemptNote, QuizResultStats, pastRounds } from './QuizStats'
 import GiveUpButton from './GiveUpButton'
 import TryNext from './TryNext'
 import QuizComments from './QuizComments'
@@ -15,6 +16,7 @@ import { countryGame } from '../data/countryPages'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import ShareButton, { resultText } from './ShareButton'
+import StateNote from './StateNote'
 
 const MIN_ROWS = 5
 const COL_GAP = 18
@@ -23,7 +25,7 @@ const COL_GAP = 18
  * Splits the table into equal columns, filled top to bottom. A CSS grid (not CSS columns)
  * so every row lines up across columns and all columns end on the same line.
  */
-function useColumns(minWidth) {
+export function useColumns(minWidth) {
   const [el, setEl] = useState(null)      // callback ref: the table may mount after the first render
   const [cols, setCols] = useState(1)
   useEffect(() => {
@@ -38,7 +40,7 @@ function useColumns(minWidth) {
 }
 
 /** Grid cell of row i when n rows are split as evenly as possible into `cols` columns (top to bottom). */
-function cellOf(i, n, cols) {
+export function cellOf(i, n, cols) {
   const base = Math.floor(n / cols), extra = n % cols   // the first `extra` columns get one more row
   const big = extra * (base + 1)
   const col = i < big ? Math.floor(i / (base + 1)) : extra + Math.floor((i - big) / Math.max(1, base))
@@ -139,6 +141,8 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
   const inputRef   = useRef(null)
   const startedAt  = useRef(0)
   const [result, setResult] = useState(null)
+  const [lastRow, setLastRow] = useState(null)          // the round just finished (for the stats panel)
+  const prevRef = useRef([])                            // earlier rounds, taken when this one started
   const pendingRef = useRef(null)
   const filledRef  = useRef(filled)
   filledRef.current = filled
@@ -192,9 +196,11 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
     setInput(typed ?? '')
     setPhase('playing')
     startedAt.current = Date.now()
+    prevRef.current = pastRounds(mode)
+    setLastRow(null)
     startSession(mode)
     setPoolSize(mode, built.length)   // left half-way: 9/196, not 9/9
-    if (daily) markSession(mode, { day: daily.day, quizId, region: reg })
+    if (daily) { markSession(mode, { day: daily.day, quizId, region: reg }); daily.onStart?.() }
     inputRef.current?.focus()   // same input as before the start: keep the next keystrokes
     setTimeout(() => inputRef.current?.focus(), 30)
   }, [rows, region, mode, daily, quizId])
@@ -211,7 +217,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
     for (const r of rows) {
       if (!done.has(r.id)) trackAnswer(mode, r.country ?? null, false, 0, r.country ? null : r.id, { silent: true })
     }
-    finishGame(mode, { completed: true, meta: { region } })
+    setLastRow(finishGame(mode, { completed: true, meta: { region, variant: `${region}|${rows.length}` } }))
     if (reason === 'complete') playWin(); else playWrong()
     const res = { score: done.size, total: rows.length, durationMs: Date.now() - startedAt.current, reason, region }
     setResult(res)
@@ -313,10 +319,10 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
     document.querySelector(`[data-row-id="${CSS.escape(activeId)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [activeId, phase, quiz.focus])
 
-  // Daily quiz: no setup screen — start right away with the day's fixed selection
+  // Daily quiz: board first with the day's fixed selection (no options); Start / typing begins it
   useEffect(() => {
-    if (daily && phase === 'setup' && countryNames.length) start(daily.region, undefined, daily.size ?? 20)
-  }, [daily, phase, countryNames.length]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (daily && phase === 'setup' && countryNames.length) prepare(daily.region, daily.size ?? 20)
+  }, [daily?.day, phase, countryNames.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Board first: lay out the (empty) quiz with the saved options; Start / typing begins it
   useEffect(() => {
@@ -340,12 +346,12 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
     })
   }, [quizId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const ready = phase === 'setup' && !daily
+  const ready = phase === 'setup'
   const changeSetup = (v) => { saveSetup(quizId, v); setSetup(v) }
-  const beginNow = (typed) => { saveSetup(quizId, setup); begin(typed) }
+  const beginNow = (typed) => { if (!daily) saveSetup(quizId, setup); begin(typed) }
   useTypeToStart(ready && rows.length > 0, beginNow)
 
-  if (phase === 'setup' && daily) return <div className="game-intro-wait">{t('Loading today\'s quiz…')}</div>
+  if (phase === 'setup' && daily && !rows.length) return <StateNote kind="loading">{t('Loading today\'s quiz…')}</StateNote>
 
   // ── Play / results ─────────────────────────────────────────────────────────
   const total = rows.length
@@ -355,6 +361,23 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
   const danger = playing && timeLeft <= 30
   const pct = total ? Math.round((score / total) * 100) : 0
   const activeRow = quiz.focus ? rows.find(r => r.id === activeId) : null
+
+  // timer · untimed · score: in the sticky answer bar while playing, in the header once it's over
+  const statsBlock = (
+    <div className="tq-stats">
+      {untimed ? (
+        <span className="tq-timer tq-untimed" title={t('Untimed — this game earns no XP')}>{t('∞ Untimed · no XP')}</span>
+      ) : (
+        <>
+          <span className={`tq-timer${danger ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
+          {playing && !daily && (
+            <button className="tq-untimed-btn" onClick={() => setConfirmUntimed(true)} title={t('Stop the clock (no XP)')}>∞</button>
+          )}
+        </>
+      )}
+      <span className="tq-score"><strong>{score}</strong> / {total}</span>
+    </div>
+  )
 
   return (
     <div className={`tq${over ? ' tq-done' : ''}${ready ? ' tq-ready' : ''}`}>
@@ -366,19 +389,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
             <p>{quiz.prompt}</p>
           </div>
         </div>
-        <div className="tq-stats">
-          {untimed ? (
-            <span className="tq-timer tq-untimed" title={t('Untimed — this game earns no XP')}>{t('∞ Untimed · no XP')}</span>
-          ) : (
-            <>
-              <span className={`tq-timer${danger ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
-              {playing && !daily && (
-                <button className="tq-untimed-btn" onClick={() => setConfirmUntimed(true)} title={t('Stop the clock (no XP)')}>∞</button>
-              )}
-            </>
-          )}
-          <span className="tq-score"><strong>{score}</strong> / {total}</span>
-        </div>
+        {over && statsBlock}
       </header>
 
       {confirmUntimed && (
@@ -399,7 +410,9 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
         </div>
       )}
 
-      {ready && <ReadyOptions options={setupOptions} values={setup} onChange={changeSetup} />}
+      {ready && !daily && <ReadyOptions options={setupOptions} values={setup} onChange={changeSetup} />}
+      {ready && !daily && <AttemptNote mode={quizId} />}
+      {ready && daily && <p className="qs-attempt tq-daily-note">{t('One attempt — once you start, leaving counts as your attempt.')}</p>}
 
       <div className="tq-bar">
         {!over ? (
@@ -420,6 +433,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
               autoCorrect="off"
               spellCheck={false}
             />
+            {statsBlock}
             {ready ? <StartButton onClick={() => beginNow()} /> : <GiveUpButton onConfirm={() => finish('giveup')} />}
           </>
         ) : (
@@ -439,7 +453,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
 
       <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
 
-      {phase === 'done' && !daily && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
+      {phase === 'done' && !daily && <QuizResultStats mode={quizId} variant={`${region}|${rows.length}`} row={lastRow} prev={prevRef.current} record={!untimed} />}
 
       {quiz.layout === 'grid' ? (
         <div className="tq-grid">
@@ -483,6 +497,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
           </div>
         </div>
       )}
+      {phase === 'done' && !daily && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
 
       {!daily && <QuizComments quiz={quizId} unlocked={phase === 'done'} />}
     </div>

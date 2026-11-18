@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { t } from '../i18n'
+import StateNote from './StateNote'
 
 /**
  * End-of-game summary: big score, accuracy ring, and a Missed / Found toggle
@@ -62,7 +63,7 @@ export default function GameSummary({ found = [], missed = [], total, noun = 'it
                 {i.sub && <span className="gs-chip-sub">{i.sub}</span>}
               </span>
             ))}
-            {shown.length === 0 && <span className="gs-empty">{t('Nothing matches.')}</span>}
+            {shown.length === 0 && <StateNote compact>{t('Nothing matches.')}</StateNote>}
           </div>
         </>
       )}

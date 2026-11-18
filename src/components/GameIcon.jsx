@@ -24,9 +24,10 @@ const BY_ID = {
   'former-names': 'scroll', monarchies: 'crown', 'drive-left': 'car', ww1: 'sword', ww2: 'sword',
   caribbean: 'island', 'central-america': 'mountain', nordic: 'snow', 'gulf-states': 'drop',
   'higher-lower': 'scale', 'true-false': 'checkx', 'country-wordle': 'grid', connections: 'link', 'border-chain': 'link',
+  islands: 'island', peninsulas: 'map',
   'daily-quiz': 'calendar', 'quiz-hub': 'flag', countries: 'map', 'globe-hub': 'globe', 'nameall-hub': 'list',
 }
-const BY_CAT = { tripoints: 'tripoint', flags: 'flag', capitals: 'building', words: 'letters', culture: 'book', numbers: 'chart', lists: 'list', arcade: 'bolt', puzzles: 'puzzle' }
+const BY_CAT = { tripoints: 'tripoint', flags: 'flag', capitals: 'building', words: 'letters', culture: 'book', numbers: 'chart', lists: 'list', arcade: 'bolt', puzzles: 'puzzle', maps: 'map' }
 
 export function gameIconName(id) {
   if (BY_ID[id]) return BY_ID[id]

@@ -218,8 +218,11 @@ async function pushToServer(rows) {
  * Uploads guest results, then pulls the account's full history into the local cache.
  */
 export async function setResultsUser(userId) {
-  flushSessions()
+  // Supabase re-announces the same user on every token refresh and when the tab regains focus;
+  // flushing then would cut a running game in two (148/196 saved, then 1/196). Only a real
+  // change of user closes the open games.
   if (userId === currentUserId) return
+  flushSessions()
   currentUserId = userId ?? null
   emit()
   if (!userId || !supabase) return

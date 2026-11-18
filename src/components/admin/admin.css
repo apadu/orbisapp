@@ -119,3 +119,9 @@
   .adm-err-msg { flex-basis: calc(100% - 80px); white-space: normal; word-break: break-word; }
   .adm-err-meta { width: 100%; }
 }
+
+/* Quiz ratings table */
+.adm-good { color: #5BD18B; }
+.adm-bad { color: #f87171; }
+.adm-stars-dist { display: inline-flex; align-items: flex-end; gap: 2px; height: 22px; vertical-align: middle; }
+.adm-stars-dist > span { width: 9px; min-height: 2px; background: #C9A86A; border-radius: 2px 2px 0 0; }

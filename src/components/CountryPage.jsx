@@ -6,6 +6,7 @@ import { t, isRo } from '../i18n'
 import GameIcon from './GameIcon'
 import Icon from './Icon'
 import { plain } from '../utils/plain'
+import StateNote from './StateNote'
 
 // The facts' emoji in the data files → line icons
 const FACT_ICON = { '🏛️': 'building', '👥': 'people', '📐': 'ruler', '🗺️': 'map', '⛰️': 'mountain', '💶': 'coin', '💴': 'coin', '💵': 'coin', '🗣️': 'speech', '📅': 'calendar' }
@@ -61,8 +62,8 @@ export default function CountryPage({ pageId, onOpen }) {
                 : (page.mapHint ? pick(page.mapHint) : t('Hover or tap a county'))}
             </span>
           </div>
-          {error && <p className="cmq-msg">{t('Could not load the map. Check your connection and try again.')}</p>}
-          {!drawn && !error && <p className="cmq-msg">{t('Loading map…')}</p>}
+          {error && <StateNote kind="error">{t('Could not load the map. Check your connection and try again.')}</StateNote>}
+          {!drawn && !error && <StateNote kind="loading">{t('Loading map…')}</StateNote>}
           {drawn && (
             <svg className="ctry-map" viewBox={`0 0 ${drawn.W} ${drawn.H}`} role="img" aria-label={pick(page.name)} onMouseLeave={() => setHover(null)}>
               <defs><clipPath id={`ctry-clip-${pageId}`}><rect width={drawn.W} height={drawn.H} /></clipPath></defs>

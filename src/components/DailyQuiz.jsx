@@ -3,11 +3,13 @@ import TableQuiz from './TableQuiz'
 import { dailyNumber, dailyQuizFor, msToNextDaily, dailyShareText, utcDayStartISO } from '../quizzes/daily'
 import { loadResults, subscribeResults, fetchLeaderboard } from '../utils/results'
 import { useAuth } from '../auth/AuthContext'
-import { t, locale, continentName } from '../i18n'
+import { t, locale } from '../i18n'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import Icon from './Icon'
 import { shareText } from '../utils/share'
+import { supabase } from '../lib/supabase'
+import StateNote from './StateNote'
 
 function fmtClock(ms) {
   const s = Math.max(0, Math.floor(ms / 1000))
@@ -58,8 +60,8 @@ function DailyLeaderboard() {
     <div className="dq-lb">
       <div className="dq-lb-head">{plain(t('🏆 Today\'s leaderboard'))}</div>
       {!user && <div className="dq-lb-hint"><button onClick={openAuth}>{t('Sign in')}</button> {t('to appear on it.')}</div>}
-      {rows === null ? <div className="dq-lb-empty">{t('Loading…')}</div>
-        : rows.length === 0 ? <div className="dq-lb-empty">{t('No scores yet today — be the first!')}</div>
+      {rows === null ? <StateNote kind="loading" compact>{t('Loading…')}</StateNote>
+        : rows.length === 0 ? <StateNote compact>{t('No scores yet today — be the first!')}</StateNote>
         : rows.slice(0, 10).map(r => (
           <div key={r.user_id} className={`dq-lb-row${r.user_id === user?.id ? ' me' : ''}`}>
             <span className="dq-lb-rank">{r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</span>
@@ -72,7 +74,40 @@ function DailyLeaderboard() {
   )
 }
 
-function ResultCard({ info, res, streak, onPractice }) {
+/**
+ * "Better than 64% of today's players": everyone plays the same daily, so the comparison is exact.
+ * The round is counted once per device and day (quiz_plays, see supabase/quiz_stats.sql).
+ */
+function DailyRank({ day, score, total, record }) {
+  const [stats, setStats] = useState(null)
+  useEffect(() => {
+    if (!supabase || !total) return
+    let alive = true
+    const variant = `day-${day}`
+    const flag = `orbis-dq-counted-${day}`
+    ;(async () => {
+      let counted = false
+      try { counted = localStorage.getItem(flag) === '1' } catch { /* private mode */ }
+      if (record && !counted) {
+        const { error } = await supabase.from('quiz_plays').insert({ mode: 'daily-quiz', variant, correct: score, total })
+        if (!error) { try { localStorage.setItem(flag, '1') } catch { /* private mode */ } counted = true }
+      }
+      const { data, error } = await supabase.rpc('quiz_stats', { p_mode: 'daily-quiz', p_variant: variant, p_correct: score, p_total: total })
+      if (alive && !error && data) setStats({ ...data, others: data.plays - (counted ? 1 : 0) })
+    })()
+    return () => { alive = false }
+  }, [day, score, total, record])
+  if (!stats) return null
+  return (
+    <div className="dq-rank">
+      {stats.others > 0
+        ? <>{t('Better than {p}% of today\'s players', { p: Math.round((stats.below / stats.others) * 100) })} <span className="dq-rank-sub">· {t(stats.plays === 1 ? '{n} player today' : '{n} players today', { n: stats.plays })}{stats.avg_pct != null && <> · {t('average {p}%', { p: stats.avg_pct })}</>}</span></>
+        : t('You\'re the first to play today\'s quiz!')}
+    </div>
+  )
+}
+
+function ResultCard({ info, res, streak, onPractice, record = false }) {
   const [copied, setCopied] = useState(false)
   const left = useCountdown()
   const text = dailyShareText(info, res)
@@ -94,6 +129,7 @@ function ResultCard({ info, res, streak, onPractice }) {
           <button className="tq-btn" onClick={onPractice}>{t('Practice this quiz')}</button>
         </div>
       </div>
+      <DailyRank day={info.day} score={res.score} total={res.total} record={record} />
       <pre className="dq-share-preview">{text}</pre>
       <div className="dq-next">{t('Next daily quiz in')} <strong>{fmtClock(left)}</strong></div>
       <DailyLeaderboard />
@@ -113,21 +149,17 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
 
   const daily = useMemo(() => info && ({
     day: info.day, region: info.region, size: info.size, seed: info.seed,
+    onStart: () => setPlaying(true),
     onFinish: (res) => setJustFinished(res),
     renderResult: (res) => (
-      <ResultCard info={info} res={res} streak={dailyStreak(loadResults(), today)} onPractice={() => onPlayQuiz(info.quizId)} />
+      <ResultCard info={info} res={res} streak={dailyStreak(loadResults(), today)} onPractice={() => onPlayQuiz(info.quizId)} record />
     ),
   }), [info, today, onPlayQuiz])
 
-  if (!info) return <div className="game-intro-wait">{t('Loading today\'s quiz…')}</div>
+  if (!info) return <StateNote kind="loading">{t('Loading today\'s quiz…')}</StateNote>
 
-  // Playing (or just finished — TableQuiz shows the table + our result card)
-  if (playing || justFinished) {
-    return <TableQuiz quizId={info.quizId} countryNames={countryNames} daily={daily} />
-  }
-
-  // Already played today
-  if (previous) {
+  // Already played today (and not the round that just ended)
+  if (previous && !playing && !justFinished) {
     const res = { score: previous.correct, total: previous.total, durationMs: previous.duration_ms }
     return (
       <div className="dq">
@@ -138,22 +170,11 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
     )
   }
 
-  // Intro
+  // Board first, like every other quiz — Start / typing begins it
   return (
-    <div className="dq">
+    <div className="dq dq-board">
       <DailyHeader info={info} streak={streak} />
-      <div className="dq-intro">
-        <span className="dq-intro-icon"><GameIcon id={info.quizId} size={44} strokeWidth={1.3} /></span>
-        <h2>{info.title}{info.region !== 'World' && <span> · {continentName(info.region)}</span>}</h2>
-        <p>{info.prompt}</p>
-        <div className="dq-facts">
-          <span>📋 {info.size} {t('answers')}</span>
-          <span>{plain(t('🎯 One attempt'))}</span>
-          <span>{plain(t('🌍 Same quiz for everyone'))}</span>
-        </div>
-        <button className="dq-start" onClick={() => setPlaying(true)}>{t('▶ Start daily #')}{info.day}</button>
-        <span className="dq-warn">{t('Leaving mid-game counts as your attempt.')}</span>
-      </div>
+      <TableQuiz quizId={info.quizId} countryNames={countryNames} daily={daily} />
     </div>
   )
 }

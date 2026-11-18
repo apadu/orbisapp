@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { loadResults } from '../utils/results'
 import Icon from './Icon'
 import { t, locale } from '../i18n'
+import StateNote from './StateNote'
 
 /**
  * Comments under a quiz (see supabase/comments.sql): one level of replies, likes, reports.
@@ -148,8 +149,8 @@ export default function QuizComments({ quiz, unlocked }) {
         )}
 
       {error && <p className="qc-error" role="alert">{error}</p>}
-      {rows === null && !error && <p className="qc-muted">{t('Loading comments…')}</p>}
-      {rows && threads.length === 0 && <p className="qc-muted">{t('No comments yet. Be the first to say something about this quiz.')}</p>}
+      {rows === null && !error && <StateNote kind="loading" compact>{t('Loading comments…')}</StateNote>}
+      {rows && threads.length === 0 && <StateNote compact>{t('No comments yet. Be the first to say something about this quiz.')}</StateNote>}
 
       <ul className="qc-list">
         {threads.map(c => (

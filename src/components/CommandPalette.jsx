@@ -3,6 +3,7 @@ import { ALL_GAMES, GAME_GROUPS, searchGames } from '../utils/gameRegistry'
 import { loadResults } from '../utils/results'
 import { t } from '../i18n'
 import GameIcon from './GameIcon'
+import StateNote from './StateNote'
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform ?? '')
 export const PALETTE_SHORTCUT = isMac ? '⌘K' : 'Ctrl K'
@@ -76,7 +77,7 @@ export default function CommandPalette({ open, onClose, onSelect }) {
           <kbd className="cp-esc">Esc</kbd>
         </div>
         <div className="cp-list" ref={listRef}>
-          {flat.length === 0 && <div className="cp-empty">{t('No games match "{q}"', { q })}</div>}
+          {flat.length === 0 && <StateNote compact>{t('No games match "{q}"', { q })}</StateNote>}
           {sections.map(s => s.items.length > 0 && (
             <div key={s.id} className="cp-section">
               {s.label && <div className="cp-section-label">{s.label}</div>}
