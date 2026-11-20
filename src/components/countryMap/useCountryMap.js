@@ -8,7 +8,12 @@ export const divName = (d) => (isRo && d.ro) || d.name
 export const divLabel = (d, small, map) => (small && map.abbreviateSmall ? d.id.split('-')[1] : divName(d))
 
 // conicCanada: Lambert conformal conic, standard parallels 49° and 77° (Statistics Canada's choice)
-const PROJECTIONS = { mercator: geoMercator, albersUsa: geoAlbersUsa, conicCanada: () => geoConicConformal().parallels([49, 77]).rotate([96, 0]) }
+// conicRussia: Lambert conformal conic centred on Siberia, so Chukotka isn't split by the antimeridian
+const PROJECTIONS = {
+  mercator: geoMercator, albersUsa: geoAlbersUsa,
+  conicCanada: () => geoConicConformal().parallels([49, 77]).rotate([96, 0]),
+  conicRussia: () => geoConicConformal().parallels([52, 72]).rotate([-100, 0]),
+}
 
 /**
  * Loads a country map (public/data/maps/<file>) and projects it into an SVG

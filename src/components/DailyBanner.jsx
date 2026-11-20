@@ -23,7 +23,7 @@ export default function DailyBanner({ countryNames, onOpen }) {
         <strong>#{info.day}</strong>
       </span>
       <span className="daily-banner-body">
-        <span className="daily-banner-kicker">{played ? t('Today\'s quiz — done') : t('Quiz of the day')}</span>
+        <span className="daily-banner-kicker">{played ? t('Today\'s fever — done') : t('Daily Fever')}</span>
         <span className="daily-banner-title">{info.title}{info.region !== 'World' ? ` · ${continentName(info.region)}` : ''}</span>
         <span className="daily-banner-sub">
           {played

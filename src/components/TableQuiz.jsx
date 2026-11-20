@@ -10,6 +10,7 @@ import GiveUpButton from './GiveUpButton'
 import TryNext from './TryNext'
 import QuizComments from './QuizComments'
 import FlagImg from './FlagImg'
+import HistoricalFlag from './HistoricalFlag'
 import { t, continentName } from '../i18n'
 import { QUIZ_ITEMS } from './QuizHub'
 import { countryGame } from '../data/countryPages'
@@ -69,7 +70,7 @@ function seededRandom(seed) {
 function Hint({ hint, reveal = false }) {
   switch (hint.type) {
     case 'flag':   return <FlagImg emoji={hint.value} className="tq-flag" />
-    case 'emoji':  return <span className="tq-emoji">{hint.value}</span>
+    case 'histflag': return <HistoricalFlag id={hint.value} className="tq-flag tq-hist-flag" />
     case 'script': return (
       <span className="tq-script">
         <span>{hint.value}</span>
@@ -94,7 +95,25 @@ function Hint({ hint, reveal = false }) {
  * daily: optional { day, region, size, seed, onFinish(result), renderResult(result) }
  *   → plays straight away with a fixed, seeded selection, tracked as mode 'daily-quiz'.
  */
-export default function TableQuiz({ quizId, countryNames, onDaily, daily = null, onOpen }) {
+/** Quizzes whose rows load on demand (quiz.load) are shown once their rows are in. */
+export default function TableQuiz(props) {
+  const quiz = TABLE_QUIZZES[props.quizId]
+  const [loaded, setLoaded] = useState(() => !quiz?.load || !!quiz.loaded)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    if (loaded || !quiz?.load) return
+    let alive = true
+    quiz.load()
+      .then(build => { quiz.build = build; quiz.loaded = true; if (alive) setLoaded(true) })
+      .catch(() => { if (alive) setFailed(true) })
+    return () => { alive = false }
+  }, [quiz, loaded])
+  if (failed) return <StateNote kind="error">{t('Could not load the quiz. Check your connection and try again.')}</StateNote>
+  if (!loaded) return <StateNote kind="loading">{t('Loading…')}</StateNote>
+  return <TableQuizBoard {...props} />
+}
+
+function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen }) {
   const quiz = TABLE_QUIZZES[quizId]
   const mode = daily ? 'daily-quiz' : quizId   // results / XP bucket
 
@@ -329,7 +348,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
     if (daily || phase !== 'setup' || !countryNames.length) return
     const n = sizeOf(setup)
     setSize(n)
-    prepare(setup.region ?? 'World', n)
+    prepare(quiz.region ?? setup.region ?? 'World', n)
   }, [phase, setup, countryNames.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -385,11 +404,11 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
         <div className="tq-title">
           <span className="tq-icon"><GameIcon id={daily ? 'daily-quiz' : quizId} size={24} /></span>
           <div>
-            <h2>{quiz.title}{region !== 'World' && <span className="tq-region"> · {continentName(region)}</span>}</h2>
+            <h2>{quiz.title}{region !== 'World' && !quiz.region && <span className="tq-region"> · {continentName(region)}</span>}</h2>
             <p>{quiz.prompt}</p>
           </div>
         </div>
-        {over && statsBlock}
+        {over && !daily && statsBlock}
       </header>
 
       {confirmUntimed && (
@@ -445,7 +464,7 @@ export default function TableQuiz({ quizId, countryNames, onDaily, daily = null,
             <div className="tq-result-btns">
               <button className="tq-btn tq-btn-primary" onClick={() => start(region)}>{t('▶ Play again')}</button>
               <button className="tq-btn" onClick={() => setPhase('setup')}>{plain(t('⚙ Settings'))}</button>
-              <ShareButton text={() => resultText({ title: quiz.title + (region !== 'World' ? ` · ${continentName(region)}` : ''), score, total })} />
+              <ShareButton text={() => resultText({ title: quiz.title + (region !== 'World' && !quiz.region ? ` · ${continentName(region)}` : ''), score, total })} />
             </div>
           </div>
         )}

@@ -5,6 +5,7 @@
  * on the same day, and adding new quizzes to the app never changes past days.
  */
 import { TABLE_QUIZZES } from './tableQuizzes'
+import { GAME_CATALOG } from '../utils/gameCatalog'
 import { DAILY_SCHEDULE } from './dailySchedule'
 import { continentName, t } from '../i18n'
 import { siteLink } from '../utils/share'
@@ -25,33 +26,34 @@ export function utcDayStartISO(now = Date.now()) {
   return new Date(DAILY_EPOCH + (dailyNumber(now) - 1) * DAY_MS).toISOString()
 }
 
-/** The quiz for daily #n: { day, quizId, region, size, seed, title, icon }
+/** The quiz for daily #n: { day, quizId, kind, region, size, seed, title, icon }
+ *  kind: 'table' (TableQuiz), 'map' (LandformQuiz) or 'diagram' (DiagramQuiz).
  *  Comes from the frozen list in dailySchedule.js, so a past day's quiz never changes. */
 export function dailyQuizFor(n) {
   const len = DAILY_SCHEDULE.length
   if (!len || n < 1) return null
   // Skip entries whose quiz no longer exists (shouldn't happen — just in case)
   for (let k = 0; k < len; k++) {
-    const [quizId, region, size] = DAILY_SCHEDULE[(n - 1 + k) % len]
-    const q = TABLE_QUIZZES[quizId]
+    const [quizId, region, size, kind = 'table'] = DAILY_SCHEDULE[(n - 1 + k) % len]
+    const q = kind === 'table' ? TABLE_QUIZZES[quizId] : GAME_CATALOG[quizId]
     if (!q) continue
-    return { day: n, quizId, region, size, seed: n * 2654435761, title: q.title, icon: q.icon, prompt: q.prompt }
+    return { day: n, quizId, kind, region, size, seed: n * 2654435761, title: q.title ?? q.label, icon: q.icon, prompt: q.prompt }
   }
   return null
 }
 
 /** Wordle-style share text. */
-export function dailyShareText({ day, title, region }, { score, total, durationMs }) {
-  const pct = total ? score / total : 0
-  const filled = Math.round(pct * 10)
-  const bar = '🟩'.repeat(filled) + '⬛'.repeat(10 - filled)
+export function dailyShareText({ day, title, region }, { score, total, durationMs }, streak = 0) {
+  // one square per answer (up to 20), otherwise a 10-square bar
+  const n = total > 0 && total <= 20 ? total : 10
+  const filled = total ? Math.round((score / total) * n) : 0
+  const bar = '🟩'.repeat(filled) + '⬛'.repeat(n - filled)
   const s = Math.round(durationMs / 1000)
   const time = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   return [
-    `Orbis · ${t('Daily Quiz')} #${day}`,
-    `${title}${region && region !== 'World' ? ` · ${continentName(region)}` : ''}`,
-    `${score}/${total} · ⏱ ${time}`,
+    `GeoFeverr #${day} · ${title}${region && region !== 'World' ? ` · ${continentName(region)}` : ''}`,
+    `${score}/${total} · ⏱ ${time}${streak > 0 ? ` · 🔥 ${streak}` : ''}`,
     bar,
-    siteLink('/daily'),
-  ].filter(Boolean).join('\n')
+    siteLink('/daily').replace(/^https?:\/\//, ''),
+  ].join('\n')
 }

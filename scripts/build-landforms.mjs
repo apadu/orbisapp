@@ -5,7 +5,11 @@
  *
  *   node scripts/build-landforms.mjs --geo=/tmp/geo
  *   needs, from github.com/nvkelso/natural-earth-vector (geojson/):
- *     ne_10m_land, ne_10m_geography_regions_polys, ne_50m_lakes  (.geojson)
+ *     ne_10m_land, ne_10m_geography_regions_polys, ne_10m_geography_marine_polys,
+ *     ne_10m_lakes, ne_50m_lakes  (.geojson)
+ *   ne_10m_rivers_lake_centerlines (.geojson) for the river quizzes,
+ *   hb/world_<year>.geojson from github.com/aourednik/historical-basemaps (GPL-3.0) for the history maps,
+ *   and PB2002_plates.json (github.com/fraxen/tectonicplates, GeoJSON/) for the plates quiz
  *   plus public/data/ne_50m_admin_0_countries.geojson (already in the repo), and:
  *     npm i --no-save polygon-clipping topojson-server topojson-client
  *
@@ -16,7 +20,7 @@ import path from 'node:path'
 import polygonClipping from 'polygon-clipping'
 import { topology } from 'topojson-server'
 import { mesh } from 'topojson-client'
-import { geoEquirectangular, geoPath, geoContains, geoArea } from 'd3-geo'
+import { geoEquirectangular, geoPath, geoContains, geoArea, geoCircle, geoCentroid } from 'd3-geo'
 import { LANDFORMS } from '../src/data/landforms.js'
 
 const GEO = (process.argv.find(a => a.startsWith('--geo=')) ?? '--geo=/tmp/geo').slice(6)
@@ -29,6 +33,31 @@ const land = read(path.join(GEO, 'ne_10m_land.geojson'))
 const regions = read(path.join(GEO, 'ne_10m_geography_regions_polys.geojson'))
 const lakes = read(path.join(GEO, 'ne_50m_lakes.geojson')).filter(f => (f.properties.scalerank ?? 9) <= 1)
 const countries = read('public/data/ne_50m_admin_0_countries.geojson')
+const marine = read(path.join(GEO, 'ne_10m_geography_marine_polys.geojson'))
+const lakes10 = read(path.join(GEO, 'ne_10m_lakes.geojson'))
+const plates = read(path.join(GEO, 'PB2002_plates.json'))
+const rivers = read(path.join(GEO, 'ne_10m_rivers_lake_centerlines.geojson'))
+const histCache = new Map()
+const history = (year) => {
+  if (!histCache.has(year)) histCache.set(year, read(path.join(GEO, 'hb', `world_${year}.geojson`)))
+  return histCache.get(year)
+}
+
+// Rings wound the other way fill the whole sphere instead of the shape: flip those polygons
+function rewound(g) {
+  const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates
+  const fixed = polys.map(p => (geoArea({ type: 'Polygon', coordinates: p }) > 2 * Math.PI ? p.map(r => [...r].reverse()) : p))
+  return { type: 'MultiPolygon', coordinates: fixed }
+}
+
+// Every polygon of the features with these names, as one MultiPolygon
+function partsNamed(features, key, names) {
+  const want = new Set([names].flat())
+  const polys = features.filter(f => want.has(f.properties[key]))
+    .flatMap(f => f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates)
+  if (!polys.length) throw new Error(`nothing named ${[...want].join(', ')}`)
+  return { type: 'MultiPolygon', coordinates: polys }
+}
 
 // Every land polygon as its own feature (10m land comes as a few big MultiPolygons)
 const landPolys = land.flatMap(f => f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates)
@@ -52,7 +81,58 @@ function cutOut(clipRing, from) {
   return near.flatMap(f => polygonClipping.intersection([ring], f.geometry.coordinates))
 }
 
+// Lines (ocean currents, ridges, parallels): straight in lon/lat, so walk them in small steps —
+// d3 would otherwise draw each stretch as a great circle, and a parallel would sag
+function densify(coords, step = 1) {
+  const out = [coords[0]]
+  for (let i = 1; i < coords.length; i++) {
+    const [x0, y0] = coords[i - 1], [x1, y1] = coords[i]
+    let dx = x1 - x0
+    if (Math.abs(dx) > 180) dx -= Math.sign(dx) * 360   // across the antimeridian: the short way
+    const n = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(y1 - y0)) / step))
+    for (let k = 1; k <= n; k++) {
+      let x = x0 + dx * k / n
+      if (x > 180) x -= 360; else if (x < -180) x += 360
+      out.push([x, y0 + (y1 - y0) * k / n])
+    }
+  }
+  return out
+}
+
+// Every river segment with one of these names (inside bbox, when several rivers share a name)
+function riverLines(item) {
+  const want = new Set([item.river].flat())
+  const [w, s, e, n] = item.bbox ?? [-180, -90, 180, 90]
+  const inBox = (c) => c.some(([x, y]) => x >= w && x <= e && y >= s && y <= n)
+  const lines = rivers.filter(f => want.has(f.properties.name))
+    .flatMap(f => f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates)
+    .filter(inBox)
+  if (!lines.length) throw new Error(`no river ${[...want].join(', ')}`)
+  return { type: 'MultiLineString', coordinates: lines }
+}
+
+// The states with these names on the historical map of a given year (one empire = many parts)
+function historical(item) {
+  const want = new Set(item.names)
+  const feats = history(item.hist).filter(f => want.has(f.properties.NAME))
+  const missing = item.names.filter(n => !feats.some(f => f.properties.NAME === n))
+  if (missing.length) throw new Error(`${item.id}: not on the ${item.hist} map: ${missing.join(', ')}`)
+  return rewound({ type: 'MultiPolygon', coordinates: feats.flatMap(f => (f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates)) })
+}
+
 function geometryOf(item) {
+  if (item.river) return riverLines(item)
+  if (item.hist) return historical(item)
+  if (item.line) return { type: 'MultiLineString', coordinates: (Array.isArray(item.line[0][0]) ? item.line : [item.line]).map(l => densify(l)) }
+  if (item.point) return geoCircle().center(item.point).radius(item.r ?? 0.45)()
+  if (item.marine) return partsNamed(marine, 'name', item.marine)
+  if (item.lake) return partsNamed(lakes10, 'name', item.lake)
+  if (item.plate) {
+    const g = partsNamed(plates, 'PlateName', item.plate)
+    if (!Array.isArray(item.plate)) return rewound(g)
+    // a major plate plus the microplates it's usually drawn with: merge them into one shape
+    try { return rewound({ type: 'MultiPolygon', coordinates: polygonClipping.union(...g.coordinates.map(p => [p])) }) } catch { return rewound(g) }
+  }
   if (item.at) {
     const f = landPolys.find(p => geoContains(p, item.at))
     if (!f) throw new Error(`no land under ${item.id}`)
@@ -60,10 +140,11 @@ function geometryOf(item) {
   }
   let clip
   if (item.ne) {
-    const r = regions.find(f => f.properties.NAME === item.ne)
-    if (!r) throw new Error(`no region ${item.ne}`)
+    // several features can share a name (a big region and a stray sliver): use them all
+    const rs = regions.filter(f => f.properties.NAME === item.ne)
+    if (!rs.length) throw new Error(`no region ${item.ne}`)
     // a region polygon's coast is rough: cut it out of the land, keep the biggest piece
-    const polys = r.geometry.type === 'Polygon' ? [r.geometry.coordinates] : r.geometry.coordinates
+    const polys = rs.flatMap(r => (r.geometry.type === 'Polygon' ? [r.geometry.coordinates] : r.geometry.coordinates))
     clip = largest(polys)[0]
   } else clip = item.clip
   // polygon-clipping winds outer rings counter-clockwise; d3-geo wants clockwise
@@ -109,11 +190,22 @@ fs.writeFileSync(path.join(OUT, 'world.json'), JSON.stringify({ W, H, land: land
 for (const [quiz, items] of Object.entries(LANDFORMS)) {
   const out = { W, H, items: [] }
   for (const item of items) {
-    const g = geometryOf(item)
+    let g = geometryOf(item)
+    if (item.line || item.river) {
+      const d = P(g)
+      const [cx, cy] = item.label ? proj(item.label) : pathGen.centroid(g)
+      out.items.push({ id: item.id, d, cx: +cx.toFixed(1), cy: +cy.toFixed(1), small: false, line: true, ...(item.color ? { color: item.color } : {}), ...(item.arrow ? { arrow: true } : {}) })
+      console.log(quiz.padEnd(11), item.id.padEnd(17), 'line'.padStart(10), `${(d.length / 1024).toFixed(1)} KB`)
+      continue
+    }
+    // too small to draw (Gibraltar, Lake Balaton…): a small round marker instead
+    if (!item.point && (!(pathGen.area(g) >= 3) || !P(g))) g = geoCircle().center(geoCentroid(g)).radius(0.45)()
     const d = P(g)
-    const [cx, cy] = pathGen.centroid(g)
+    // a scattered empire gets its badge on its biggest piece, not in the sea between them
+    const biggest = item.hist && g.coordinates.length > 1 ? { type: 'Polygon', coordinates: largest(g.coordinates) } : g
+    const [cx, cy] = item.label ? proj(item.label) : pathGen.centroid(biggest)
     const area = pathGen.area(g)
-    out.items.push({ id: item.id, d, cx: +cx.toFixed(1), cy: +cy.toFixed(1), small: area < 90 })
+    out.items.push({ id: item.id, d, cx: +cx.toFixed(1), cy: +cy.toFixed(1), small: area < 90, ...(item.color ? { color: item.color } : {}) })
     console.log(quiz.padEnd(11), item.id.padEnd(17), `${Math.round(area)} px²`.padStart(10), `${(d.length / 1024).toFixed(1)} KB`)
   }
   fs.writeFileSync(path.join(OUT, `${quiz}.json`), JSON.stringify(out))

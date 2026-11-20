@@ -32,7 +32,7 @@ export default class ErrorBoundary extends Component {
         background: '#0D1A2B', color: '#F2E9D8', fontFamily: 'system-ui, sans-serif', padding: 24,
       }}>
         <div style={{ maxWidth: 640, width: '100%' }}>
-          <h1 style={{ fontSize: 22, marginBottom: 8 }}>{plain(t('⚠️ Orbis crashed'))}</h1>
+          <h1 style={{ fontSize: 22, marginBottom: 8 }}>{plain(t('⚠️ GeoFeverr crashed'))}</h1>
           <p style={{ color: '#B5AD9E', marginBottom: 16 }}>{t('Copy the error below and send it over.')}</p>
           <pre style={{
             background: '#12233A', border: '1px solid #2C415C', borderRadius: 10, padding: 14,

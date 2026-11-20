@@ -3,7 +3,7 @@ import { loadResults, subscribeResults } from '../utils/results'
 import DailyBanner from './DailyBanner'
 import { GAME_CATALOG } from '../utils/gameCatalog'
 import { t, locale } from '../i18n'
-import { gameTag, isNewGame } from '../utils/gameTags'
+import { gameTag, isNewGame, addedOn } from '../utils/gameTags'
 import GameIcon from './GameIcon'
 import Icon from './Icon'
 import { TRIPOINT_QUIZZES } from '../quizzes/tripointQuizzes'
@@ -11,23 +11,36 @@ import { useQuizOverview, rankScore } from '../utils/quizOverview'
 import StateNote from './StateNote'
 
 // ── Catalogue ──────────────────────────────────────────────────────────────
+/** Families of categories: how the category tabs are grouped */
+export const QUIZ_FAMILIES = [
+  { id: 'countries', label: t('Countries') },
+  { id: 'nature',    label: t('Maps & nature') },
+  { id: 'games',     label: t('Games') },
+]
 export const QUIZ_CATEGORIES = [
-  { id: 'flags',    label: t('Flags & symbols'), icon: '🚩', color: '#D98C7A' },
-  { id: 'capitals', label: t('Capitals'),        icon: '🏛️', color: '#5FB7A8' },
-  { id: 'words',    label: t('Names & spelling'), icon: '🔤', color: '#E2B65C' },
-  { id: 'culture',  label: t('Culture & facts'), icon: '📖', color: '#D9C49A' },
-  { id: 'numbers',  label: t('Size & numbers'),  icon: '📊', color: '#6FA8DC' },
-  { id: 'lists',    label: t('Lists & groups'),  icon: '📋', color: '#8CC18F' },
-  { id: 'arcade',   label: t('Arcade'),          icon: '🕹️', color: '#FF7A3D' },
-  { id: 'puzzles',  label: t('Puzzles'),         icon: '🧩', color: '#9BB3CF' },
-  { id: 'maps',     label: t('Maps'),            icon: '🗺️', color: '#7FB0C9' },
+  { id: 'flags',    family: 'countries', label: t('Flags & symbols'), icon: '🚩', color: '#D98C7A' },
+  { id: 'capitals', family: 'countries', label: t('Capitals'),        icon: '🏛️', color: '#5FB7A8' },
+  { id: 'culture',  family: 'countries', label: t('Culture & facts'), icon: '📖', color: '#D9C49A' },
+  { id: 'lists',    family: 'countries', label: t('Lists & groups'),  icon: '📋', color: '#8CC18F' },
+  { id: 'numbers',  family: 'countries', label: t('Size & numbers'),  icon: '📊', color: '#6FA8DC' },
+  { id: 'words',    family: 'countries', label: t('Names & spelling'), icon: '🔤', color: '#E2B65C' },
+  { id: 'history',  family: 'countries', label: t('World history'),         icon: '🏺', color: '#C9A27A' },
+  { id: 'maps',     family: 'nature',    label: t('Maps'),            icon: '🗺️', color: '#7FB0C9' },
+  { id: 'science',  family: 'nature',    label: t('Earth science'),   icon: '🌋', color: '#E0915C' },
+  { id: 'space',    family: 'nature',    label: t('Space'),           icon: '🪐', color: '#9C8CE0' },
+  { id: 'puzzles',  family: 'games',     label: t('Puzzles'),         icon: '🧩', color: '#9BB3CF' },
+  { id: 'arcade',   family: 'games',     label: t('Arcade'),          icon: '🕹️', color: '#FF7A3D' },
 ]
 
 export const QUIZ_ITEMS = [
-  { id: 'flag',           cat: 'flags',    icon: '🚩', label: t('Flags'),                desc: t('Name 20 or 30 random flags. Watch out: Chad and Romania are near twins.') },
+  { id: 'flag',           cat: 'flags',    icon: '🚩', label: t('Flag Fever'),                desc: t('Name 20 or 30 random flags. Watch out: Chad and Romania are near twins.') },
   { id: 'flag-colors',    cat: 'flags',    icon: '🎨', label: t('Flag Colors'),          desc: t('No shapes, no symbols — just the colour mix. Whose flag is it?') },
-  { id: 'emoji-quiz',     cat: 'flags',    icon: '🌍', label: t('Country Emoji'),        desc: t('Countries hidden in emoji combos. 100 of them, some very sneaky.') },
-  { id: 'capital',        cat: 'capitals', icon: '🏛️', label: t('Capitals'),             desc: t('196 capitals. Australia\'s isn\'t Sydney, Canada\'s isn\'t Toronto.') },
+  { id: 'capital',        cat: 'capitals', icon: '🏛️', label: t('Capital Fever'),             desc: t('196 capitals. Australia\'s isn\'t Sydney, Canada\'s isn\'t Toronto.') },
+  { id: 'capitals-europe', cat: 'capitals', icon: '🏰', label: t('Capitals of Europe'), desc: t("From Lisbon to Moscow \u2014 the capitals of every European country.") },
+  { id: 'capitals-asia', cat: 'capitals', icon: '🏯', label: t('Capitals of Asia'), desc: t("From Ankara to Tokyo \u2014 and Naypyidaw, not Yangon.") },
+  { id: 'capitals-africa', cat: 'capitals', icon: '🦁', label: t('Capitals of Africa'), desc: t("54 countries, from Rabat to Pretoria \u2014 and Abuja, not Lagos.") },
+  { id: 'capitals-americas', cat: 'capitals', icon: '🗽', label: t('Capitals of the Americas'), desc: t("From Ottawa to Buenos Aires \u2014 Bras\u00edlia, not Rio.") },
+  { id: 'capitals-oceania', cat: 'capitals', icon: '🌊', label: t('Capitals of Oceania'), desc: t("Canberra, Wellington and the Pacific islands.") },
   { id: 'cap-to-country', cat: 'capitals', icon: '🗺️', label: t('Countries by Capital'), desc: t('Ouagadougou, Thimphu, Vaduz… which country does each one belong to?') },
   { id: 'scramble',       cat: 'words',    icon: '🔀', label: t('Scramble'),             desc: t('RAMONIA is Romania. Can you untangle 30 more country names?') },
   { id: 'missing-vowels', cat: 'words',    icon: '🔡', label: t('Missing Vowels'),       desc: t('MXC is Mexico, BRZL is Brazil. Only the consonants are left.') },
@@ -45,17 +58,17 @@ export const QUIZ_ITEMS = [
   { id: 'eu-members', cat: 'lists', icon: '🇪🇺', label: t('EU Members'), desc: t('All 27 EU members. Croatia, the newest, joined in 2013.') },
   { id: 'nato-members', cat: 'lists', icon: '🛡️', label: t('NATO Members'), desc: t('All 32 NATO members. Sweden became number 32 in 2024.') },
   { id: 'g20', cat: 'lists', icon: '💼', label: t('G20 Countries'), desc: t('19 countries plus the EU and the African Union. Name the 19.') },
-  { id: 'former-ussr', cat: 'lists', icon: '☭', label: t('Former Soviet Republics'), desc: t('15 republics, one union. Russia was just the biggest piece.') },
-  { id: 'former-yugoslavia', cat: 'lists', icon: '🧩', label: t('Former Yugoslavia'), desc: t('One country in 1990, seven today. Name them all.') },
+  { id: 'former-ussr', cat: 'history', icon: '☭', label: t('Former Soviet Republics'), desc: t('15 republics, one union. Russia was just the biggest piece.') },
+  { id: 'former-yugoslavia', cat: 'history', icon: '🧩', label: t('Former Yugoslavia'), desc: t('One country in 1990, seven today. Name them all.') },
   { id: 'equator', cat: 'lists', icon: '🌐', label: t('On the Equator'), desc: t('The Equator crosses 13 countries — only one is named after it.') },
   { id: 'stans', cat: 'lists', icon: '🐎', label: t('The -stans'), desc: t('Seven -stans. In Persian, "stan" means "land of".') },
   { id: 'spanish-speaking', cat: 'lists', icon: '🇪🇸', label: t('Spanish-speaking'), desc: t('Spanish is official in 20 countries — one of them is in Africa.') },
   { id: 'portuguese-speaking', cat: 'lists', icon: '🇵🇹', label: t('Portuguese-speaking'), desc: t('Portuguese is official in 9 countries on 4 continents.') },
   { id: 'french-speaking', cat: 'lists', icon: '🇫🇷', label: t('French-speaking'), desc: t('French is official in 29 countries. Most of them are in Africa.') },
   { id: 'alphabet', cat: 'lists', icon: '🔤', label: t('A to Z'), desc: t('One country per letter. Q has only one option.') },
-  { id: 'ww1', cat: 'culture', icon: '🪖', label: t('World War I Countries'), desc: t('28 nations under their 1914–18 names: Hejaz, Siam, Austria-Hungary…') },
-  { id: 'ww2', cat: 'culture', icon: '✈️', label: t('World War II Countries'), desc: t('34 belligerents. Some, like Italy and Romania, switched sides.') },
-  { id: 'former-names', cat: 'culture', icon: '📜', label: t('Former Country Names'), desc: t('Ceylon, Persia, Upper Volta… 39 old names. What are they called today?') },
+  { id: 'ww1', cat: 'history', icon: '🪖', label: t('World War I Countries'), desc: t('28 nations under their 1914–18 names: Hejaz, Siam, Austria-Hungary…') },
+  { id: 'ww2', cat: 'history', icon: '✈️', label: t('World War II Countries'), desc: t('34 belligerents. Some, like Italy and Romania, switched sides.') },
+  { id: 'former-names', cat: 'history', icon: '📜', label: t('Former Country Names'), desc: t('Ceylon, Persia, Upper Volta… 39 old names. What are they called today?') },
   { id: 'monarchies', cat: 'lists', icon: '👑', label: t('Monarchies Today'), desc: t('43 countries still have a monarch — 15 of them share the same king.') },
   { id: 'drive-left', cat: 'lists', icon: '🚗', label: t('Countries Driving on the Left'), desc: t('54 countries keep left. It\'s not just Britain and its former colonies.') },
   { id: 'named-after', cat: 'culture', icon: '👤', label: t('Countries Named After People'), desc: t('Columbus, Bolívar, King Philip II… 21 countries named after a person.') },
@@ -72,11 +85,70 @@ export const QUIZ_ITEMS = [
   { id: 'smallest', cat: 'numbers', icon: '🔬', label: t('Smallest Countries'), desc: t('The 20 smallest. Vatican City could fit into Central Park 7 times.') },
   { id: 'least-populous', cat: 'numbers', icon: '🧍', label: t('Least Populous'), desc: t('The 20 tiniest populations. Tuvalu has about 11,000 people.') },
   { id: 'higher-lower',   cat: 'arcade',   icon: '⚖️', label: t('Higher or Lower'),      desc: t('More people? Bigger? One wrong call ends the streak.') },
+  { id: 'flags-pick',     cat: 'flags',    icon: '🎯', label: t('Pick the Flag'),        desc: t('A country name and four flags — pick the right one. 20 rounds.') },
+  { id: 'flags-sprint',   cat: 'flags',    icon: '⚡', label: t('Fever Sprint'),          desc: t('One flag at a time — name as many as you can before the clock runs out.') },
+  { id: 'flags-survival', cat: 'flags',    icon: '❤️', label: t('Flag Survival'),        desc: t('Three lives. Name each flag from four choices — how far can you go?') },
   { id: 'true-false',     cat: 'arcade',   icon: '✅', label: t('True or False'),        desc: t('Rapid-fire facts. True or false — every mistake costs 3 seconds.') },
   { id: 'country-wordle', cat: 'puzzles',  icon: '🟩', label: t('Country Wordle'),       desc: t('One country a day, six tries, and colour clues for every letter.') },
   { id: 'connections',    cat: 'puzzles',  icon: '🧩', label: t('Country Connections'),          desc: t('16 countries, 4 hidden links. "One away!" means you\'re close.') },
   { id: 'border-chain',   cat: 'puzzles',  icon: '🔗', label: t('Border Chain'),         desc: t('Cross the map neighbour by neighbour. Can you match the shortest path?') },
   { id: 'islands',        cat: 'maps',     icon: '🏝️', label: t('Famous Islands'),       desc: t('30 famous islands lit up on the world map, from Greenland to Mallorca.') },
+  { id: 'lakes', cat: 'maps', icon: '💧', label: t('Famous Lakes'), desc: t("27 lakes, from the Caspian Sea to Balaton.") },
+  { id: 'deserts', cat: 'maps', icon: '🏜️', label: t('Famous Deserts'), desc: t("From the Sahara to the Gobi and the Atacama.") },
+  { id: 'seas-map', cat: 'maps', icon: '🌊', label: t('Seas and Gulfs'), desc: t("28 seas and gulfs, from the Baltic to the Coral Sea.") },
+  { id: 'straits', cat: 'maps', icon: '⚓', label: t('Famous Straits'), desc: t("Gibraltar, the Bosphorus, Hormuz, Magellan \u2014 20 straits and channels.") },
+  { id: 'earth-layers', cat: 'science', icon: '🌍', label: t('Layers of the Earth'), desc: t("From the inner core to the exosphere \u2014 16 layers and boundaries on a globe cut in half.") },
+  { id: 'plates', cat: 'science', icon: '🧩', label: t('Tectonic Plates'), desc: t("18 plates on the world map, from the giant Pacific to tiny Juan de Fuca.") },
+  { id: 'rocks', cat: 'science', icon: '🪨', label: t('Rock Types'), desc: t("Granite, marble, chalk\u2026 name 17 rocks from their description.") },
+  { id: 'rock-cycle', cat: 'science', icon: '🔄', label: t('The Rock Cycle'), desc: t("Magma, sediments, metamorphism \u2014 complete the cycle of rocks.") },
+  { id: 'volcanoes', cat: 'science', icon: '🌋', label: t("Famous Volcanoes"), desc: t("Etna, Fuji, Krakatoa, Kilimanjaro \u2014 22 volcanoes and the Ring of Fire.") },
+  { id: 'volcano', cat: 'science', icon: '🌋', label: t("Anatomy of a Volcano"), desc: t("Magma chamber, vent, crater, ash cloud \u2014 10 parts of a volcano cut in half.") },
+  { id: 'plate-boundaries', cat: 'science', icon: '↔️', label: t("Plate Boundaries"), desc: t("Divergent, subduction, collision, transform \u2014 and the trenches, ridges and mountains they make.") },
+  { id: 'ocean-floor', cat: 'science', icon: '🌊', label: t("Trenches and Ridges"), desc: t("The Mariana Trench, the Mid-Atlantic Ridge, the East African Rift \u2014 13 lines on the map.") },
+  { id: 'water-cycle', cat: 'science', icon: '💧', label: t("The Water Cycle"), desc: t("Evaporation, condensation, precipitation, infiltration \u2014 9 stages of water's journey.") },
+  { id: 'currents', cat: 'science', icon: '🌀', label: t("Ocean Currents"), desc: t("The Gulf Stream, Kuroshio, Humboldt \u2014 14 warm and cold currents.") },
+  { id: 'climate-zones', cat: 'science', icon: '🌡️', label: t("Climate Zones"), desc: t("Torrid, temperate and frigid zones, the tropics, the polar circles and the poles.") },
+  { id: 'earth-lines', cat: 'science', icon: '🧭', label: t("Imaginary Lines"), desc: t("The Equator, the tropics, the Arctic Circle, Greenwich and the Date Line on the map.") },
+  { id: 'earth-orbit', cat: 'space', icon: '☀️', label: t("The Earth in Space"), desc: t("Solstices, equinoxes, perihelion, aphelion \u2014 why we have seasons.") },
+  { id: 'landscape', cat: 'science', icon: '⛰️', label: t("Landforms"), desc: t("Fjord, delta, atoll, canyon, plateau \u2014 17 landforms in one landscape.") },
+  { id: 'biomes', cat: 'science', icon: '🌳', label: t("Biomes"), desc: t("Taiga, savanna, tundra, steppe \u2014 14 biomes from their description.") },
+  { id: 'minerals', cat: 'science', icon: '💎', label: t("Minerals"), desc: t("From talc to diamond: the Mohs scale and 9 more famous minerals.") },
+  { id: 'phenomena', cat: 'science', icon: '🌪️', label: t("Natural Phenomena"), desc: t("Tsunami, foehn, El Ni\u00f1o, aurora \u2014 18 phenomena from their description.") },
+  { id: 'earth-records', cat: 'science', icon: '🏆', label: t("Records of the Earth"), desc: t("The highest, deepest, driest, coldest \u2014 23 records, one place each.") },
+  { id: 'geologic-time', cat: 'science', icon: '🦕', label: t("Geological Time"), desc: t("From the Precambrian to the Quaternary \u2014 the 13 chapters of Earth's history.") },
+  { id: 'solar-system', cat: 'space', icon: '🪐', label: t("The Solar System"), desc: t("The Sun, 8 planets, the Moon, Pluto and the two belts \u2014 13 in all.") },
+  { id: 'planets', cat: 'space', icon: '🪐', label: t("Planets by Clues"), desc: t("Hottest, windiest, tipped on its side \u2014 13 bodies of the Solar System from a clue.") },
+  { id: 'moon-phases', cat: 'space', icon: '🌓', label: t("Phases of the Moon"), desc: t("New moon, first quarter, waxing gibbous\u2026 all 8 phases and why they happen.") },
+  { id: 'eclipses', cat: 'space', icon: '🌑', label: t("Eclipses"), desc: t("Solar and lunar eclipses: umbra, penumbra, corona and the blood moon.") },
+  { id: 'sun-anatomy', cat: 'space', icon: '☀️', label: t("Inside the Sun"), desc: t("Core, radiative and convective zones, sunspots, prominences, solar wind.") },
+  { id: 'moons', cat: 'space', icon: '🌙', label: t("Moons of the Solar System"), desc: t("Titan, Europa, Io, Triton, Charon \u2014 15 moons and the worlds they orbit.") },
+  { id: 'sky-map', cat: 'space', icon: '🌌', label: t("The Night Sky"), desc: t("Ursa Major, Orion, Cassiopeia, the Milky Way \u2014 24 things to find in the sky over Romania.") },
+  { id: 'stars-constellations', cat: 'space', icon: '✨', label: t("Stars and Constellations"), desc: t("Sirius, Polaris, Betelgeuse, the Pleiades \u2014 20 stars, constellations and galaxies.") },
+  { id: 'missions', cat: 'space', icon: '🚀', label: t("Space Exploration"), desc: t("From Sputnik and Gagarin to Dumitru Prunariu and James Webb \u2014 21 missions in order.") },
+  { id: 'phys-europe', cat: 'maps', icon: '🏔️', label: t("Physical Map of Europe"), desc: t("The Danube, the Alps, the Carpathians, the Urals \u2014 20 rivers, ranges and plains.") },
+  { id: 'phys-asia', cat: 'maps', icon: '🏔️', label: t("Physical Map of Asia"), desc: t("The Himalayas, the Yangtze, the Tibetan Plateau \u2014 23 rivers, ranges and plains.") },
+  { id: 'phys-africa', cat: 'maps', icon: '🏔️', label: t("Physical Map of Africa"), desc: t("The Nile, the Atlas, the Rift Valley, the Sahel \u2014 16 rivers, ranges and plains.") },
+  { id: 'phys-namerica', cat: 'maps', icon: '🏔️', label: t("Physical Map of North America"), desc: t("The Rockies, the Mississippi, the Great Plains \u2014 18 rivers, ranges and plains.") },
+  { id: 'phys-samerica', cat: 'maps', icon: '🏔️', label: t("Physical Map of South America"), desc: t("The Andes, the Amazon, the Pampas \u2014 17 rivers, ranges and plains.") },
+  { id: 'phys-oceania', cat: 'maps', icon: '🏔️', label: t("Physical Map of Oceania"), desc: t("The Great Dividing Range, Uluru, the Murray \u2014 13 places in Australia and New Zealand.") },
+  { id: 'rivers-world', cat: 'maps', icon: '🏞️', label: t("Great Rivers of the World"), desc: t("The Nile, the Amazon, the Yangtze, the Danube \u2014 25 rivers drawn on the map.") },
+  { id: 'wonders-ancient', cat: 'maps', icon: '🏛️', label: t("Seven Wonders of the Ancient World"), desc: t("The pyramids, the Colossus, the Lighthouse of Alexandria \u2014 where they stood.") },
+  { id: 'wonders-new', cat: 'maps', icon: '🗿', label: t("New Seven Wonders"), desc: t("The Great Wall, Petra, Machu Picchu, the Taj Mahal \u2014 and the pyramids of Giza.") },
+  { id: 'cities-world', cat: 'maps', icon: '🏙️', label: t("Great Cities of the World"), desc: t("Tokyo, Lagos, Lima, Sydney \u2014 34 big cities marked on the world map.") },
+  { id: 'cities-europe', cat: 'maps', icon: '🏰', label: t("Cities of Europe"), desc: t("From Lisbon to Moscow \u2014 33 European cities on the map.") },
+  { id: 'cities-romania', cat: 'maps', icon: '🇷🇴', label: t("Cities of Romania"), desc: t("Bucure\u0219ti, Cluj, Timi\u0219oara, Ia\u0219i \u2014 30 Romanian cities on the map.") },
+  { id: 'hist-100', cat: 'history', icon: '🏛️', label: t("The World in AD 100"), desc: t("Rome, the Han, the Parthians \u2014 and Dacia, just before Trajan. 16 states.") },
+  { id: 'hist-1279', cat: 'history', icon: '🐎', label: t("The Mongol Empire, 1279"), desc: t("The four Mongol khanates and their neighbours, at the empire's peak. 16 states.") },
+  { id: 'hist-1700', cat: 'history', icon: '👑', label: t("The World in 1700"), desc: t("Ottomans, Mughals, Qing, Spain and Russia \u2014 16 great powers.") },
+  { id: 'hist-1914', cat: 'history', icon: '🗺️', label: t("Colonial Empires in 1914"), desc: t("The British, French, German and Russian empires \u2014 and 12 more, on the eve of WWI.") },
+  { id: 'flags-historical', cat: 'history', icon: '🏴', label: t('Historical Flags'), desc: t('The USSR, Yugoslavia, Zaire, the 1989 flag with a hole — 18 flags that are gone.') },
+  { id: 'peaks', cat: 'maps', icon: '🏔️', label: t("Famous Peaks"), desc: t("Everest, K2, Aconcagua, Denali, Mont Blanc \u2014 23 summits on the world map.") },
+  { id: 'waterfalls', cat: 'maps', icon: '💦', label: t("Famous Waterfalls"), desc: t("Angel, Iguaz\u00fa, Niagara, Victoria \u2014 19 waterfalls around the world.") },
+  { id: 'natural-wonders', cat: 'maps', icon: '🏞️', label: t("Natural Wonders"), desc: t("The Grand Canyon, Ha Long Bay, Uluru, Gal\u00e1pagos \u2014 26 places on the map.") },
+  { id: 'extreme-points', cat: 'maps', icon: '🧭', label: t("Extreme Points of the Continents"), desc: t("Cape Horn, North Cape, Cape Agulhas \u2014 the ends of every continent.") },
+  { id: 'clouds', cat: 'science', icon: '☁️', label: t("Types of Clouds"), desc: t("Cirrus, cumulus, nimbostratus, cumulonimbus \u2014 11 clouds by shape and height.") },
+  { id: 'climates', cat: 'science', icon: '🌦️', label: t("Climate Types"), desc: t("Equatorial, Mediterranean, monsoon, tundra \u2014 13 climates and where to find them.") },
+  { id: 'scales', cat: 'science', icon: '📐', label: t("Scales and Units"), desc: t("Richter, Beaufort, Mohs, Kelvin, light-years \u2014 18 ways to measure the planet.") },
   { id: 'peninsulas',     cat: 'maps',     icon: '🗺️', label: t('Famous Peninsulas'),    desc: t('21 famous peninsulas lit up on the world map, from Iberia to Kamchatka.') },
   ...Object.values(TRIPOINT_QUIZZES).map(q => ({
     id: q.id, cat: 'puzzles', icon: '⨯', label: q.title,
@@ -91,6 +163,8 @@ export const QUIZ_ITEMS = [
  * Each group sits in its members' category, where its first member would be.
  */
 export const QUIZ_GROUPS = [
+  { id: 'grp-capitals-continents', label: t('Capitals by continent'), desc: t('Europe, Asia, Africa, the Americas and Oceania — one quiz each.'),
+    members: ['capitals-europe', 'capitals-asia', 'capitals-africa', 'capitals-americas', 'capitals-oceania'] },
   { id: 'grp-flag-symbols', label: t('Flags with symbols'), desc: t('Crescents, crosses and suns — three flag hunts.'),
     members: ['flags-crescent', 'flags-cross', 'flags-sun'] },
   { id: 'grp-wars', label: t('World Wars'), desc: t('Every country that fought, under its name at the time.'),
@@ -105,6 +179,34 @@ export const QUIZ_GROUPS = [
     members: ['former-ussr', 'former-yugoslavia'] },
   { id: 'grp-regions', label: t('Regions'), desc: t('The Caribbean, Central America, the Nordics, the Gulf and the -stans.'),
     members: ['caribbean', 'central-america', 'nordic', 'gulf-states', 'stans'] },
+  { id: 'grp-world-landforms', label: t('Islands, peninsulas, deserts'), desc: t('The famous ones, lit up on the world map.'),
+    members: ['islands', 'peninsulas', 'deserts'] },
+  { id: 'grp-world-waters', label: t('Lakes, seas and rivers'), desc: t('Lakes, seas and gulfs, straits and the great rivers of the world.'),
+    members: ['lakes', 'seas-map', 'straits', 'rivers-world'] },
+  { id: 'grp-phys-continents', label: t('Physical maps by continent'), desc: t('Rivers, mountains and plains — one map for each continent.'),
+    members: ['phys-europe', 'phys-asia', 'phys-africa', 'phys-namerica', 'phys-samerica', 'phys-oceania'] },
+  { id: 'grp-wonders', label: t('Wonders of the World'), desc: t('The seven ancient wonders and the New Seven Wonders.'),
+    members: ['wonders-ancient', 'wonders-new'] },
+  { id: 'grp-cities', label: t('Cities on the map'), desc: t('The great cities of the world, of Europe and of Romania.'),
+    members: ['cities-world', 'cities-europe', 'cities-romania'] },
+  { id: 'grp-empires', label: t('Empires through time'), desc: t('The world in AD 100, 1279, 1700 and 1914 — name the empires on the map.'),
+    members: ['hist-100', 'hist-1279', 'hist-1700', 'hist-1914'] },
+  { id: 'grp-nature-wonders', label: t('Peaks, waterfalls and natural wonders'), desc: t('Famous summits, waterfalls, natural wonders and the extreme points of the continents.'),
+    members: ['peaks', 'waterfalls', 'natural-wonders', 'extreme-points'] },
+  { id: 'grp-earth-inside', label: t('Inside the Earth'), desc: t('Layers, tectonic plates, plate boundaries, trenches and ridges.'),
+    members: ['earth-layers', 'plates', 'plate-boundaries', 'ocean-floor'] },
+  { id: 'grp-volcanoes', label: t('Volcanoes'), desc: t('Famous volcanoes on the map and the anatomy of a volcano.'),
+    members: ['volcanoes', 'volcano'] },
+  { id: 'grp-rocks', label: t('Rocks and minerals'), desc: t('Rock types, the rock cycle and the Mohs scale.'),
+    members: ['rocks', 'rock-cycle', 'minerals'] },
+  { id: 'grp-water-climate', label: t('Water, weather and climate'), desc: t('The water cycle, clouds, ocean currents, climate zones and types, and the imaginary lines.'),
+    members: ['water-cycle', 'clouds', 'currents', 'climate-zones', 'climates', 'earth-lines'] },
+  { id: 'grp-planets', label: t('Planets and moons'), desc: t('The Solar System, planets by clues and the moons that orbit them.'),
+    members: ['solar-system', 'planets', 'moons'] },
+  { id: 'grp-sun-moon', label: t('Sun, Earth and Moon'), desc: t('Seasons, the phases of the Moon, eclipses and the inside of the Sun.'),
+    members: ['earth-orbit', 'moon-phases', 'eclipses', 'sun-anatomy'] },
+  { id: 'grp-sky', label: t('Stars and the night sky'), desc: t('The sky over Romania, stars, constellations and galaxies.'),
+    members: ['sky-map', 'stars-constellations'] },
   { id: 'grp-tripoints', label: t('Tripoints'), desc: t('Three countries meet at one point. Zoomed-in maps, 10 points per quiz — name all three.'),
     members: Object.keys(TRIPOINT_QUIZZES), numbered: true },
 ].map(g => {
@@ -188,6 +290,10 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
   const hasRatings = Object.values(overview).some(o => o.ratings > 0)
   const hasPlays = Object.values(overview).some(o => o.playsWeek > 0)
   const chooseCat = (c) => { setCat(c); setOpenGroup(null); try { sessionStorage.setItem('orbis-qh-cat', c) } catch { /* private mode */ } }
+  // cat is 'all', a family ('fam:countries') or one category ('capitals')
+  const catFamily = cat.startsWith('fam:') ? cat.slice(4) : QUIZ_CATEGORIES.find(c => c.id === cat)?.family ?? null
+  const showsCat = (catId) => cat === 'all' || cat === catId || cat === `fam:${QUIZ_CATEGORIES.find(c => c.id === catId)?.family}`
+  const catLabel = cat === 'all' ? t('All') : cat.startsWith('fam:') ? QUIZ_FAMILIES.find(f => f.id === catFamily)?.label : QUIZ_CATEGORIES.find(c => c.id === cat)?.label
   const searchRef = useRef(null)
 
   // "/" focuses search
@@ -216,6 +322,13 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
   }, [results])
 
   const played = QUIZ_ITEMS.filter(q => stats[q.id]).length
+  // Newest first; same day → catalogue order
+  const newest = useMemo(() => QUIZ_ITEMS
+    .map((it, i) => ({ it, i, d: addedOn(it.id) }))
+    .filter(x => x.d && isNewGame(x.it.id) && !stats[x.it.id])
+    .sort((a, b) => b.d.localeCompare(a.d) || a.i - b.i)
+    .slice(0, 16)
+    .map(x => x.it), [stats])
   const filtering = query.trim() !== '' || filter !== 'all'
 
   const onSearchKey = (e) => {
@@ -304,27 +417,68 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
         </div>
       </div>
 
-      {/* ── Categories ── */}
-      <div className="qh-cats" role="tablist" aria-label={t('Categories')}>
-        {[{ id: 'all', label: t('All') }, ...QUIZ_CATEGORIES].map(c => (
-          <button key={c.id} role="tab" aria-selected={cat === c.id} className={`qh-cat${cat === c.id ? ' active' : ''}`} onClick={() => chooseCat(c.id)}
-            style={c.color ? { '--cat': c.color } : undefined}>
-            {c.label}
-            {c.id !== 'all' && <span className="qh-cat-n">{QUIZ_ITEMS.filter(q => q.cat === c.id).length}</span>}
-          </button>
-        ))}
+      {/* ── Families (big tabs), then the categories of the chosen family ── */}
+      <div className="qh-fams" role="tablist" aria-label={t('Categories')}>
+        {[{ id: 'all', label: t('All') }, ...QUIZ_FAMILIES].map(f => {
+          const active = f.id === 'all' ? cat === 'all' : catFamily === f.id
+          const n = f.id === 'all' ? QUIZ_ITEMS.length : QUIZ_ITEMS.filter(q => QUIZ_CATEGORIES.find(c => c.id === q.cat)?.family === f.id).length
+          return (
+            <button key={f.id} role="tab" aria-selected={active} className={`qh-fam${active ? ' active' : ''}`}
+              onClick={() => chooseCat(f.id === 'all' ? 'all' : `fam:${f.id}`)}>
+              <span className="qh-fam-label">{f.label}</span>
+              <span className="qh-fam-n">{n}</span>
+            </button>
+          )
+        })}
       </div>
+      {catFamily && (
+        <div className="qh-cats" role="tablist" aria-label={QUIZ_FAMILIES.find(f => f.id === catFamily)?.label}>
+          <button role="tab" aria-selected={cat === `fam:${catFamily}`} className={`qh-cat${cat === `fam:${catFamily}` ? ' active' : ''}`} onClick={() => chooseCat(`fam:${catFamily}`)}>
+            {t('All')}
+          </button>
+          {QUIZ_CATEGORIES.filter(c => c.family === catFamily).map(c => (
+            <button key={c.id} role="tab" aria-selected={cat === c.id} className={`qh-cat${cat === c.id ? ' active' : ''}`} onClick={() => chooseCat(c.id)}
+              style={{ '--cat': c.color }}>
+              <span className="qh-cat-dot" aria-hidden="true" />
+              {c.label}
+              <span className="qh-cat-n">{QUIZ_ITEMS.filter(q => q.cat === c.id).length}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── New quizzes: a strip of the latest ones you haven't played ── */}
+      {!filtering && cat === 'all' && sort === 'default' && newest.length > 0 && (
+        <section className="qh-new">
+          <div className="qh-section-head">
+            <span className="qh-section-icon">✨</span>
+            <h2>{t('New quizzes')}</h2>
+            <span className="qh-section-count">{newest.length}</span>
+          </div>
+          <div className="qh-new-strip">
+            {newest.map(it => (
+              <button key={it.id} className="qh-new-card" onClick={() => onSelect(it.id)} style={{ '--cat': QUIZ_CATEGORIES.find(c => c.id === it.cat)?.color }}>
+                <span className="qh-new-icon"><GameIcon id={it.id} size={22} /></span>
+                <span className="qh-new-body">
+                  <span className="qh-new-name">{it.label}</span>
+                  <span className="qh-new-cat">{QUIZ_CATEGORIES.find(c => c.id === it.cat)?.label}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Category rows (or one sorted list) ── */}
       {sort !== 'default' && visible.length > 0 ? (
         <section className="qh-section">
           <div className="qh-section-head">
             <h2>{sort === 'rated' ? t('Top rated') : t('Popular this week')}</h2>
-            <span className="qh-section-count">{cat === 'all' ? t('All') : QUIZ_CATEGORIES.find(c => c.id === cat)?.label}</span>
+            <span className="qh-section-count">{catLabel}</span>
           </div>
           <div className="qh-grid">
             {visible
-              .filter(it => cat === 'all' || it.cat === cat)
+              .filter(it => showsCat(it.cat))
               .map((it, i) => ({ it, i, key: sort === 'rated' ? rankScore(overview[it.id]) : (overview[it.id]?.playsWeek ?? 0) }))
               .sort((a, b) => b.key - a.key || a.i - b.i)
               .map(({ it }) => <QuizTile key={it.id} item={it} st={stats[it.id]} onSelect={onSelect} rating={overview[it.id]} />)}
@@ -332,7 +486,7 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
         </section>
       ) : visible.length === 0 ? (
         <StateNote action={{ label: t('Clear filters'), onClick: () => { setQuery(''); setFilter('all') } }}>{t('No quizzes match.')}</StateNote>
-      ) : QUIZ_CATEGORIES.filter(c => cat === 'all' || c.id === cat).map(c => {
+      ) : QUIZ_CATEGORIES.filter(c => showsCat(c.id)).map(c => {
         const catAll = QUIZ_ITEMS.filter(it => it.cat === c.id)
         const catPlayed = catAll.filter(it => stats[it.id]).length
         // Searching / "not played": every matching quiz, ungrouped
@@ -340,7 +494,7 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
           ? visible.filter(it => it.cat === c.id).map(item => ({ type: 'quiz', item }))
           : entriesFor(c.id)
         if (!entries.length) return null
-        const capped = !filtering && cat === 'all' && entries.length > CAP
+        const capped = !filtering && !QUIZ_CATEGORIES.some(x => x.id === cat) && entries.length > CAP
         const shown = capped ? entries.slice(0, CAP) : entries
         const open = shown.find(e => e.type === 'group' && e.group.id === openGroup)?.group
         return (

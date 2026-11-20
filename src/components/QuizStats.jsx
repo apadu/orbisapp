@@ -57,6 +57,14 @@ export function AttemptNote({ mode }) {
  * prev: the rounds before it (pastRounds taken when the game started)
  * record: count this round in the "% of players" stats (first attempt, timed)
  */
+/** GeoFeverr's verdict on a score (percent): on fire → high fever → mild fever → just a cold */
+export function feverVerdict(pct) {
+  if (pct >= 100) return { cls: 'fire', text: t('🔥 On fire! A perfect score.') }
+  if (pct >= 75) return { cls: 'high', text: t('🌡️ High fever — impressive!') }
+  if (pct >= 40) return { cls: 'mild', text: t('🌡️ Mild fever — getting there.') }
+  return { cls: 'cold', text: t('🤧 Just a cold — have another go!') }
+}
+
 export function QuizResultStats({ mode, variant = '', row, prev = [], record = true }) {
   const auth = useAuth()
   const me = auth.user?.id ?? null
@@ -102,6 +110,7 @@ export function QuizResultStats({ mode, variant = '', row, prev = [], record = t
 
   return (
     <div className="qs-panel">
+      <div className={`qs-fever qs-fever-${feverVerdict(pct(row)).cls}`}>{feverVerdict(pct(row)).text}</div>
       <div className="qs-col">
         <span className="qs-kicker">{t('Your score')}</span>
         <span className="qs-big">{scoreOf(row)} <small>({pct(row)}%)</small></span>

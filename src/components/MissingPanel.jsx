@@ -60,7 +60,9 @@ export default function MissingPanel({ gameCountries, countryInfo, onHiddenChang
       onFoundChange?.(found)
     } else {
       onHiddenChange(new Set())
-      if (phase === 'idle') onFoundChange?.([])
+      // done: report the final list too — the last answer ends the game in the same render,
+      // and without this the last country stayed uncoloured instead of green
+      onFoundChange?.(phase === 'idle' ? [] : found)
     }
   }, [phase, found, target, onHiddenChange, onFoundChange])
 

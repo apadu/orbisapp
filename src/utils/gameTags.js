@@ -25,7 +25,7 @@ const TAGS = {
   missing: ['type', 'timed'], silhouette: ['type', 'timed'], mystery: ['type', 'daily'], 'daily-quiz': ['type', 'daily'],
   distance: ['estimate'],
   connections: ['choose'], 'true-false': ['choose'], 'higher-lower': ['choose', 'streak'],
-  learn: [],
+  'flags-pick': ['choose'], 'flags-sprint': ['type', 'timed'], 'flags-survival': ['choose', 'streak'],
 }
 
 export function gameTag(id, { short = false } = {}) {
@@ -48,8 +48,21 @@ const ADDED = {
   ...Object.fromEntries([...TRIPOINT_IDS].map(id => [id, '2026-11-17'])),
   'gb-regions': '2026-11-17', 'gb-quiz': '2026-11-17', 'country-gb': '2026-11-17', 'pl-voivodeships': '2026-11-17', 'pl-capitals': '2026-11-17', 'pl-quiz': '2026-11-17', 'country-pl': '2026-11-17', 'hu-counties': '2026-11-17', 'hu-seats': '2026-11-17', 'hu-quiz': '2026-11-17', 'country-hu': '2026-11-17', 'br-states': '2026-11-17', 'br-capitals': '2026-11-17', 'br-quiz': '2026-11-17', 'country-br': '2026-11-17', 'ca-provinces': '2026-11-17', 'ca-capitals': '2026-11-17', 'ca-quiz': '2026-11-17', 'country-ca': '2026-11-17', 'au-states': '2026-11-17', 'au-capitals': '2026-11-17', 'au-quiz': '2026-11-17', 'country-au': '2026-11-17',
   islands: '2026-11-18', peninsulas: '2026-11-18',
+  lakes: '2026-11-20', deserts: '2026-11-20', 'seas-map': '2026-11-20', straits: '2026-11-20',
+  'capitals-europe': '2026-11-20', 'capitals-asia': '2026-11-20', 'capitals-africa': '2026-11-20', 'capitals-americas': '2026-11-20', 'capitals-oceania': '2026-11-20',
+  'mx-states': '2026-11-20', 'mx-capitals': '2026-11-20', 'mx-quiz': '2026-11-20', 'country-mx': '2026-11-20', 'in-states': '2026-11-20', 'in-capitals': '2026-11-20', 'in-quiz': '2026-11-20', 'country-in': '2026-11-20', 'cn-provinces': '2026-11-20', 'cn-capitals': '2026-11-20', 'cn-quiz': '2026-11-20', 'country-cn': '2026-11-20', 'ru-subjects': '2026-11-20', 'ru-quiz': '2026-11-20', 'country-ru': '2026-11-20', 'ar-provinces': '2026-11-20', 'ar-capitals': '2026-11-20', 'ar-quiz': '2026-11-20', 'country-ar': '2026-11-20', 'tr-provinces': '2026-11-20', 'tr-quiz': '2026-11-20', 'country-tr': '2026-11-20',
+  'volcanoes': '2026-11-21', 'volcano': '2026-11-21', 'plate-boundaries': '2026-11-21', 'ocean-floor': '2026-11-21', 'water-cycle': '2026-11-21', 'currents': '2026-11-21', 'climate-zones': '2026-11-21', 'earth-lines': '2026-11-21', 'earth-orbit': '2026-11-21', 'landscape': '2026-11-21', 'biomes': '2026-11-21', 'minerals': '2026-11-21', 'phenomena': '2026-11-21', 'earth-records': '2026-11-21', 'geologic-time': '2026-11-21',
+  'solar-system': '2026-11-21', 'planets': '2026-11-21', 'moon-phases': '2026-11-21', 'eclipses': '2026-11-21', 'sun-anatomy': '2026-11-21', 'moons': '2026-11-21',
+  'sky-map': '2026-11-21', 'stars-constellations': '2026-11-21', 'missions': '2026-11-21', 'phys-europe': '2026-11-21', 'phys-asia': '2026-11-21', 'phys-africa': '2026-11-21', 'phys-namerica': '2026-11-21', 'phys-samerica': '2026-11-21', 'phys-oceania': '2026-11-21', 'rivers-world': '2026-11-21', 'wonders-ancient': '2026-11-21', 'wonders-new': '2026-11-21',
+  'cities-world': '2026-11-21', 'cities-europe': '2026-11-21', 'cities-romania': '2026-11-21', 'hist-100': '2026-11-21', 'hist-1279': '2026-11-21', 'hist-1700': '2026-11-21', 'hist-1914': '2026-11-21',
+  'flags-historical': '2026-11-21',
+  'peaks': '2026-11-21', 'waterfalls': '2026-11-21', 'natural-wonders': '2026-11-21', 'extreme-points': '2026-11-21', 'clouds': '2026-11-21', 'climates': '2026-11-21', 'scales': '2026-11-21',
+  plates: '2026-11-20', 'earth-layers': '2026-11-20', 'rock-cycle': '2026-11-20', rocks: '2026-11-20',
+  'flags-pick': '2026-11-20', 'flags-sprint': '2026-11-20', 'flags-survival': '2026-11-20',
 }
 const NEW_DAYS = 21
+/** The day a game was added (YYYY-MM-DD), or null for the original games. */
+export const addedOn = (id) => ADDED[id] ?? null
 export function isNewGame(id, now = Date.now()) {
   const d = ADDED[id]
   return !!d && now - Date.parse(d) < NEW_DAYS * 864e5

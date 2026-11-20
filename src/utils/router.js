@@ -3,7 +3,7 @@
  * Forward buttons, refresh and shared links all work.
  *
  *   /                  Home
- *   /play/<mode>       globe games (mystery, capital-drop, name-all, learn…)
+ *   /play/<mode>       globe games (mystery, capital-drop, name-all…)
  *   /quiz              Quiz Hub
  *   /quiz/<mode>       a quiz (capital, ww2, country-wordle…)
  *   /daily             Quiz of the day

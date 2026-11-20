@@ -33,7 +33,7 @@ export default function StreakBadge({ onSelectMode }) {
         <div className="streak-popover">
           <div className="streak-pop-header">
             <span className="streak-pop-date">{todayLabel}</span>
-            {streak > 0 && <span className="streak-pop-streak"><Icon name="flame" size={14} /> {streak} {t('day streak')}</span>}
+            {streak > 0 && <span className="streak-pop-streak"><Icon name="flame" size={14} /> {streak} {t('days of fever')}</span>}
           </div>
 
           <div className="streak-pop-challenges">

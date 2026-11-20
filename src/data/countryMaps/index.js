@@ -13,6 +13,12 @@ import { HUNGARY } from './hungary'
 import { BRAZIL } from './brazil'
 import { CANADA } from './canada'
 import { AUSTRALIA } from './australia'
+import { MEXICO } from './mexico'
+import { INDIA } from './india'
+import { CHINA } from './china'
+import { RUSSIA } from './russia'
+import { ARGENTINA } from './argentina'
+import { TURKEY } from './turkey'
 
 /**
  * "Country maps" quizzes: a flat 2D map of one country split into its subdivisions.
@@ -178,6 +184,66 @@ export const COUNTRY_MAP_QUIZZES = {
     title: t('State Capitals of Australia'),
     prompt: t('Type the capital of every state and territory'),
     placeholder: t('Type a city…'),
+  },
+  'mx-states': {
+    map: MEXICO, kind: 'divisions', icon: '🇲🇽',
+    title: t("States of Mexico"),
+    prompt: t("Type all 31 states \u2014 and Mexico City"),
+    placeholder: t("Type a state\u2026"),
+  },
+  'mx-capitals': {
+    map: MEXICO, kind: 'seats', icon: '🏛️',
+    title: t("State Capitals of Mexico"),
+    prompt: t("Type the capital of every state \u2014 its state lights up"),
+    placeholder: t("Type a city\u2026"),
+  },
+  'in-states': {
+    map: INDIA, kind: 'divisions', icon: '🇮🇳',
+    title: t("States and Territories of India"),
+    prompt: t("Type the 28 states and 8 union territories"),
+    placeholder: t("Type a state\u2026"),
+  },
+  'in-capitals': {
+    map: INDIA, kind: 'seats', icon: '🏛️',
+    title: t("State Capitals of India"),
+    prompt: t("Type the capital of every state and territory \u2014 its area lights up"),
+    placeholder: t("Type a city\u2026"),
+  },
+  'cn-provinces': {
+    map: CHINA, kind: 'divisions', icon: '🇨🇳',
+    title: t("Provinces of China"),
+    prompt: t("Type all 31 provinces, autonomous regions and municipalities"),
+    placeholder: t("Type a province\u2026"),
+  },
+  'cn-capitals': {
+    map: CHINA, kind: 'seats', icon: '🏛️',
+    title: t("Provincial Capitals of China"),
+    prompt: t("Type the capital of every province and region (the 4 municipalities have none)"),
+    placeholder: t("Type a city\u2026"),
+  },
+  'ru-subjects': {
+    map: RUSSIA, kind: 'divisions', icon: '🇷🇺',
+    title: t("Federal Subjects of Russia"),
+    prompt: t("Type all 83 federal subjects \u2014 republics, krais, oblasts and more"),
+    placeholder: t("Type a region\u2026"),
+  },
+  'ar-provinces': {
+    map: ARGENTINA, kind: 'divisions', icon: '🇦🇷',
+    title: t("Provinces of Argentina"),
+    prompt: t("Type the 23 provinces \u2014 and Buenos Aires City"),
+    placeholder: t("Type a province\u2026"),
+  },
+  'ar-capitals': {
+    map: ARGENTINA, kind: 'seats', icon: '🏛️',
+    title: t("Provincial Capitals of Argentina"),
+    prompt: t("Type the capital of every province \u2014 its province lights up"),
+    placeholder: t("Type a city\u2026"),
+  },
+  'tr-provinces': {
+    map: TURKEY, kind: 'divisions', icon: '🇹🇷',
+    title: t("Provinces of Turkey"),
+    prompt: t("Type all 81 provinces"),
+    placeholder: t("Type a province\u2026"),
   },
 }
 export const COUNTRY_MAP_IDS = new Set(Object.keys(COUNTRY_MAP_QUIZZES))

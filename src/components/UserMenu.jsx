@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
-import { levelForXp, computeXp } from '../utils/profileData'
+import { levelForXp, computeXp, feverTemp } from '../utils/profileData'
 import { t, lang, setLang, LANGS } from '../i18n'
 import { plain } from '../utils/plain'
 
@@ -37,8 +37,8 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
 
   return (
     <div className="um" ref={ref}>
-      <button className="um-level" onClick={onProfile} title={t('{v} XP to level {v2}', { v: level.next - level.xp, v2: level.level + 1 })}>
-        <span className="um-level-num">{t('Lv')} {level.level}</span>
+      <button className="um-level" onClick={onProfile} title={t('{v} XP to {temp}', { v: level.next - level.xp, temp: feverTemp(level.level + 1) })}>
+        <span className="um-level-num">🌡️ {feverTemp(level.level)}</span>
         <span className="um-level-bar"><span style={{ width: `${level.pct}%` }} /></span>
       </button>
 

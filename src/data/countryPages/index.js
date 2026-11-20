@@ -13,6 +13,12 @@ import { HUNGARY_PAGE } from './hungary'
 import { BRAZIL_PAGE } from './brazil'
 import { CANADA_PAGE } from './canada'
 import { AUSTRALIA_PAGE } from './australia'
+import { MEXICO_PAGE } from './mexico'
+import { INDIA_PAGE } from './india'
+import { CHINA_PAGE } from './china'
+import { RUSSIA_PAGE } from './russia'
+import { ARGENTINA_PAGE } from './argentina'
+import { TURKEY_PAGE } from './turkey'
 import { ROMANIA } from '../countryMaps/romania'
 import { MOLDOVA } from '../countryMaps/moldova'
 import { USA } from '../countryMaps/usa'
@@ -27,6 +33,12 @@ import { HUNGARY } from '../countryMaps/hungary'
 import { BRAZIL } from '../countryMaps/brazil'
 import { CANADA } from '../countryMaps/canada'
 import { AUSTRALIA } from '../countryMaps/australia'
+import { MEXICO } from '../countryMaps/mexico'
+import { INDIA } from '../countryMaps/india'
+import { CHINA } from '../countryMaps/china'
+import { RUSSIA } from '../countryMaps/russia'
+import { ARGENTINA } from '../countryMaps/argentina'
+import { TURKEY } from '../countryMaps/turkey'
 
 /**
  * Country pages: one hub per country (facts, an explorable map, its games) plus its
@@ -49,6 +61,12 @@ export const COUNTRY_PAGES = {
   'country-br': { slug: 'brazil', page: BRAZIL_PAGE, map: BRAZIL, games: ['br-states', 'br-capitals', 'br-quiz'] },
   'country-ca': { slug: 'canada', page: CANADA_PAGE, map: CANADA, games: ['ca-provinces', 'ca-capitals', 'ca-quiz'] },
   'country-au': { slug: 'australia', page: AUSTRALIA_PAGE, map: AUSTRALIA, games: ['au-states', 'au-capitals', 'au-quiz'] },
+  'country-mx': { slug: 'mexico', page: MEXICO_PAGE, map: MEXICO, games: ['mx-states', 'mx-capitals', 'mx-quiz'] },
+  'country-in': { slug: 'india', page: INDIA_PAGE, map: INDIA, games: ['in-states', 'in-capitals', 'in-quiz'] },
+  'country-cn': { slug: 'china', page: CHINA_PAGE, map: CHINA, games: ['cn-provinces', 'cn-capitals', 'cn-quiz'] },
+  'country-ru': { slug: 'russia', page: RUSSIA_PAGE, map: RUSSIA, games: ['ru-subjects', 'ru-quiz'] },
+  'country-ar': { slug: 'argentina', page: ARGENTINA_PAGE, map: ARGENTINA, games: ['ar-provinces', 'ar-capitals', 'ar-quiz'] },
+  'country-tr': { slug: 'turkey', page: TURKEY_PAGE, map: TURKEY, games: ['tr-provinces', 'tr-quiz'] },
 }
 export const COUNTRY_PAGE_IDS = new Set(Object.keys(COUNTRY_PAGES))
 
@@ -94,6 +112,22 @@ export const COUNTRY_GAMES = [
   { id: 'au-states', icon: '🗺️', label: t('States and Territories of Australia'), desc: t('6 states and 2 territories. The easiest map in the game — or is it?') },
   { id: 'au-capitals', icon: '🏛️', label: t('State Capitals of Australia'), desc: t('Canberra, not Sydney. Then Perth, Darwin, Hobart…') },
   { id: 'au-quiz', icon: '❓', label: t('Quiz: Australia'), desc: t('20 questions, from Uluru to the platypus.') },
+  { id: 'mx-states', icon: '🗺️', label: t("States of Mexico"), desc: t("From Baja California to Yucat\u00e1n \u2014 31 states and the capital.") },
+  { id: 'mx-capitals', icon: '🏛️', label: t("State Capitals of Mexico"), desc: t("Monterrey, Guadalajara, M\u00e9rida\u2026 and Toluca. Every state capital.") },
+  { id: 'mx-quiz', icon: '❓', label: t("Quiz: Mexico"), desc: t("20 questions, from the Aztecs to the Day of the Dead.") },
+  { id: 'in-states', icon: '🗺️', label: t("States and Territories of India"), desc: t("28 states and 8 union territories, from Ladakh to Kerala.") },
+  { id: 'in-capitals', icon: '🏛️', label: t("State Capitals of India"), desc: t("Mumbai, Kolkata, Chennai\u2026 and Dispur. Punjab and Haryana share one.") },
+  { id: 'in-quiz', icon: '❓', label: t("Quiz: India"), desc: t("20 questions, from the Taj Mahal to Diwali.") },
+  { id: 'cn-provinces', icon: '🗺️', label: t("Provinces of China"), desc: t("22 provinces, 5 autonomous regions and 4 cities, from Tibet to Shanghai.") },
+  { id: 'cn-capitals', icon: '🏛️', label: t("Provincial Capitals of China"), desc: t("Guangzhou, Chengdu, Wuhan\u2026 and Hohhot. 27 provincial capitals.") },
+  { id: 'cn-quiz', icon: '❓', label: t("Quiz: China"), desc: t("20 questions, from the Great Wall to the giant panda.") },
+  { id: 'ru-subjects', icon: '🗺️', label: t("Federal Subjects of Russia"), desc: t("83 republics, krais and oblasts across 11 time zones. A real challenge.") },
+  { id: 'ru-quiz', icon: '❓', label: t("Quiz: Russia"), desc: t("20 questions, from Lake Baikal to Sputnik.") },
+  { id: 'ar-provinces', icon: '🗺️', label: t("Provinces of Argentina"), desc: t("23 provinces from Jujuy to Tierra del Fuego, plus the capital.") },
+  { id: 'ar-capitals', icon: '🏛️', label: t("Provincial Capitals of Argentina"), desc: t("La Plata, not Buenos Aires. Then Rawson, Viedma, Ushuaia\u2026") },
+  { id: 'ar-quiz', icon: '❓', label: t("Quiz: Argentina"), desc: t("20 questions, from tango to Patagonia.") },
+  { id: 'tr-provinces', icon: '🗺️', label: t("Provinces of Turkey"), desc: t("81 provinces from Edirne to Hakk\u00e2ri. Most share their capital's name.") },
+  { id: 'tr-quiz', icon: '❓', label: t("Quiz: Turkey"), desc: t("20 questions, from Cappadocia to Hagia Sophia.") },
 ]
 const gameById = Object.fromEntries(COUNTRY_GAMES.map(g => [g.id, g]))
 export const countryGame = (id) => gameById[id] ?? null

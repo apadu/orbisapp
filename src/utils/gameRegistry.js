@@ -50,9 +50,8 @@ export const GLOBE_ROWS = [
 
 // Extra entries that aren't on the Home rows
 const EXTRA = [
-  { id: 'daily-quiz', icon: '📅', label: t('Daily Quiz'), desc: t('Quiz of the day'), group: 'quizzes' },
+  { id: 'daily-quiz', icon: '📅', label: t('Daily Fever'), desc: t('Daily Fever'), group: 'quizzes' },
   { id: 'quiz-hub',   icon: '🎯', label: t('Quiz Hub'),   desc: t('Open Hub →'), group: 'quizzes' },
-  { id: 'learn',      icon: '🎓', label: t('Learn'),      desc: t('Spin the globe, click a country, learn something you didn\'t know.'), group: 'learn' },
 ]
 
 /**
@@ -69,8 +68,6 @@ export const GAME_GROUPS = [
     desc: t('A country at a time: its map by county or state and a quiz') },
   { id: 'quizzes',   icon: '🧩', label: t('Quizzes'),       short: t('Quizzes'),   color: '#E2B65C', page: 'quiz-hub',
     desc: t('Flags, capitals, lists, puzzles — no globe needed') },
-  { id: 'learn',     icon: '🎓', label: t('Learn'),         short: t('Learn'),     color: '#9BB3CF', page: 'learn',
-    desc: t('Spin the globe, click a country, learn something new') },
 ]
 /** Section pages that list games (the Quiz Hub and Countries have their own components) */
 export const SECTION_HUBS = { 'globe-hub': 'globe', 'nameall-hub': 'nameall' }

@@ -34,7 +34,7 @@ export default function CompletionModal({ stats, onClose, onPlayAgain }) {
   const completionRate = COMPLETION_RATE[type] ?? 10
 
   // Share text
-  const shareMsg = [`Orbis · ${game}`, `${total}/${total} · ${timeLabel}`, siteLink(window.location.pathname)].join('\n')
+  const shareMsg = [`GeoFeverr · ${game}`, `${total}/${total} · ${timeLabel}`, siteLink(window.location.pathname)].join('\n')
 
   const handleShare = () => {
     shareText(shareMsg).then((r) => {

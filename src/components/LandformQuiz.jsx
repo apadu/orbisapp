@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LANDFORM_QUIZZES } from '../quizzes/landformQuizzes'
+import { LANDFORMS } from '../data/landforms'
 import { norm } from '../quizzes/tableQuizzes'
 import { startSession, trackAnswer, finishGame, markSession, setPoolSize } from '../utils/results'
 import { playCorrect, playWin, playWrong } from '../utils/sounds'
@@ -35,7 +36,8 @@ const CLOCK_OPTION = () => ({
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`
 
 // "Peninsula Iberică" / "Iberian Peninsula" / "Insula Baffin" / "Baffin Island" → also "Iberică", "Iberian", "Baffin"
-const GENERIC = /^(peninsula|insula|isla|ile)\s+|\s+(peninsula|island|isle)$/i
+// (and likewise "Lacul Baikal" → "Baikal", "Strait of Gibraltar" → "Gibraltar", "Gobi Desert" → "Gobi")
+const GENERIC = /^((mount|cascada|cascadele|vârful|varful|insulele|lacurile|ghețarul|ghetarul|fiordul|depresiunea|delta|tropicul|curentul|fosa|groapa|dorsala|riftul|muntele|vulcanul|placa|peninsula|insula|isla|ile|lacul|lake|lago|lac|marea|deșertul|desertul|strâmtoarea|stramtoarea|canalul|pasajul|golful)\s+|(strait|straits|sea|gulf|bay|lake|tropic) of\s+(the\s+)?)|\s+(falls|waterfall|waterfalls|glacier|islands|delta|depression|lakes|current|trench|ridge|rise|plate|peninsula|island|isle|lake|sea|desert|strait|channel|passage|gulf|bay)$/i
 const shortForms = (s) => { const x = s.replace(GENERIC, '').trim(); return x && x !== s ? [s, x] : [s] }
 
 const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '')
@@ -50,6 +52,15 @@ function loadJson(file) {
   return cache.get(file)
 }
 
+// The same order for every player on a given day
+function seededShuffle(a, seed) {
+  let t = seed >>> 0
+  const rnd = () => { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296 }
+  const x = [...a]
+  for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [x[i], x[j]] = [x[j], x[i]] }
+  return x
+}
+
 const shuffled = (a) => {
   const x = [...a]
   for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [x[i], x[j]] = [x[j], x[i]] }
@@ -60,8 +71,8 @@ const shuffled = (a) => {
 const MAX_ZOOM = 6
 const MARGIN_X = 0.012, MARGIN_Y = 0.035    // ocean around the world when zoomed out (share of the map size)
 /** Zoom / pan inside the frame { x0, y0, W, H } (map units); the view keeps the frame's proportions. */
-function useZoom({ x0, y0, W, H }) {
-  const [view, setView] = useState(null)            // { x, y, w } in map units; h follows the aspect ratio
+function useZoom({ x0, y0, W, H }, initial = null) {
+  const [view, setView] = useState(initial)            // { x, y, w } in map units; h follows the aspect ratio
   const full = { x: x0, y: y0, w: W }
   const v = view ?? full
   const clamp = useCallback((n) => {
@@ -79,16 +90,28 @@ function useZoom({ x0, y0, W, H }) {
     const c = cur ?? { x: x0, y: y0, w: W }
     return clamp({ ...c, x: c.x + dx, y: c.y + dy })
   }), [x0, y0, W, clamp])
-  const reset = useCallback(() => setView(null), [])
+  const reset = useCallback(() => setView(initial), [initial])
   return { v, h: v.w * H / W, zoomAt, panBy, reset, zoomed: !!view && view.w < W - 0.5 }
 }
 
-function LandformMap({ world, map, numberOf, found, recent, over, focus, title }) {
+function LandformMap({ world, map, numberOf, found, recent, over, focus, title, bounds }) {
   const frame = useMemo(() => {
     const mx = world.W * MARGIN_X, my = world.H * MARGIN_Y
     return { x0: -mx, y0: -my, W: world.W + 2 * mx, H: world.H + 2 * my }
   }, [world.W, world.H])
-  const { v, h, zoomAt, panBy, reset, zoomed } = useZoom(frame)
+  // A quiz about one continent opens zoomed in on it: bounds = [west, south, east, north]
+  const initial = useMemo(() => {
+    if (!bounds) return null
+    const k = world.W / 360, LAT_TOP = 84
+    const [w, s, e, n] = bounds
+    const bx = (w + 180) * k, by = (LAT_TOP - n) * k, bw = (e - w) * k, bh = (n - s) * k
+    const vw = Math.min(frame.W, Math.max(bw, bh * frame.W / frame.H))
+    const vh = vw * frame.H / frame.W
+    const x = Math.min(frame.x0 + frame.W - vw, Math.max(frame.x0, bx + bw / 2 - vw / 2))
+    const y = Math.min(frame.y0 + frame.H - vh, Math.max(frame.y0, by + bh / 2 - vh / 2))
+    return { x, y, w: vw }
+  }, [bounds, world.W, frame])
+  const { v, h, zoomAt, panBy, reset, zoomed } = useZoom(frame, initial)
   const svgRef = useRef(null)
   const drag = useRef(null)
   // map units per screen pixel: rings, badges and lines keep the same size on screen at any zoom
@@ -145,8 +168,19 @@ function LandformMap({ world, map, numberOf, found, recent, over, focus, title }
         <path d={world.land} className="lfq-land" />
         <path d={world.lakes} className="lfq-lake" />
         <path d={world.borders} className="lfq-border" style={{ strokeWidth: 0.6 * px }} />
-        {items.map(it => (
-          <path key={it.id} d={it.d} className={`lfq-item${stateOf(it.id)}${focus === it.id ? ' focus' : ''}`} style={{ strokeWidth: 1 * px }} />
+        {items.some(it => it.arrow) && (
+          <defs>
+            <marker id="lfq-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" className="lfq-arrowhead" />
+            </marker>
+          </defs>
+        )}
+        {items.map(it => it.line ? (
+          <path key={it.id} d={it.d} className={`lfq-item lfq-line${stateOf(it.id)}${focus === it.id ? ' focus' : ''}`}
+            markerEnd={it.arrow ? 'url(#lfq-arrow)' : undefined}
+            style={{ strokeWidth: 3.2 * px, ...(it.color && !stateOf(it.id) && focus !== it.id ? { stroke: it.color } : {}) }} />
+        ) : (
+          <path key={it.id} d={it.d} className={`lfq-item${stateOf(it.id)}${focus === it.id ? ' focus' : ''}${it.color ? ' tinted' : ''}`} style={{ strokeWidth: 1 * px, ...(it.color && !stateOf(it.id) && focus !== it.id ? { fill: it.color } : {}) }} />
         ))}
         {items.filter(it => it.small).map(it => (
           <circle key={it.id} cx={it.cx} cy={it.cy} r={10 * px} className={`lfq-ring${stateOf(it.id)}${focus === it.id ? ' focus' : ''}`} style={{ strokeWidth: 1.6 * px }} />
@@ -167,17 +201,19 @@ function LandformMap({ world, map, numberOf, found, recent, over, focus, title }
       <div className="lfq-zoom">
         <button type="button" onClick={() => zoomAt(1.6)} aria-label={t('Zoom in')}>+</button>
         <button type="button" onClick={() => zoomAt(1 / 1.6)} aria-label={t('Zoom out')} disabled={!zoomed}>−</button>
-        {zoomed && <button type="button" className="lfq-zoom-reset" onClick={reset}>{t('Reset')}</button>}
+        {(zoomed || initial) && <button type="button" className="lfq-zoom-reset" onClick={reset}>{t('Reset')}</button>}
       </div>
     </div>
   )
 }
 
-export default function LandformQuiz({ quizId, onOpen }) {
+/** daily: { day, seed, onStart(), onFinish(result), renderResult(result) } — Daily Fever mode:
+ *  one attempt, timed, numbers in a seeded order (the same for everyone), tracked as 'daily-quiz'. */
+export default function LandformQuiz({ quizId, onOpen, daily = null }) {
   const quiz = LANDFORM_QUIZZES[quizId]
-  const mode = quizId
+  const mode = daily ? 'daily-quiz' : quizId
 
-  const items = useMemo(() => quiz.items.map(d => {
+  const items = useMemo(() => LANDFORMS[quiz.set].map(d => {
     const name = (isRo && d.ro) || d.name
     const pool = isRo ? [d.ro ?? d.name, ...(d.roAlt ?? d.alt ?? [])] : [d.name, ...(d.alt ?? [])]
     return { id: d.id, answer: name, accepts: pool.flatMap(shortForms) }
@@ -206,12 +242,13 @@ export default function LandformQuiz({ quizId, onOpen }) {
   }, [quiz.file])
 
   // Table order (and the numbers on the map): random, new every game
-  const [order, setOrder] = useState(() => shuffled(items.map(it => it.id)))
+  const [order, setOrder] = useState(() => (daily ? seededShuffle(items.map(it => it.id), daily.seed) : shuffled(items.map(it => it.id))))
   const numberOf = useMemo(() => Object.fromEntries(order.map((id, i) => [id, i + 1])), [order])
 
   const options = useMemo(() => [CLOCK_OPTION()], [])
   const [phase, setPhase] = useState('setup')        // setup (map shown, not started) · playing · done
-  const [setup, setSetup] = useState(() => getSavedSetup(quizId, options))
+  const [setup, setSetup] = useState(() => (daily ? { time: '5' } : getSavedSetup(quizId, options)))
+  const [dailyResult, setDailyResult] = useState(null)
   const [timed, setTimed] = useState(() => setup.time !== 'free')
   const [timeLeft, setTimeLeft] = useState(TIME_S)
   const [found, setFound] = useState(() => new Set())
@@ -230,7 +267,7 @@ export default function LandformQuiz({ quizId, onOpen }) {
 
   const start = useCallback((values, typed, reshuffle = false) => {
     const isTimed = values?.time !== 'free'
-    saveSetup(mode, values)
+    if (!daily) saveSetup(mode, values)
     if (reshuffle) setOrder(shuffled(items.map(it => it.id)))
     setTimed(isTimed)
     setTimeLeft(TIME_S)
@@ -245,11 +282,12 @@ export default function LandformQuiz({ quizId, onOpen }) {
     prevRef.current = pastRounds(mode)
     setLastRow(null)
     startSession(mode)
+    if (daily) { markSession(mode, { day: daily.day, quizId }); daily.onStart?.() }
     setPoolSize(mode, items.length)
     if (!isTimed) markSession(mode, { untimed: true })
     inputRef.current?.focus()
     setTimeout(() => inputRef.current?.focus(), 30)
-  }, [mode, items])
+  }, [mode, items, daily, quizId])
 
   const ready = phase === 'setup'
   const changeSetup = (v) => { saveSetup(mode, v); setSetup(v); setTimed(v.time !== 'free') }
@@ -285,7 +323,12 @@ export default function LandformQuiz({ quizId, onOpen }) {
     setEndReason(reason)
     setPhase('done')
     if (reason === 'complete') playWin(); else playWrong()
-  }, [items, mode, quizId])
+    if (daily) {
+      const res = { score: done.size, total: items.length, durationMs: Date.now() - startedAt.current, reason }
+      setDailyResult(res)
+      daily.onFinish?.(res)
+    }
+  }, [items, mode, quizId, daily])
 
   useEffect(() => {
     if (phase !== 'playing' || !timed) return
@@ -362,8 +405,9 @@ export default function LandformQuiz({ quizId, onOpen }) {
         {over && statsBlock}
       </header>
 
-      {ready && <ReadyOptions options={options} values={setup} onChange={changeSetup} />}
-      {ready && <AttemptNote mode={quizId} />}
+      {ready && !daily && <ReadyOptions options={options} values={setup} onChange={changeSetup} />}
+      {ready && !daily && <AttemptNote mode={quizId} />}
+      {ready && daily && <p className="qs-attempt tq-daily-note">{t('One attempt — once you start, leaving counts as your attempt.')}</p>}
 
       <div className="tq-bar">
         {!over ? (
@@ -381,7 +425,7 @@ export default function LandformQuiz({ quizId, onOpen }) {
             {statsBlock}
             {ready ? <StartButton onClick={() => beginNow()} /> : <GiveUpButton onConfirm={() => finish('giveup')} />}
           </>
-        ) : (
+        ) : daily && dailyResult ? daily.renderResult(dailyResult) : (
           <div className="tq-result">
             <span className="tq-result-msg">
               {endReason === 'complete'
@@ -401,12 +445,12 @@ export default function LandformQuiz({ quizId, onOpen }) {
 
       <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
 
-      {over && <QuizResultStats mode={quizId} row={lastRow} prev={prevRef.current} record={timed} />}
+      {over && !daily && <QuizResultStats mode={quizId} row={lastRow} prev={prevRef.current} record={timed} />}
 
       {loadError && <StateNote kind="error">{t('Could not load the map. Check your connection and try again.')}</StateNote>}
       {!loadError && !(world && map) && <StateNote kind="loading">{t('Loading map…')}</StateNote>}
       {world && map && (
-        <LandformMap world={world} map={map} numberOf={numberOf} found={found} recent={recent} over={over} focus={focus} title={quiz.title} />
+        <LandformMap world={world} map={map} numberOf={numberOf} found={found} recent={recent} over={over} focus={focus} title={quiz.title} bounds={quiz.view} />
       )}
 
       <div className="tq-table lfq-table">
@@ -426,8 +470,8 @@ export default function LandformQuiz({ quizId, onOpen }) {
         </div>
       </div>
 
-      {over && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
-      <QuizComments quiz={quizId} unlocked={over} />
+      {over && !daily && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
+      {!daily && <QuizComments quiz={quizId} unlocked={over} />}
     </div>
   )
 }

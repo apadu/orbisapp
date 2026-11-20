@@ -6,6 +6,7 @@ import RailNav from './components/RailNav'
 import Icon, { SECTION_ICON } from './components/Icon'
 import GameIcon from './components/GameIcon'
 import MobileNav from './components/MobileNav'
+import MobileGamesSheet from './components/MobileGamesSheet'
 import GameHud from './components/GameHud'
 import { useIsMobile, useKeyboardInset, useTypingBar, SheetHandle, useSheet, snapHeights } from './components/MobileSheet'
 import { GAME_GROUPS, SECTION_HUBS, gamesInGroup, groupOf, menuGames } from './utils/gameRegistry'
@@ -34,7 +35,8 @@ import RulesHint from './components/RulesHint'
 import { TABLE_QUIZ_IDS, TABLE_QUIZZES } from './quizzes/tableQuizzes'
 import { COUNTRY_MAP_QUIZZES, COUNTRY_MAP_IDS } from './data/countryMaps'
 import { TRIPOINT_QUIZZES, TRIPOINT_IDS } from './quizzes/tripointQuizzes'
-import { LANDFORM_QUIZZES, LANDFORM_IDS } from './quizzes/landformQuizzes'
+import { LANDFORM_IDS } from './quizzes/landformQuizzes'
+import { DIAGRAM_IDS } from './quizzes/diagramIds'
 import { COUNTRY_PAGES, COUNTRY_PAGE_IDS, COUNTRY_GAME_HOME, countryName } from './data/countryPages'
 import { clearRules } from './utils/rulesStore'
 import HomePage from './components/HomePage'
@@ -53,7 +55,6 @@ const SeaPanel = lazy(() => import('./components/SeaPanel'))
 const LocatePanel = lazy(() => import('./components/LocatePanel'))
 const BorderChainPanel = lazy(() => import('./components/BorderChainPanel'))
 const MissingPanel = lazy(() => import('./components/MissingPanel'))
-const LearnPanel = lazy(() => import('./components/LearnPanel'))
 const SpotlightPanel = lazy(() => import('./components/SpotlightPanel'))
 const SilhouettePanel = lazy(() => import('./components/SilhouettePanel'))
 const CapitalDropPanel = lazy(() => import('./components/CapitalDropPanel'))
@@ -81,12 +82,14 @@ const TableQuiz = lazy(() => import('./components/TableQuiz'))
 const CountryMapQuiz = lazy(() => import('./components/CountryMapQuiz'))
 const TripointQuiz = lazy(() => import('./components/TripointQuiz'))
 const LandformQuiz = lazy(() => import('./components/LandformQuiz'))
+const DiagramQuiz = lazy(() => import('./components/DiagramQuiz'))
 const CountryPage = lazy(() => import('./components/CountryPage'))
 const CountriesHub = lazy(() => import('./components/CountriesHub'))
 const GamesSection = lazy(() => import('./components/GamesSection'))
 const DailyQuiz = lazy(() => import('./components/DailyQuiz'))
 const HigherLower = lazy(() => import('./components/HigherLower'))
 const TrueFalse = lazy(() => import('./components/TrueFalse'))
+const FlagArena = lazy(() => import('./components/FlagArena'))
 const CountryWordle = lazy(() => import('./components/CountryWordle'))
 
 // Map data: served from /data (see `npm run fetch-maps`), remote fallback in src/data/sources.js
@@ -148,15 +151,17 @@ const SECTION_PAGES = new Set(['countries', 'globe-hub', 'nameall-hub'])
 const QUIZ_MODES = new Set([
   'scramble', 'flag', 'capital', 'cap-to-country',
   'currency', 'language', 'area', 'pop-order', 'border-chain',
-  'missing-vowels', 'flag-colors', 'connections', 'emoji-quiz', 'country-fact', 'endonyms',
+  'missing-vowels', 'flag-colors', 'connections', 'country-fact', 'endonyms',
   ...TABLE_QUIZ_IDS,
   ...COUNTRY_MAP_IDS,
   ...TRIPOINT_IDS,
   ...LANDFORM_IDS,
+  ...DIAGRAM_IDS,
   ...COUNTRY_PAGE_IDS,
   'countries', 'globe-hub', 'nameall-hub',
   'daily-quiz',
   'higher-lower', 'true-false', 'country-wordle',
+  'flags-pick', 'flags-sprint', 'flags-survival',
 ])
 
 // Globe games that drive the globe through one generic "extras" object (see onGlobe)
@@ -177,7 +182,6 @@ const QUIZ_LABELS = {
   'missing-vowels': '🔡 Missing Vowels',
   'flag-colors':    '🎨 Flag Colors',
   connections:      '🔗 Connections',
-  'emoji-quiz':     '🌍 Country Emoji',
   'country-fact':   '📖 Country by Fact',
   endonyms:         '🗺️ Endonyms',
   'higher-lower':   '⚖️ Higher or Lower',
@@ -237,6 +241,7 @@ export default function App() {
   // ── App page & profile ───────────────────────────────────────────────────
   const [page,        setPage]        = useState('home') // 'home' | 'game' | 'quiz' | 'profile'
   const [drawerOpen,     setDrawerOpen]     = useState(false)
+  const [gamesSheetOpen, setGamesSheetOpen] = useState(false)   // phones: the bottom bar's "Games" tab
   const [completionStats,     setCompletionStats]     = useState(null)
   const auth = useAuth()
   const displayName = auth.profile?.username ?? (auth.user ? '…' : t('Guest'))
@@ -298,8 +303,8 @@ export default function App() {
   const [locateGameOver, setLocateGameOver] = useState(false)
   const [locateExpired,  setLocateExpired]  = useState(false) // sprint time up
 
-  // ── Globe spin: auto-on when idle (home page or learn mode), off during any game
-  const globeSpin = (page === 'home' || page === 'quiz') || mode === 'learn'
+  // ── Globe spin: auto-on when idle (home page, quiz pages), off during any game
+  const globeSpin = page === 'home' || page === 'quiz'
 
   // ── Solo Map (Spotlight) state ───────────────────────────────────────────
   const [spotlightCurrentFeature, setSpotlightCurrentFeature] = useState(null)
@@ -347,10 +352,6 @@ export default function App() {
   const [neighborHistory, setNeighborHistory] = useState([])
 
   // ── Odd One Out state ────────────────────────────────────────────────────
-
-  // ── Learn mode state ─────────────────────────────────────────────────────
-  const [learnSelected, setLearnSelected] = useState(null)   // feature
-  const [learnHistory,  setLearnHistory]  = useState([])     // [name, ...]
 
   // ── Bigger/Smaller (Area) state ──────────────────────────────────────────
 
@@ -676,8 +677,6 @@ export default function App() {
     setSeaScore({ correct: 0, total: 0 })
     setMissingFound([])
     setMissingComplete(false)
-    setLearnSelected(null)
-    setLearnHistory([])
   }, [gameCountries])
 
   // ── Mystery: handle a guess ──────────────────────────────────────────────
@@ -745,52 +744,6 @@ export default function App() {
 
 
 
-  // ── Learn mode handler ──────────────────────────────────────────────────
-  const handleLearnClick = useCallback((lon, lat) => {
-
-    // 1. Fixed-ellipse countries (Fiji, Kiribati, Micronesia, etc.) — check by
-    //    proximity to their known visual center, scaled from canvas pixel radii
-    let hit = countries.find(f => hitsIslandEllipse(f, lon, lat))
-
-    // 2. geoContains — with bbox pre-filter to block wrongly-wound polygons
-    //    from claiming clicks thousands of km from their actual territory
-    if (!hit) {
-      hit = countries.find(f => {
-        try {
-          const [[w, s], [e, n]] = geoBounds(f)
-          if (lon < w - 0.5 || lon > e + 0.5 || lat < s - 0.5 || lat > n + 0.5) return false
-          return geoContains(f, [lon, lat])
-        } catch { return false }
-      })
-    }
-
-    // 3. Nearest centroid within 2°-padded bbox — catches multi-island nations
-    //    (Bahamas, etc.) and small islands where geoContains fails.
-    //    Using nearest-centroid instead of first-match avoids Bahamas shadowing Cuba.
-    if (!hit) {
-      let best = null, bestDist = Infinity
-      for (const f of countries) {
-        try {
-          const [[w, s], [e, n]] = geoBounds(f)
-          const p = 2.0
-          if (lon < w - p || lon > e + p || lat < s - p || lat > n + p) continue
-          const [clon, clat] = geoCentroid(f)
-          const d = Math.hypot(lon - clon, lat - clat)
-          if (d < bestDist) { bestDist = d; best = f }
-        } catch { /* skip */ }
-      }
-      hit = best
-    }
-
-    if (!hit) return
-    const name = hit.properties.NAME
-    setLearnSelected(hit)
-    setLearnHistory(h => {
-      const filtered = h.filter(n => n !== name)
-      return [name, ...filtered].slice(0, 10)
-    })
-  }, [countries])
-
   // ── Locate It handlers ──────────────────────────────────────────────────
   const LOCATE_EXCLUDE = new Set([
     'Dominica', 'St. Lucia', 'Saint Kitts and Nevis', 'Saint Vincent and the Grenadines',
@@ -811,7 +764,7 @@ export default function App() {
   const handleLocateClick = useCallback((lon, lat) => {
     if (locateGuessed || !locateCurrent || locateGameOver || locateExpired) return
 
-    // ── Identify which country was actually clicked (same 4-step logic as Learn mode) ──
+    // ── Identify which country was actually clicked (fixed ellipses, geoContains, nearest centroid…) ──
     // Step 1: fixed-ellipse countries (Fiji, Kiribati, Micronesia, etc.)
     let clicked = countries.find(f => hitsIslandEllipse(f, lon, lat))
     // Step 2: geoContains with bbox pre-filter
@@ -1027,7 +980,7 @@ export default function App() {
   here.current = { page, mode }
   const routeOpts = useMemo(() => ({
     quizModes: QUIZ_MODES,
-    globeModes: new Set([...Object.keys(GAME_CATALOG).filter(m => !QUIZ_MODES.has(m)), 'learn']),
+    globeModes: new Set(Object.keys(GAME_CATALOG).filter(m => !QUIZ_MODES.has(m))),
   }), [])
 
   useEffect(() => {
@@ -1044,15 +997,15 @@ export default function App() {
       }
     }
     const path = routeFor(page, mode, QUIZ_MODES)
-    // Tab title per screen: "Capitals · Orbis"
+    // Tab title per screen: "Capitals · GeoFeverr"
     const name = page === 'home' ? null
       : page === 'profile' ? t('Profile')
       : page === 'privacy' ? t('Privacy Policy') : page === 'terms' ? t('Terms of Use') : page === 'credits' ? t('Credits')
-      : mode === 'quiz-hub' ? t('Quiz Hub') : mode === 'learn' ? t('Learn')
+      : mode === 'quiz-hub' ? t('Quiz Hub')
       : mode === 'countries' ? t('Countries') : COUNTRY_PAGES[mode] ? countryName(mode)
       : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all')
       : GAME_CATALOG[mode]?.label ?? null
-    document.title = name ? `${name} · Orbis` : t('Orbis — Geography Games on a 3D Globe')
+    document.title = name ? `${name} · GeoFeverr` : t('GeoFeverr — Catch the geo fever')
     if (window.location.pathname !== path) {
       if (fromPop.current) window.history.replaceState(null, '', path)
       else window.history.pushState(null, '', path)
@@ -1178,7 +1131,6 @@ export default function App() {
           : []
 
   const globeHighlighted = mode === 'spotlight' ? spotlightCurrentFeature
-    : mode === 'learn' ? learnSelected
     : mode === 'neighbor' ? (neighborGameStarted ? neighborTarget : null)
     : null
 
@@ -1191,7 +1143,7 @@ export default function App() {
   if (loading) return (
     <div className="loading-screen">
       <div className="loading-globe"><Icon name="globe" size={56} strokeWidth={1.3} /></div>
-      <h1 className="loading-title">{t('Orbis')}</h1>
+      <h1 className="loading-title">Geo<span className="topbar-name-accent">Feverr</span></h1>
       <div className="loading-spinner-wrap"><div className="spinner" /></div>
       <p className="loading-text">{t('Loading the globe…')}</p>
     </div>
@@ -1218,7 +1170,7 @@ export default function App() {
           </button>
           <div className="topbar-brand" onClick={goHome} style={{ cursor: 'pointer' }}>
             <span className="topbar-logo"><Icon name="globe" size={24} strokeWidth={1.6} /></span>
-            <span className="topbar-name">{t('Orbis')}</span>
+            <span className="topbar-name">Geo<span className="topbar-name-accent">Feverr</span></span>
             <span className="topbar-tagline">{t('Geography Games')}</span>
           </div>
           {playing && (
@@ -1270,7 +1222,7 @@ export default function App() {
       {/* ── Quiz page (no globe) ── */}
       {page === 'quiz' && (
         <div className="quiz-shell">
-          <div className="quiz-nav-bar">
+          <div className={`quiz-nav-bar${!QUIZ_MODES.has(mode) || SECTION_PAGES.has(mode) ? ' top-level' : ''}`}>
             {/* Lists of games: back one level (a game has "✕ Leave" in the top bar instead) */}
             {!playing && (
               COUNTRY_PAGE_IDS.has(mode)
@@ -1278,7 +1230,7 @@ export default function App() {
                 : <button className="quiz-nav-back" onClick={goHome}>{t('← Home')}</button>
             )}
             <span className="quiz-nav-title">
-              {mode === 'daily-quiz' ? t('Daily Quiz') : mode === 'countries' ? t('Countries') : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all') : COUNTRY_PAGE_IDS.has(mode) ? (isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en) : COUNTRY_MAP_IDS.has(mode) ? COUNTRY_MAP_QUIZZES[mode].title : TRIPOINT_IDS.has(mode) ? TRIPOINT_QUIZZES[mode].title : LANDFORM_IDS.has(mode) ? LANDFORM_QUIZZES[mode].title : TABLE_QUIZ_IDS.has(mode) ? TABLE_QUIZZES[mode].title : QUIZ_MODES.has(mode) ? GAME_CATALOG[mode]?.label ?? t(QUIZ_LABELS[mode]) : t('Quiz Hub')}
+              {mode === 'daily-quiz' ? t('Daily Fever') : mode === 'countries' ? t('Countries') : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all') : COUNTRY_PAGE_IDS.has(mode) ? (isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en) : COUNTRY_MAP_IDS.has(mode) ? COUNTRY_MAP_QUIZZES[mode].title : TRIPOINT_IDS.has(mode) ? TRIPOINT_QUIZZES[mode].title : LANDFORM_IDS.has(mode) ? GAME_CATALOG[mode]?.label : DIAGRAM_IDS.has(mode) ? GAME_CATALOG[mode]?.label : TABLE_QUIZ_IDS.has(mode) ? TABLE_QUIZZES[mode].title : QUIZ_MODES.has(mode) ? GAME_CATALOG[mode]?.label ?? t(QUIZ_LABELS[mode]) : t('Quiz Hub')}
             </span>
             {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && !COUNTRY_PAGE_IDS.has(mode) && !SECTION_PAGES.has(mode) && <RulesHint className="rules-hint-quiz" />}
           </div>
@@ -1292,6 +1244,8 @@ export default function App() {
               <HigherLower key={mode} countryNames={gameCountryNames} />
             ) : mode === 'true-false' ? (
               <TrueFalse key={mode} countryNames={gameCountryNames} />
+            ) : mode === 'flags-pick' || mode === 'flags-sprint' || mode === 'flags-survival' ? (
+              <FlagArena key={mode} mode={mode} countryNames={gameCountryNames} />
             ) : mode === 'country-wordle' ? (
               <CountryWordle key={mode} countryNames={gameCountryNames} />
             ) : COUNTRY_PAGE_IDS.has(mode) ? (
@@ -1306,6 +1260,8 @@ export default function App() {
               <TripointQuiz key={mode} quizId={mode} onOpen={openGame} />
             ) : LANDFORM_IDS.has(mode) ? (
               <LandformQuiz key={mode} quizId={mode} onOpen={openGame} />
+            ) : DIAGRAM_IDS.has(mode) ? (
+              <DiagramQuiz key={mode} quizId={mode} onOpen={openGame} />
             ) : TABLE_QUIZ_IDS.has(mode) ? (
               <TableQuiz key={mode} quizId={mode} countryNames={gameCountryNames} onOpen={openGame} />
             ) : (
@@ -1341,7 +1297,7 @@ export default function App() {
         <div className="mobile-drawer-backdrop" onClick={() => setDrawerOpen(false)}>
           <nav className="mobile-drawer" onClick={e => e.stopPropagation()}>
             <div className="drawer-header">
-              <span className="drawer-title">Orbis</span>
+              <span className="drawer-title">GeoFeverr</span>
               <button className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
             </div>
             <div className="drawer-scroll md">
@@ -1469,8 +1425,8 @@ export default function App() {
                 missed={mode === 'name-all' ? nameAllMissed : mode === 'name-all-caps' ? capsAllMissed : mode === 'name-all-currencies' ? currenciesMissed : mode === 'name-all-languages' ? languagesMissed : mode === 'missing' ? missingMissedFeatures : mode === 'spotlight' ? spotlightMissedFeatures : []}
                 hiddenCountries={mode === 'missing' ? missingHidden : undefined}
                 soloMode={mode === 'spotlight' || (mode === 'name-all' && nameAllBlind)}
-                onGlobeClick={mode === 'locate' ? handleLocateClick : mode === 'learn' ? handleLearnClick : null}
-                confirmTap={mode !== 'learn'}
+                onGlobeClick={mode === 'locate' ? handleLocateClick : null}
+                confirmTap
                 locateMarker={mode === 'locate' ? locateMarker : null}
                 overlay={locateOverlay}
                 locateCorrectMarker={
@@ -1653,12 +1609,6 @@ export default function App() {
         {mode === 'distance'     && <DistancePanel onGlobe={onGlobe} />}
         {mode === 'line-up'      && <LineUpPanel      gameCountries={gameCountries} onGlobe={onGlobe} />}
         {mode === 'time-zones'   && <TimeZonesPanel   gameCountries={gameCountries} onGlobe={onGlobe} />}
-        {mode === 'learn' && (
-          <LearnPanel
-            selected={learnSelected}
-            history={learnHistory.slice(1)}
-          />
-        )}
         {mode === 'missing' && (
           <MissingPanel
             gameCountries={gameCountries}
@@ -1681,11 +1631,15 @@ export default function App() {
       <MobileNav
         page={page} mode={mode}
         onHome={goHome}
-        onGames={() => setDrawerOpen(true)}
+        onGames={() => setGamesSheetOpen(true)}
         onSearch={() => setPaletteOpen(true)}
         onDaily={() => openGame('daily-quiz')}
         onProfile={() => page === 'profile' ? undefined : guard(openProfile)}
       />
+    )}
+    {isMobile && (
+      <MobileGamesSheet open={gamesSheetOpen} page={page} mode={mode} onClose={() => setGamesSheetOpen(false)}
+        onOpen={openGame} onAllGames={() => setDrawerOpen(true)} />
     )}
     <ConfirmLeave open={!!pendingNav} game={pendingNav ? activeGame() : null} onStay={() => setPendingNav(null)} onLeave={() => { const fn = pendingNav; setPendingNav(null); fn?.() }} />
     <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onSelect={openGame} />

@@ -6,7 +6,7 @@ import GameIcon from './GameIcon'
 
 // A natural follow-up for some games (same skill, one step further)
 const RELATED = {
-  locate:        { good: 'capital-drop', weak: 'learn' },
+  locate:        { good: 'capital-drop', weak: 'spotlight' },
   'capital-drop': { good: 'landmark-drop', weak: 'capital' },
   neighbor:      { good: 'border-chain',  weak: 'locate' },
   missing:       { good: 'spotlight',     weak: 'locate' },

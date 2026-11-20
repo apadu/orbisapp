@@ -25,7 +25,6 @@ import { ENDONYMS } from '../utils/endonyms'
 // Greek and Cyrillic are readable enough: their romanization only shows once the game is over.
 // Scripts you can't sound out (Arabic, Chinese, Thai, Georgian…) keep it while playing.
 const GREEK_CYRILLIC = /[\u0370-\u03FF\u0400-\u04FF]/
-import { EMOJI_CLUES } from '../utils/emojiClues'
 import { COUNTRY_FACTS } from '../utils/countryFacts'
 import { FLAG_COLORS } from '../utils/flagColors'
 import { countryAnswers } from '../utils/aliases'
@@ -44,6 +43,12 @@ import { UNITED_KINGDOM_PAGE } from '../data/countryPages/unitedKingdom'
 import { POLAND_PAGE } from '../data/countryPages/poland'
 import { HUNGARY_PAGE } from '../data/countryPages/hungary'
 import { BRAZIL_PAGE } from '../data/countryPages/brazil'
+import { MEXICO_PAGE } from '../data/countryPages/mexico'
+import { INDIA_PAGE } from '../data/countryPages/india'
+import { CHINA_PAGE } from '../data/countryPages/china'
+import { RUSSIA_PAGE } from '../data/countryPages/russia'
+import { ARGENTINA_PAGE } from '../data/countryPages/argentina'
+import { TURKEY_PAGE } from '../data/countryPages/turkey'
 import { CANADA_PAGE } from '../data/countryPages/canada'
 import { AUSTRALIA_PAGE } from '../data/countryPages/australia'
 import { WAR_QUIZZES } from './warQuizzes'
@@ -98,7 +103,7 @@ for (const c of new Set(Object.values(COUNTRY_CURRENCY).map(c => c.name))) {
 // ── Catalogue ──────────────────────────────────────────────────────────────
 export const TABLE_QUIZZES = {
   capital: {
-    title: t('Capitals'), icon: '🏛️',
+    title: t('Capital Fever'), icon: '🏛️', regions: false,   // all 196 — each continent has its own quiz below
     prompt: t('Type the capital of each country'),
     columns: { hint: t('Country'), answer: t('Capital') },
     build: ({ countries, region }) => countries
@@ -118,7 +123,7 @@ export const TABLE_QUIZZES = {
   },
 
   flag: {
-    title: t('Flags'), icon: '🚩', layout: 'grid',
+    title: t('Flag Fever'), icon: '🚩', layout: 'grid',
     // One flag at a time: your answer only counts for the highlighted flag, so you
     // can't just type every country you know. Random world selection, no regions.
     focus: true, regions: false, sample: 30,
@@ -166,18 +171,6 @@ export const TABLE_QUIZZES = {
     build: ({ countries, region }) => ENDONYMS
       .filter(e => countries.includes(e.country) && inRegion(e.country, region))
       .map(e => ({ id: e.country, country: e.country, hint: { type: 'script', value: e.endonym, sub: e.roman, subAlways: !GREEK_CYRILLIC.test(e.endonym) }, answers: countryAnswers(e.country), display: e.country })),
-  },
-
-  'emoji-quiz': {
-    title: t('Country Emoji'), icon: '🌍', sample: 30,
-    prompt: t('Name the country behind each emoji combo'),
-    columns: { hint: t('Emojis'), answer: t('Country') },
-    build: ({ countries, region }) => {
-      const seen = new Set()
-      return EMOJI_CLUES
-        .filter(e => countries.includes(e.country) && inRegion(e.country, region) && !seen.has(e.country) && seen.add(e.country))
-        .map(e => ({ id: e.country, country: e.country, hint: { type: 'emoji', value: e.emojis.join(' ') }, answers: countryAnswers(e.country), display: e.country }))
-    },
   },
 
   'missing-vowels': {
@@ -272,6 +265,12 @@ TABLE_QUIZZES['hu-quiz'] = countryQuiz(HUNGARY_PAGE, t('Quiz: Hungary'), t('Answ
 TABLE_QUIZZES['br-quiz'] = countryQuiz(BRAZIL_PAGE, t('Quiz: Brazil'), t('Answer 20 questions about Brazil'))
 TABLE_QUIZZES['ca-quiz'] = countryQuiz(CANADA_PAGE, t('Quiz: Canada'), t('Answer 20 questions about Canada'))
 TABLE_QUIZZES['au-quiz'] = countryQuiz(AUSTRALIA_PAGE, t('Quiz: Australia'), t('Answer 20 questions about Australia'))
+TABLE_QUIZZES['mx-quiz'] = countryQuiz(MEXICO_PAGE, t("Quiz: Mexico"), t("Answer 20 questions about Mexico"))
+TABLE_QUIZZES['in-quiz'] = countryQuiz(INDIA_PAGE, t("Quiz: India"), t("Answer 20 questions about India"))
+TABLE_QUIZZES['cn-quiz'] = countryQuiz(CHINA_PAGE, t("Quiz: China"), t("Answer 20 questions about China"))
+TABLE_QUIZZES['ru-quiz'] = countryQuiz(RUSSIA_PAGE, t("Quiz: Russia"), t("Answer 20 questions about Russia"))
+TABLE_QUIZZES['ar-quiz'] = countryQuiz(ARGENTINA_PAGE, t("Quiz: Argentina"), t("Answer 20 questions about Argentina"))
+TABLE_QUIZZES['tr-quiz'] = countryQuiz(TURKEY_PAGE, t("Quiz: Turkey"), t("Answer 20 questions about Turkey"))
 
 // Localise country names shown in the tables (keys / ids stay English)
 if (isRo) {
@@ -285,6 +284,37 @@ if (isRo) {
         : r.hint,
     }))
   }
+}
+
+// Science & history tables: their rows live in scienceTables.js and load when the quiz opens
+// (TableQuiz waits for quiz.load). Only the titles, prompts and columns are here.
+const lazyTable = (id, def) => ({ regions: false, timeLimit: 5 * 60, ...def, build: () => [], load: () => import('./scienceTables').then(m => m.SCIENCE_BUILDS[id]) })
+Object.assign(TABLE_QUIZZES, {
+  rocks: lazyTable('rocks', { title: t('Rock Types'), icon: '🪨', prompt: t('Name each rock from its description'), columns: { hint: t('Description'), extra: t('Type'), answer: t('Rock') } }),
+  minerals: lazyTable('minerals', { title: t('Minerals'), icon: '💎', prompt: t('Name each mineral — its Mohs hardness is in the middle'), columns: { hint: t('Description'), extra: t('Hardness'), answer: t('Mineral') } }),
+  'earth-records': lazyTable('earth-records', { title: t('Records of the Earth'), icon: '🏆', prompt: t('Name the place that holds each record'), columns: { hint: t('Record'), extra: t('Value'), answer: t('Place') } }),
+  phenomena: lazyTable('phenomena', { title: t('Natural Phenomena'), icon: '🌪️', prompt: t('Name each natural phenomenon from its description'), columns: { hint: t('Description'), extra: t('Type'), answer: t('Phenomenon') } }),
+  'geologic-time': lazyTable('geologic-time', { title: t('Geological Time'), icon: '🦕', prompt: t('Name the periods of Earth\'s history, oldest first'), columns: { hint: t('What happened'), extra: t('Million years ago'), answer: t('Period') } }),
+  planets: lazyTable('planets', { title: t('Planets by Clues'), icon: '🪐', prompt: t('Name each planet, dwarf planet or other body of the Solar System'), columns: { hint: t('Clue'), extra: t('Diameter'), answer: t('Name') } }),
+  moons: lazyTable('moons', { title: t('Moons of the Solar System'), icon: '🌙', prompt: t('Name each moon — the planet it orbits is in the middle'), columns: { hint: t('Description'), extra: t('Planet'), answer: t('Moon') } }),
+  missions: lazyTable('missions', { title: t('Space Exploration'), icon: '🚀', prompt: t('Name each mission, spacecraft or space traveller'), columns: { hint: t('Description'), extra: t('Year'), answer: t('Answer') } }),
+  'stars-constellations': lazyTable('stars-constellations', { title: t('Stars and Constellations'), icon: '✨', prompt: t('Name each star, constellation or galaxy'), columns: { hint: t('Description'), extra: t('Type'), answer: t('Name') } }),
+  biomes: lazyTable('biomes', { title: t('Biomes'), icon: '🌳', prompt: t('Name each biome from its description and an example place'), columns: { hint: t('Description'), extra: t('Example'), answer: t('Biome') } }),
+  'extreme-points': lazyTable('extreme-points', { title: t('Extreme Points of the Continents'), icon: '🧭', prompt: t('Name the northernmost, southernmost, easternmost and westernmost points of each continent'), columns: { hint: t('Description'), extra: t('Country'), answer: t('Place') } }),
+  climates: lazyTable('climates', { title: t('Climate Types'), icon: '🌦️', prompt: t('Name each type of climate from its description and two example cities'), columns: { hint: t('Description'), extra: t('Example'), answer: t('Climate') } }),
+  scales: lazyTable('scales', { title: t('Scales and Units'), icon: '📐', prompt: t('Name the scale or unit from its description — what it measures is in the middle'), columns: { hint: t('Description'), extra: t('Measures'), answer: t('Scale') } }),
+  'flags-historical': lazyTable('flags-historical', { title: t('Historical Flags'), icon: '🏴', prompt: t('Name the country or state that flew each flag'), columns: { hint: t('Flag'), extra: t('Years'), answer: t('Country') } }),
+})
+
+// Capitals, one quiz per continent (same rows as `capital`, region fixed — no region picker)
+for (const [slug, region, title, icon] of [
+  ['europe', 'Europe', t('Capitals of Europe'), '🏰'],
+  ['asia', 'Asia', t('Capitals of Asia'), '🏯'],
+  ['africa', 'Africa', t('Capitals of Africa'), '🦁'],
+  ['americas', 'Americas', t('Capitals of the Americas'), '🗽'],
+  ['oceania', 'Oceania', t('Capitals of Oceania'), '🌊'],
+]) {
+  TABLE_QUIZZES[`capitals-${slug}`] = { ...TABLE_QUIZZES.capital, title, icon, region, regions: false }
 }
 
 export const TABLE_QUIZ_IDS = new Set(Object.keys(TABLE_QUIZZES))

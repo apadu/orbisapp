@@ -111,7 +111,7 @@ export default function AuthModal() {
 
         <div className="auth-brand"><Icon name="globe" size={40} strokeWidth={1.4} /></div>
         <h2 className="auth-title">
-          {tab === 'signup' ? t('Create your Orbis account') : tab === 'reset' ? t('Reset password') : t('Welcome back')}
+          {tab === 'signup' ? t('Create your GeoFeverr account') : tab === 'reset' ? t('Reset password') : t('Welcome back')}
         </h2>
         <p className="auth-sub">
           {tab === 'reset'

@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import TableQuiz from './TableQuiz'
+// Map and diagram dailies load their engine only when they're today's quiz
+const LandformQuiz = lazy(() => import('./LandformQuiz'))
+const DiagramQuiz = lazy(() => import('./DiagramQuiz'))
 import { dailyNumber, dailyQuizFor, msToNextDaily, dailyShareText, utcDayStartISO } from '../quizzes/daily'
 import { loadResults, subscribeResults, fetchLeaderboard } from '../utils/results'
 import { useAuth } from '../auth/AuthContext'
@@ -8,6 +11,7 @@ import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import Icon from './Icon'
 import { shareText } from '../utils/share'
+import { feverVerdict } from './QuizStats'
 import { supabase } from '../lib/supabase'
 import StateNote from './StateNote'
 
@@ -45,7 +49,7 @@ function dailyStreak(results, today) {
   return n
 }
 
-function DailyLeaderboard() {
+function DailyLeaderboard({ played = false }) {
   const { backendEnabled, user, openAuth } = useAuth()
   const [rows, setRows] = useState(null)
   useEffect(() => {
@@ -61,7 +65,7 @@ function DailyLeaderboard() {
       <div className="dq-lb-head">{plain(t('🏆 Today\'s leaderboard'))}</div>
       {!user && <div className="dq-lb-hint"><button onClick={openAuth}>{t('Sign in')}</button> {t('to appear on it.')}</div>}
       {rows === null ? <StateNote kind="loading" compact>{t('Loading…')}</StateNote>
-        : rows.length === 0 ? <StateNote compact>{t('No scores yet today — be the first!')}</StateNote>
+        : rows.length === 0 ? <StateNote compact>{played ? t('You\'re the first to play today — others will show up here.') : t('No scores yet today — be the first!')}</StateNote>
         : rows.slice(0, 10).map(r => (
           <div key={r.user_id} className={`dq-lb-row${r.user_id === user?.id ? ' me' : ''}`}>
             <span className="dq-lb-rank">{r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</span>
@@ -97,20 +101,20 @@ function DailyRank({ day, score, total, record }) {
     })()
     return () => { alive = false }
   }, [day, score, total, record])
-  if (!stats) return null
+  // first of the day: nothing to compare with — the leaderboard below says so
+  if (!stats || stats.others <= 0) return null
   return (
     <div className="dq-rank">
-      {stats.others > 0
-        ? <>{t('Better than {p}% of today\'s players', { p: Math.round((stats.below / stats.others) * 100) })} <span className="dq-rank-sub">· {t(stats.plays === 1 ? '{n} player today' : '{n} players today', { n: stats.plays })}{stats.avg_pct != null && <> · {t('average {p}%', { p: stats.avg_pct })}</>}</span></>
-        : t('You\'re the first to play today\'s quiz!')}
+      {t('Better than {p}% of today\'s players', { p: Math.round((stats.below / stats.others) * 100) })} <span className="dq-rank-sub">· {t(stats.plays === 1 ? '{n} player today' : '{n} players today', { n: stats.plays })}{stats.avg_pct != null && <> · {t('average {p}%', { p: stats.avg_pct })}</>}</span>
     </div>
   )
 }
 
 function ResultCard({ info, res, streak, onPractice, record = false }) {
   const [copied, setCopied] = useState(false)
+  const [showText, setShowText] = useState(false)
   const left = useCountdown()
-  const text = dailyShareText(info, res)
+  const text = dailyShareText(info, res, streak)
   const pct = res.total ? Math.round((res.score / res.total) * 100) : 0
   const share = async () => {
     try {
@@ -122,17 +126,23 @@ function ResultCard({ info, res, streak, onPractice, record = false }) {
       <div className="dq-result-top">
         <div className="dq-result-score">
           <span className="dq-big">{res.score}<small>/{res.total}</small></span>
-          <span className="dq-sub">{pct}% · ⏱ {fmtTime(res.durationMs)}{streak > 1 ? t(' · 🔥 {streak}-day streak', { streak: streak }) : ''}</span>
+          <span className="dq-sub">{pct}% · ⏱ {fmtTime(res.durationMs)}{streak > 1 ? t(' · 🔥 {streak} days of fever', { streak: streak }) : ''}</span>
         </div>
         <div className="dq-result-btns">
-          <button className="tq-btn tq-btn-primary" onClick={share}>{copied ? plain(t('✅ Copied!')) : plain(t('📋 Share result'))}</button>
+          <button className="tq-btn tq-btn-primary dq-share-btn" onClick={share}>{copied ? <><Icon name="check" size={16} /> {t('Copied')}</> : t('Share result')}</button>
           <button className="tq-btn" onClick={onPractice}>{t('Practice this quiz')}</button>
         </div>
       </div>
+      <div className={`qs-fever qs-fever-${feverVerdict(pct).cls}`}>{feverVerdict(pct).text}</div>
       <DailyRank day={info.day} score={res.score} total={res.total} record={record} />
-      <pre className="dq-share-preview">{text}</pre>
-      <div className="dq-next">{t('Next daily quiz in')} <strong>{fmtClock(left)}</strong></div>
-      <DailyLeaderboard />
+      <div className="dq-next">
+        <span>{t('Next Daily Fever in')} <strong>{fmtClock(left)}</strong></span>
+        <button type="button" className="dq-share-toggle" onClick={() => setShowText(v => !v)} aria-expanded={showText}>
+          {showText ? t('Hide') : t('See what gets shared')}
+        </button>
+      </div>
+      {showText && <pre className="dq-share-preview">{text}</pre>}
+      <DailyLeaderboard played />
     </div>
   )
 }
@@ -174,7 +184,13 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
   return (
     <div className="dq dq-board">
       <DailyHeader info={info} streak={streak} />
-      <TableQuiz quizId={info.quizId} countryNames={countryNames} daily={daily} />
+      {info.kind === 'map' || info.kind === 'diagram' ? (
+        <Suspense fallback={<StateNote kind="loading">{t('Loading today\'s quiz…')}</StateNote>}>
+          {info.kind === 'map' ? <LandformQuiz quizId={info.quizId} daily={daily} /> : <DiagramQuiz quizId={info.quizId} daily={daily} />}
+        </Suspense>
+      ) : (
+        <TableQuiz quizId={info.quizId} countryNames={countryNames} daily={daily} />
+      )}
     </div>
   )
 }
@@ -182,7 +198,7 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
 function DailyHeader({ info, streak }) {
   return (
     <div className="dq-header">
-      <span className="dq-badge">{plain(t('📅 Daily #'))}{info.day}</span>
+      <span className="dq-badge">{plain(t('🌡️ Daily Fever #'))}{info.day}</span>
       <span className="dq-date">{new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
       {streak > 0 && <span className="dq-streak"><Icon name="flame" size={15} /> {streak}</span>}
     </div>

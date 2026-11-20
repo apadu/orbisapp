@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
-import { computeProfile, levelTitle } from '../utils/profileData'
+import { computeProfile, levelTitle, feverTemp } from '../utils/profileData'
 import { GAME_CATALOG, gameMeta } from '../utils/gameCatalog'
 import { useDailyChallenges } from '../utils/useDailyChallenges'
 import Leaderboard from './profile/Leaderboard'
@@ -73,7 +73,7 @@ export default function ProfilePage({ onBack, onPlay }) {
           {auth.profile?.avatar_url
             ? <img className="pp-avatar" src={auth.profile.avatar_url} alt="" referrerPolicy="no-referrer" />
             : <div className="pp-avatar pp-avatar-letter">{username.charAt(0).toUpperCase()}</div>}
-          <span className="pp-level-badge">{p.level.level}</span>
+          <span className="pp-level-badge pp-temp-badge">{feverTemp(p.level.level)}</span>
         </div>
         <div className="pp-hero-main">
           <div className="pp-name-row">
@@ -85,7 +85,7 @@ export default function ProfilePage({ onBack, onPlay }) {
           </div>
           <div className="pp-xp">
             <div className="pp-xp-bar"><div className="pp-xp-fill" style={{ width: `${p.level.pct}%` }} /></div>
-            <span className="pp-xp-label">{t('Level {l} · {n} XP to level {next}', { l: p.level.level, n: (p.level.next - p.xp).toLocaleString(locale), next: p.level.level + 1 })}</span>
+            <span className="pp-xp-label">{t('{temp} · {n} XP to {next}', { temp: feverTemp(p.level.level), n: (p.level.next - p.xp).toLocaleString(locale), next: feverTemp(p.level.level + 1) })}</span>
           </div>
         </div>
         {auth.user
@@ -98,7 +98,7 @@ export default function ProfilePage({ onBack, onPlay }) {
         <div className="pp-stat"><span className="pp-stat-label">{t('Games played')}</span><span className="pp-stat-num">{p.totals.games.toLocaleString(locale)}</span></div>
         <div className="pp-stat"><span className="pp-stat-label">{t('Correct answers')}</span><span className="pp-stat-num">{p.totals.correct.toLocaleString(locale)}</span></div>
         <div className="pp-stat"><span className="pp-stat-label">{t('Time played')}</span><span className="pp-stat-num">{fmtHours(p.totals.timeMs)}</span></div>
-        <div className="pp-stat"><span className="pp-stat-label">{t('Daily streak')}</span><span className="pp-stat-num">{t(p.streak.current === 1 ? '{n} day' : '{n} days', { n: p.streak.current })}</span></div>
+        <div className="pp-stat"><span className="pp-stat-label">{t('Fever streak')}</span><span className="pp-stat-num">{t(p.streak.current === 1 ? '{n} day' : '{n} days', { n: p.streak.current })}</span></div>
       </section>
 
       {/* ── Tabs ── */}

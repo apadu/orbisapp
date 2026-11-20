@@ -161,7 +161,7 @@ export default function AdminPage() {
   const [loadedAt, setLoadedAt] = useState(null)
   const [userQuery, setUserQuery] = useState('')
 
-  useEffect(() => { document.title = 'Admin · Orbis' }, [])
+  useEffect(() => { document.title = 'Admin · GeoFeverr' }, [])
 
   const load = useCallback(async () => {
     if (!supabase || !user) return
@@ -193,7 +193,7 @@ export default function AdminPage() {
   // ── Gates ──
   if (!supabase) return <Gate title="Backend neconfigurat" text="Lipsesc VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY." />
   if (!ready) return <Gate title="Se încarcă…" />
-  if (!user) return <Gate title="Admin Orbis" text="Conectează-te cu contul de admin." action={<button className="adm-btn adm-btn-primary" onClick={openAuth}>Conectare</button>} />
+  if (!user) return <Gate title="Admin GeoFeverr" text="Conectează-te cu contul de admin." action={<button className="adm-btn adm-btn-primary" onClick={openAuth}>Conectare</button>} />
   if (err === 'not_admin') return <Gate title="Acces interzis" text="Contul acesta nu are drepturi de admin." />
   if (err) return <Gate title="Eroare" text={err} action={<button className="adm-btn" onClick={load}>Reîncearcă</button>} />
   if (!data) return <Gate title="Se încarcă…" />
@@ -204,7 +204,7 @@ export default function AdminPage() {
   return (
     <div className="adm">
       <header className="adm-top">
-        <a href="/" className="adm-back">← Orbis</a>
+        <a href="/" className="adm-back">← GeoFeverr</a>
         <h1>Admin</h1>
         <div className="adm-periods" role="group" aria-label="Perioadă">
           {PERIODS.map(p => (
@@ -307,7 +307,7 @@ export default function AdminPage() {
       </section>
 
       <p className="adm-foot">
-        Vizitele sunt numărate anonim de Orbis (fără cookie-uri; se păstrează 180 de zile). Jocurile vizitatorilor fără cont rămân doar în browserul lor, deci nu apar aici.
+        Vizitele sunt numărate anonim de GeoFeverr (fără cookie-uri; se păstrează 180 de zile). Jocurile vizitatorilor fără cont rămân doar în browserul lor, deci nu apar aici.
       </p>
     </div>
   )
@@ -321,7 +321,7 @@ function Gate({ title, text, action }) {
         {text && <p>{text}</p>}
         <div className="adm-gate-actions">
           {action}
-          <a href="/" className="adm-btn">← Înapoi la Orbis</a>
+          <a href="/" className="adm-btn">← Înapoi la GeoFeverr</a>
         </div>
       </div>
     </div>

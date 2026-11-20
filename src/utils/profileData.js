@@ -3,7 +3,7 @@
  * Pure functions — no storage access.
  */
 import { GAME_CATALOG } from './gameCatalog'
-import { t } from '../i18n'
+import { t, locale } from '../i18n'
 import { challengeHistory } from './dailyChallenges'
 
 // ── XP & levels ────────────────────────────────────────────────────────────
@@ -57,10 +57,16 @@ export function levelForXp(xp) {
   return { level, cur, next, pct: Math.min(100, ((xp - cur) / (next - cur)) * 100) }
 }
 
+// GeoFeverr: every level is a body temperature — 36.6° at level 1, +0.2° a level, 42° at the top
 const LEVEL_TITLES = [
-  [1, 'Tourist'], [3, 'Backpacker'], [6, 'Explorer'], [10, 'Navigator'],
-  [15, 'Cartographer'], [22, 'Globetrotter'], [30, 'Geographer'], [40, 'Atlas'],
+  [1, 'Healthy'], [3, 'Warming up'], [6, 'Slight fever'], [10, 'Fever'],
+  [15, 'High fever'], [21, 'Burning up'], [28, 'Max fever'],
 ]
+/** Temperature for a level, e.g. "36.6°" / "36,6°" */
+export function feverTemp(level) {
+  const tenths = Math.min(420, 366 + 2 * (Math.max(1, level) - 1))
+  return `${(tenths / 10).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}°`
+}
 export function levelTitle(level) {
   let title = LEVEL_TITLES[0][1]
   for (const [l, name] of LEVEL_TITLES) if (level >= l) title = name
@@ -109,7 +115,7 @@ export const ACHIEVEMENTS = [
   { id: 'streak-7',      icon: '📅', label: t('Week Warrior'),      desc: t('Play 7 days in a row'),                      progress: p => [p.streak.best, 7] },
   { id: 'streak-30',     icon: '🗓️', label: t('Habit Formed'),      desc: t('Play 30 days in a row'),                     progress: p => [p.streak.best, 30] },
   { id: 'variety',       icon: '🎲', label: t('Variety Pack'),      desc: t('Play 10 different games'),                   progress: p => [p.modesPlayed, 10] },
-  { id: 'completionist', icon: '🏆', label: t('Completionist'),     desc: t('Play every game in Orbis'),                  progress: p => [p.modesPlayed, Object.keys(GAME_CATALOG).length] },
+  { id: 'completionist', icon: '🏆', label: t('Completionist'),     desc: t('Play every game in GeoFeverr'),                  progress: p => [p.modesPlayed, Object.keys(GAME_CATALOG).length] },
   { id: 'explorer-100',  icon: '🧭', label: t('Well Travelled'),    desc: t('Correctly answer 100 different countries'),  progress: p => [p.countriesKnown, 100] },
   { id: 'cartographer',  icon: '🗺️', label: t('Cartographer'),      desc: t('Master 50 countries (80%+ over 3+ tries)'),  progress: p => [p.countriesMastered, 50] },
   { id: 'world-clear',   icon: '🌍', label: t('World Clear'),       desc: t('Name every country in Name All'),            progress: p => [p.flags.worldClear ? 1 : 0, 1] },
@@ -120,7 +126,7 @@ export const ACHIEVEMENTS = [
   { id: 'connections',   icon: '🧩', label: t('Perfect Connection'), desc: t('Solve Connections with no mistakes'),       progress: p => [p.flags.connPerfect ? 1 : 0, 1] },
   { id: 'polyglot',      icon: '🗣️', label: t('Polyglot'),          desc: t('Score 90%+ on a full Endonyms round'),       progress: p => [p.flags.polyglot ? 1 : 0, 1] },
   { id: 'bullseye',      icon: '📍', label: t('Bullseye'),          desc: t('Hit 25 countries dead-on in Pinpoint'),      progress: p => [p.flags.locateHits, 25] },
-  { id: 'level-10',      icon: '⭐', label: t('Navigator'),         desc: t('Reach level 10'),                            progress: p => [p.level.level, 10] },
+  { id: 'level-10',      icon: '🌡️', label: t('Fever'),             desc: t('Reach 38.4° (level 10)'),                            progress: p => [p.level.level, 10] },
 ]
 
 // ── Main derivation ────────────────────────────────────────────────────────

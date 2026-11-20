@@ -27,7 +27,7 @@ const POOL = [
     task: () => t('Solve today\'s Mystery Country'),
     value: R => ofMode(R, 'mystery').some(r => r.correct > 0 && !r.details?.practice && !r.details?.gaveUp) ? 1 : 0 },
   { id: 'daily-quiz', slot: 'daily', icon: '📅', mode: 'daily-quiz', target: 1,
-    task: () => t('Play today\'s Daily Quiz'),
+    task: () => t('Play today\'s Daily Fever'),
     value: R => ofMode(R, 'daily-quiz').length ? 1 : 0 },
   { id: 'wordle', slot: 'daily', icon: '🟩', mode: 'country-wordle', target: 1,
     task: () => t('Solve today\'s Country Wordle'),

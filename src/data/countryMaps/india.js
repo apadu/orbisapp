@@ -1,0 +1,48 @@
+/**
+ * India: 28 states + 8 union territories, keyed by ISO 3166-2 code (= `id` in
+ * public/data/maps/in.json, Natural Earth admin-1). `seat` = capital. Punjab and Haryana
+ * share Chandigarh, so one answer fills both.
+ */
+export const INDIA = {
+  id: 'in',
+  file: 'in.json',
+  country: 'India',
+  divisions: [
+    { id: 'IN-AN', name: 'Andaman and Nicobar Islands', ro: 'Insulele Andaman și Nicobar', alt: ['Andaman and Nicobar', 'Andaman', 'Andaman și Nicobar'], seat: 'Sri Vijaya Puram', seatAlt: ['Port Blair'] },
+    { id: 'IN-AP', name: 'Andhra Pradesh', seat: 'Amaravati' },
+    { id: 'IN-AR', name: 'Arunachal Pradesh', seat: 'Itanagar' },
+    { id: 'IN-AS', name: 'Assam', seat: 'Dispur' },
+    { id: 'IN-BR', name: 'Bihar', seat: 'Patna' },
+    { id: 'IN-CH', name: 'Chandigarh', city: true },
+    { id: 'IN-CT', name: 'Chhattisgarh', seat: 'Raipur', seatAlt: ['Nava Raipur'] },
+    { id: 'IN-DH', name: 'Dadra and Nagar Haveli and Daman and Diu', ro: 'Dadra și Nagar Haveli și Daman și Diu', alt: ['Dadra and Nagar Haveli', 'Daman and Diu', 'Dadra', 'Daman'], seat: 'Daman' },
+    { id: 'IN-DL', name: 'Delhi', seat: 'New Delhi', seatRo: 'New Delhi', seatAlt: ['Delhi', 'Noua Delhi'], city: true },
+    { id: 'IN-GA', name: 'Goa', seat: 'Panaji', seatAlt: ['Panjim'] },
+    { id: 'IN-GJ', name: 'Gujarat', seat: 'Gandhinagar' },
+    { id: 'IN-HR', name: 'Haryana', seat: 'Chandigarh' },
+    { id: 'IN-HP', name: 'Himachal Pradesh', seat: 'Shimla', seatAlt: ['Simla'] },
+    { id: 'IN-JK', name: 'Jammu and Kashmir', ro: 'Jammu și Cașmir', alt: ['Jammu', 'Kashmir', 'Cașmir', 'Jammu and Kashmir'], seat: 'Srinagar', seatAlt: ['Jammu'] },
+    { id: 'IN-JH', name: 'Jharkhand', seat: 'Ranchi' },
+    { id: 'IN-KA', name: 'Karnataka', seat: 'Bengaluru', seatAlt: ['Bangalore'] },
+    { id: 'IN-KL', name: 'Kerala', seat: 'Thiruvananthapuram', seatAlt: ['Trivandrum'] },
+    { id: 'IN-LA', name: 'Ladakh', seat: 'Leh' },
+    { id: 'IN-LD', name: 'Lakshadweep', seat: 'Kavaratti' },
+    { id: 'IN-MP', name: 'Madhya Pradesh', seat: 'Bhopal' },
+    { id: 'IN-MH', name: 'Maharashtra', seat: 'Mumbai', seatAlt: ['Bombay'] },
+    { id: 'IN-MN', name: 'Manipur', seat: 'Imphal' },
+    { id: 'IN-ML', name: 'Meghalaya', seat: 'Shillong' },
+    { id: 'IN-MZ', name: 'Mizoram', seat: 'Aizawl' },
+    { id: 'IN-NL', name: 'Nagaland', seat: 'Kohima' },
+    { id: 'IN-OR', name: 'Odisha', alt: ['Orissa'], seat: 'Bhubaneswar' },
+    { id: 'IN-PY', name: 'Puducherry', alt: ['Pondicherry'], seat: 'Puducherry', seatAlt: ['Pondicherry'] },
+    { id: 'IN-PB', name: 'Punjab', seat: 'Chandigarh' },
+    { id: 'IN-RJ', name: 'Rajasthan', seat: 'Jaipur' },
+    { id: 'IN-SK', name: 'Sikkim', seat: 'Gangtok' },
+    { id: 'IN-TN', name: 'Tamil Nadu', seat: 'Chennai', seatAlt: ['Madras'] },
+    { id: 'IN-TG', name: 'Telangana', seat: 'Hyderabad' },
+    { id: 'IN-TR', name: 'Tripura', seat: 'Agartala' },
+    { id: 'IN-UP', name: 'Uttar Pradesh', seat: 'Lucknow' },
+    { id: 'IN-UT', name: 'Uttarakhand', alt: ['Uttaranchal'], seat: 'Dehradun', seatAlt: ['Dehra Dun'] },
+    { id: 'IN-WB', name: 'West Bengal', ro: 'Bengalul de Vest', alt: ['Bengal'], seat: 'Kolkata', seatAlt: ['Calcutta', 'Calcuta'] },
+  ],
+}

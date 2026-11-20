@@ -198,6 +198,6 @@ export function scoreGuess(guess, target) {
 
 export function wordleShareText(day, rows, solved) {
   const grid = rows.map(r => r.map(c => c === 'hit' ? '🟩' : c === 'near' ? '🟨' : '⬛').join('')).join('\n')
-  return [`Orbis Wordle #${day} · ${solved ? rows.length : 'X'}/${WORDLE_TRIES}`, grid, siteLink('/quiz/country-wordle')].filter(Boolean).join('\n')
+  return [`GeoFeverr Wordle #${day} · ${solved ? rows.length : 'X'}/${WORDLE_TRIES}`, grid, siteLink('/quiz/country-wordle')].filter(Boolean).join('\n')
 }
 

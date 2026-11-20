@@ -3,7 +3,7 @@ import { QUIZ_ITEMS, QuizTile, summarize } from './QuizHub'
 import { COUNTRY_PAGE_IDS } from '../data/countryPages'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
-import { levelForXp, levelTitle, computeXp } from '../utils/profileData'
+import { levelForXp, levelTitle, computeXp, feverTemp } from '../utils/profileData'
 import { gameMeta } from '../utils/gameCatalog'
 import { useDailyChallenges } from '../utils/useDailyChallenges'
 import { dailyNumber, dailyQuizFor } from '../quizzes/daily'
@@ -76,14 +76,14 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
       <section className="hp-hero">
         <div className="hp-hero-text">
           <p className="hp-greet">
-            {name ? t('Welcome back, {name}', { name: name }) : isNew ? t('Welcome to Orbis') : t('Welcome back, explorer')}
+            {name ? t('Welcome back, {name}', { name: name }) : isNew ? t('Catch the geo fever 🌡️') : t('Welcome back, explorer')}
             {dailyStreak > 0 && <span className="hp-greet-streak"><Icon name="flame" size={14} /> {dailyStreak} {t('day')}{dailyStreak === 1 ? '' : 's'}</span>}
           </p>
           <h1 className="hp-title">{t('The whole world,')}<br /><span>{t('one game.')}</span></h1>
           <p className="hp-tagline">{t('Guess countries by flag, shape, capital or neighbours — on the globe, on maps and in quizzes.')}</p>
           <div className="hp-ctas">
             <button className="hp-cta-primary" onClick={onDailyQuiz}>
-              {dailyPlayed ? <><Icon name="check" size={18} /> {t('Today\'s quiz: {s}', { s: `${dailyPlayed.correct}/${dailyPlayed.total}` })}</> : <>{t('Play the quiz of the day')} <Icon name="arrow" size={18} /></>}
+              {dailyPlayed ? <><Icon name="check" size={18} /> {t('Today\'s fever: {s}', { s: `${dailyPlayed.correct}/${dailyPlayed.total}` })}</> : <>{t('Play the Daily Fever')} <Icon name="arrow" size={18} /></>}
             </button>
             <button className="hp-cta-secondary" onClick={() => onSelectMode('mystery')}><Icon name="question" size={18} /> {t('Mystery country')}</button>
           </div>
@@ -158,25 +158,13 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
         </div>
 
         <button className="hp-card" onClick={onProfile}>
-          <span className="hp-card-kicker">{t('Level')} {level.level} · {levelTitle(level.level)}</span>
+          <span className="hp-card-kicker">🌡️ {feverTemp(level.level)} · {levelTitle(level.level)}</span>
           <span className="hp-card-title">{xp.toLocaleString()} {t('XP')}</span>
           <span className="hp-xp"><span style={{ width: `${level.pct}%` }} /></span>
-          <span className="hp-card-sub">{(level.next - xp).toLocaleString()} {t('XP to level')} {level.level + 1}</span>
+          <span className="hp-card-sub">{t('{v} XP to {temp}', { v: (level.next - xp).toLocaleString(), temp: feverTemp(level.level + 1) })}</span>
         </button>
       </section>
       )}
-
-      {/* ── Learn ── */}
-      <section className="hp-bottom hp-bottom-single">
-        <button className="hp-banner hp-banner-learn" onClick={() => onSelectMode('learn')}>
-          <span className="hp-banner-icon"><Icon name="book" size={30} strokeWidth={1.4} /></span>
-          <span className="hp-banner-body">
-            <span className="hp-banner-title">{t('Learn mode')}</span>
-            <span className="hp-banner-sub">{t('Spin the globe, click a country, learn something you didn\'t know.')}</span>
-          </span>
-          <span className="hp-banner-cta">{t('Explore ▸')}</span>
-        </button>
-      </section>
 
       {onOpenInfo && <InfoLinks onOpen={onOpenInfo} />}
     </div>

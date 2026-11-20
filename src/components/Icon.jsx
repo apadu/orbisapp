@@ -63,6 +63,7 @@ const PATHS = {
   bolt:     <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
   home:     <><path d="M3 11 12 4l9 7" /><path d="M5 10v10h14V10" /></>,
   user:     <><circle cx="12" cy="8" r="3.5" /><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7" /></>,
+  cycle: <><path d="M20 12a8 8 0 0 1-13.7 5.6" /><path d="M4 12a8 8 0 0 1 13.7-5.6" /><path d="M17.5 2.5v4h-4" /><path d="M6.5 21.5v-4h4" /></>,
   layers:   <><path d="m12 3 9 5-9 5-9-5z" /><path d="m3 13 9 5 9-5" /></>,
   tripoint: <><rect x="3.5" y="3.5" width="17" height="17" rx="2" /><path d="M12 13 7 3.5M12 13l8.5-3M12 13l-1.5 7.5" /><circle cx="12" cy="13" r="1.8" fill="currentColor" /></>,
 }
@@ -78,4 +79,4 @@ export default function Icon({ name, size = 20, strokeWidth = 1.75, className = 
 }
 
 /** Icon for each section of the site */
-export const SECTION_ICON = { globe: 'globe', nameall: 'list', quizzes: 'flag', countries: 'map', learn: 'book' }
+export const SECTION_ICON = { globe: 'globe', nameall: 'list', quizzes: 'flag', countries: 'map' }

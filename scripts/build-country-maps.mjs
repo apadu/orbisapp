@@ -44,6 +44,13 @@ const COUNTRY_CONFIG = {
   AU: { simplify: '12%', minIsland: '300km2', filter: "['Jervis Bay Territory','Lord Howe Island','Macquarie Island','Ashmore and Cartier Islands'].indexOf(name) === -1" },
   CA: { simplify: '6%', minIsland: '2000km2' },   // the Arctic archipelago is huge in detail
   BR: { simplify: '12%', minIsland: '200km2' },
+  MX: { simplify: '12%', minIsland: '150km2', filter: "iso_3166_2 !== 'MX-X01~'" },
+  IN: { simplify: '12%' },   // no island filter: Lakshadweep is only small islands
+  CN: { simplify: '10%', minIsland: '300km2', pad: 0.12, filter: "iso_3166_2 !== 'CN-X01~'" },
+  // Russia: the 83 federal subjects within its internationally recognised borders
+  RU: { simplify: '6%', minIsland: '1500km2', box: '19,38,180,82', filter: "iso_3166_2.indexOf('RU-') === 0 && iso_3166_2 !== 'RU-X01~'" },
+  AR: { simplify: '12%', minIsland: '200km2' },
+  TR: { simplify: '15%' },
 }
 const COUNTRIES = new URL('../public/data/ne_50m_admin_0_countries.geojson', import.meta.url)
 const OUT = new URL('../public/data/maps/', import.meta.url)
@@ -130,8 +137,10 @@ for (const code of codes) {
   let [x0, y0, x1, y1] = [180, 90, -180, -90]
   const walk = (c) => typeof c[0] === 'number' ? (x0 = Math.min(x0, c[0]), x1 = Math.max(x1, c[0]), y0 = Math.min(y0, c[1]), y1 = Math.max(y1, c[1])) : c.forEach(walk)
   fc.features.forEach(f => walk(f.geometry.coordinates))
-  const px = (x1 - x0) * 0.35, py = (y1 - y0) * 0.35
-  const box = [x0 - px, y0 - py, x1 + px, y1 + py].map(v => +v.toFixed(3)).join(',')
+  // pad: how much of the surroundings to keep; box: a fixed one (Russia crosses the antimeridian)
+  const pad = cfg.pad ?? 0.35
+  const px = (x1 - x0) * pad, py = (y1 - y0) * pad
+  const box = cfg.box ?? [x0 - px, y0 - py, x1 + px, y1 + py].map(v => +v.toFixed(3)).join(',')
   const ctx = await mapshaper.applyCommands(
     `-i c.json -filter "NAME !== '${countryName.replace(/'/g, "\\'")}'" -clip bbox=${box} -filter-fields NAME ` +
     `-rename-fields name=NAME -each "ctx=true" -o out.json format=geojson precision=0.001`,

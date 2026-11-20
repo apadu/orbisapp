@@ -49,10 +49,10 @@ export default function RailNav({ mode, page, onOpen, onSearch, onHome }) {
             key={g.id}
             className={`nrail-btn${activeGroup === g.id ? ' active' : ''}${open === g.id ? ' open' : ''}`}
             style={{ '--cat': g.color }}
-            onMouseEnter={() => g.id !== 'learn' ? show(g.id) : setOpen(null)}
-            onFocus={() => g.id !== 'learn' && show(g.id)}
+            onMouseEnter={() => show(g.id)}
+            onFocus={() => show(g.id)}
             onClick={() => pick(g.page)}
-            aria-haspopup={g.id !== 'learn' ? 'menu' : undefined}
+            aria-haspopup="menu"
             aria-current={activeGroup === g.id ? 'page' : undefined}
             title={g.label}
           >

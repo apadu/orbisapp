@@ -1,4 +1,4 @@
-# Orbis accounts and stats setup
+# GeoFeverr accounts and stats setup
 
 Until you finish these steps, the app works in guest-only mode, with stats saved in the browser.
 

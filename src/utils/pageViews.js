@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase'
 import { lang } from '../i18n'
 
 /**
- * Orbis's own anonymous page counter (table public.page_views), read by /admin.
+ * GeoFeverr's own anonymous page counter (table public.page_views), read by /admin.
  * No cookies, no IP, no fingerprint: just a random id per browser-tab session
  * (sessionStorage) so visits can be told apart from page views.
  * Off in dev and when the browser sends "Do Not Track".
@@ -32,7 +32,7 @@ function device() {
 }
 
 // Only the site name of where the visitor came from (never the full URL), and only on
-// the first page of a visit; links inside Orbis itself don't count as referrers.
+// the first page of a visit; links inside GeoFeverr itself don't count as referrers.
 function referrerHost() {
   try {
     if (!document.referrer) return null

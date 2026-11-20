@@ -259,11 +259,15 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
   }
   const isMergedTerritory = name => DISPLAY_MERGE[name] != null
 
+  // Hidden by the game (Blind Map). A linked territory follows its country: Greenland is
+  // hidden while Denmark is, and comes back with it.
+  const inHiddenSet = (name) => !!hiddenSet && (hiddenSet.has(name) || (LINKED_COUNTRIES[name] != null && hiddenSet.has(LINKED_COUNTRIES[name])))
+
   // ── Pass 0: light "shallow water" halo around every visible coastline ─────
   const isHiddenName = (name) => {
     const linked = LINKED_COUNTRIES[name]
     const guessed = guessMap[name] ?? (linked ? guessMap[linked] : null)
-    return hiddenSet?.has(name) ||
+    return inHiddenSet(name) ||
       (soloMode && !guessed && name !== highlightedName && !missedSet?.has(name) && !(gameWon && name === mysteryName))
   }
   for (const [width, color] of [[14, SHALLOW_OUTER], [6, SHALLOW_INNER]]) {
@@ -308,7 +312,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
 
     // In solo mode every country defaults to ocean unless it's highlighted / guessed / missed
     const isOcean =
-      hiddenSet?.has(name) ||
+      inHiddenSet(name) ||
       (soloMode &&
         !effectiveColor &&
         name !== highlightedName &&
@@ -417,7 +421,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     const linkedName = LINKED_COUNTRIES[name]
     const guessColor = guessMap[name] ?? (linkedName ? guessMap[linkedName] : null)
     const isWinner   = gameWon && name === mysteryName
-    const isHidden   = hiddenSet?.has(name) ||
+    const isHidden   = inHiddenSet(name) ||
       (soloMode && !guessColor && name !== highlightedName && !missedSet?.has(name) && !isWinner)
 
     if (isHidden) continue   // nothing to draw — the sea is already there
@@ -454,7 +458,7 @@ function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highli
     const linkedName = LINKED_COUNTRIES[name]
     const guessColor = guessMap[name] ?? (linkedName ? guessMap[linkedName] : null)
     const isWinner = gameWon && name === mysteryName
-    const isEllipseHidden = hiddenSet?.has(name) ||
+    const isEllipseHidden = inHiddenSet(name) ||
       (soloMode && !guessColor && name !== highlightedName && !missedSet?.has(name) && !isWinner)
     // Hidden → don't draw anything (the sea is already underneath). Painting it with the
     // ocean gradient here would be offset by the translate() below and show a ghost ellipse.

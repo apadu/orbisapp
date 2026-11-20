@@ -27,7 +27,7 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
     }).join('')
     const n = guesses.length
     const text = [
-      `Orbis · ${t('Mystery Country')}${practiceMode ? ` (${plain(t('🎲 Practice'))})` : dateLabel ? ` · ${dateLabel}` : ''}`,
+      `GeoFeverr · ${t('Mystery Country')}${practiceMode ? ` (${plain(t('🎲 Practice'))})` : dateLabel ? ` · ${dateLabel}` : ''}`,
       emojiRow,
       gaveUp ? t('Gave up after {n} guesses', { n }) : n === 1 ? t('Solved in 1 guess!') : t('Solved in {n} guesses!', { n }),
       siteLink('/play/mystery'),
