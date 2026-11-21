@@ -25,6 +25,7 @@ export function useKeyboardInset() {
     const vv = window.visualViewport
     const root = document.documentElement
     let tallest = window.innerHeight
+    let wasOpen = false
     const typing = () => {
       const el = document.activeElement
       return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !/^(range|checkbox|radio|button)$/.test(el.type)
@@ -37,9 +38,16 @@ export function useKeyboardInset() {
       const shrunk = tallest - window.innerHeight
       const isOpen = overlay > 80 || (shrunk > 150 && typing())
       root.style.setProperty('--kb', `${overlay > 80 ? overlay : 0}px`)
+      // The height you can actually see; quiz pages shrink to it while typing, so their list
+      // scrolls normally above the keyboard instead of fighting the page underneath
+      root.style.setProperty('--vvh', `${Math.round(vv ? vv.height : window.innerHeight)}px`)
+      root.classList.toggle('kb-open', isOpen)
       setOpen(isOpen)
-      // iOS scrolls the whole page up when an input gets focus — undo that
-      if (isOpen && window.scrollY) window.scrollTo(0, 0)
+      // iOS scrolls the whole page up when an input gets focus — undo that. Only once per
+      // opening on quiz pages: doing it on every scroll event made their scrolling jump.
+      const quizPage = !!document.querySelector('.app-shell.page-quiz')
+      if (isOpen && window.scrollY && (!quizPage || !wasOpen)) window.scrollTo(0, 0)
+      wasOpen = isOpen
     }
     const onRotate = () => { tallest = window.innerHeight; update() }
     update()
@@ -54,6 +62,7 @@ export function useKeyboardInset() {
       window.removeEventListener('resize', update); window.removeEventListener('orientationchange', onRotate)
       document.removeEventListener('focusin', update); document.removeEventListener('focusout', update)
       root.style.setProperty('--kb', '0px')
+      root.classList.remove('kb-open')
     }
   }, [])
   return open

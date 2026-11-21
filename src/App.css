@@ -4924,3 +4924,17 @@ h1, h2, .hp-title, .hp-sec-title, .qh-title, .qh-section-head h2, .chub-head h1,
 .ch-name input { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.25); color: var(--text); font: inherit; }
 @media (max-width: 640px) { .ch-name { right: auto; left: 0; } }
 .um-ios-help { margin: 0 10px 6px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); font-size: 0.78rem; color: var(--text-dim); line-height: 1.4; }
+
+/* Phones: while the keyboard is open, a quiz page shrinks to the part of the screen you can
+   see (--vvh, set by useKeyboardInset), so the list scrolls normally above the keyboard and
+   the last rows can be reached. scroll-padding keeps rows scrolled into view clear of the
+   sticky answer bar. */
+@media (max-width: 700px) {
+  .kb-open .is-mobile.page-quiz { height: var(--vvh, 100dvh); }
+  .is-mobile.page-quiz .quiz-content {
+    padding-bottom: 24px;
+    scroll-padding-top: 96px;
+    scroll-padding-bottom: 16px;
+    overscroll-behavior: contain;
+  }
+}
