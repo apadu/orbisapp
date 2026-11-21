@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadResults, subscribeResults } from './results'
-import { challengeStatus, challengeStreak, todayKey } from './dailyChallenges'
+import { challengeStatus, challengeHistory, streakInfo, todayKey } from './dailyChallenges'
 
 /** Live hook: today's challenges + streak, updated whenever a game is saved. */
 export function useDailyChallenges() {
@@ -14,6 +14,8 @@ export function useDailyChallenges() {
   }, [day])
   return useMemo(() => {
     const list = challengeStatus(results, day)
-    return { list, done: list.filter(c => c.done).length, allDone: list.every(c => c.done), streak: challengeStreak(results) }
+    const history = challengeHistory(results)
+    const info = streakInfo(results, history)
+    return { list, done: list.filter(c => c.done).length, allDone: list.every(c => c.done), streak: info.streak, info, history }
   }, [results, day])
 }

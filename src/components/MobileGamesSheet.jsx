@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { t } from '../i18n'
 import Icon, { SECTION_ICON } from './Icon'
 import GameIcon from './GameIcon'
-import { GAME_GROUPS } from '../utils/gameRegistry'
+import { GAME_GROUPS, randomGame } from '../utils/gameRegistry'
 import { gameMeta } from '../utils/gameCatalog'
 import { loadResults } from '../utils/results'
 
@@ -49,6 +49,11 @@ export default function MobileGamesSheet({ open, page, mode, onClose, onOpen, on
           <h2>{t('What shall we play?')}</h2>
           <button className="mgs-close" onClick={onClose} aria-label={t('Close')}>✕</button>
         </div>
+
+        <button className="mgs-random" onClick={() => { const g = randomGame(mode); if (g) go(g.id) }}>
+          <Icon name="dice" size={20} /> {t('Surprise me')}
+          <span>{t('A random game — on the globe, a quiz or a country')}</span>
+        </button>
 
         <div className="mgs-sections">
           {GAME_GROUPS.map(g => (

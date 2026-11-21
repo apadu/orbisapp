@@ -27,6 +27,7 @@ import { useAuth } from './auth/AuthContext'
 import { startSession, trackAnswer, finishGame, flushSessions, hasActiveGame, activeGame } from './utils/results'
 import { routeFor, parseRoute, INFO_PAGES } from './utils/router'
 import { GAME_CATALOG } from './utils/gameCatalog'
+import { randomGame } from './utils/gameRegistry'
 import ConfirmLeave from './components/ConfirmLeave'
 import { useListTracking } from './utils/useListTracking'
 import GlobeFeedback from './components/GlobeFeedback'
@@ -1182,6 +1183,9 @@ export default function App() {
         <div className="topbar-auth">
           <button className="topbar-search" onClick={() => setPaletteOpen(true)} title={t('Search games')}>
             <Icon name="search" size={16} /><span className="topbar-search-text">{t('Search games')}</span><kbd>{PALETTE_SHORTCUT}</kbd>
+          </button>
+          <button className="topbar-random" onClick={() => { const g = randomGame(mode); if (g) openGame(g.id) }} title={t('Random game')} aria-label={t('Random game')}>
+            <Icon name="dice" size={17} /><span className="topbar-random-text">{t('Random')}</span>
           </button>
           <StreakBadge
             onSelectMode={openGame}

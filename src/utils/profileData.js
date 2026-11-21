@@ -11,12 +11,11 @@ import { challengeHistory } from './dailyChallenges'
 //   • 2 XP per correct answer — only the FIRST time you get a given item right in a
 //     given game (naming France in Name All twice gives XP once)
 //   • 15 XP per finished game
-//   • 30 XP per daily challenge completed, +40 bonus when all three are done that day
+//   • daily challenges: 20 / 35 / 60 XP (easy / medium / hard), +40 bonus when all three are done
+//     (days before the new quests: 30 XP each)
 // Untimed games earn nothing. Everything is recomputed from the saved results.
 export const XP_PER_NEW = 2
 export const XP_PER_GAME = 15
-export const XP_PER_CHALLENGE = 30
-export const XP_ALL_CHALLENGES = 40
 
 export function itemKey(mode, a) {
   const id = a.c ?? a.k
@@ -42,9 +41,7 @@ export function computeXp(results) {
     // Correct answers that weren't itemized (older data) still count
     xp += Math.max(0, r.correct - itemizedOk) * XP_PER_NEW
   }
-  for (const done of Object.values(challengeHistory(results))) {
-    xp += done * XP_PER_CHALLENGE + (done === 3 ? XP_ALL_CHALLENGES : 0)
-  }
+  for (const day of Object.values(challengeHistory(results))) xp += day.xp
   return xp
 }
 

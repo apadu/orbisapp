@@ -10,6 +10,7 @@ import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import Icon from './Icon'
 import StateNote from './StateNote'
+import { QuestRing, streakLabel } from './StreakBadge'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function useResults() {
@@ -265,14 +266,14 @@ function Overview({ p, results, onPlay, goTo }) {
         <div className="pp-card">
           <div className="pp-card-head">
             <h3>{t('Today\'s challenges')}</h3>
-            {dailyStreak > 0 && <span className="pp-chip"><Icon name="flame" size={13} /> {dailyStreak}</span>}
+            {dailyStreak > 0 && <span className="pp-chip"><QuestRing list={daily} size={14} stroke={2} /> {streakLabel(dailyStreak)}</span>}
           </div>
           <div className="profile-daily-list">
             {daily.map(ch => (
               <div key={ch.id} className={`profile-daily-ch${ch.done ? ' pdc-done' : ''}`}>
-                <span className="pdc-icon">{ch.icon}</span>
+                <span className="pdc-icon"><GameIcon id={ch.mode} size={18} /></span>
                 <div className="pdc-body">
-                  <span className="pdc-label">{ch.task}</span>
+                  <span className="pdc-label">{ch.task}{ch.tier && <span className="pdc-xp"> · +{ch.xp} XP</span>}</span>
                   {!ch.done && ch.target > 1 && <div className="pdc-bar"><div className="pdc-bar-fill" style={{ width: `${Math.min((ch.value / ch.target) * 100, 100)}%` }} /></div>}
                 </div>
                 <span className={`pdc-status${ch.done ? ' pdc-check' : ''}`}>{ch.done ? '✓' : `${ch.value}/${ch.target}`}</span>

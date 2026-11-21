@@ -12,7 +12,7 @@ import Icon, { SECTION_ICON } from './Icon'
 import { InfoLinks } from './InfoPage'
 import { t, continentName } from '../i18n'
 
-import { GLOBE_ROWS as ROWS, GAME_GROUPS } from '../utils/gameRegistry'
+import { GLOBE_ROWS as ROWS, GAME_GROUPS, gamesOfTheDay, randomGame } from '../utils/gameRegistry'
 import GameIcon from './GameIcon'
 
 // First visit: four easy ways in (replaced by the most played quizzes once there's data)
@@ -26,7 +26,7 @@ function useResults() {
 }
 
 export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenInfo }) {
-  const { list: daily, streak: dailyStreak } = useDailyChallenges()
+  const { list: daily } = useDailyChallenges()
   const auth = useAuth()
   const results = useResults()
   const stats = useMemo(() => summarize(results), [results])
@@ -60,6 +60,7 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
 
   const overview = useQuizOverview()
   const today = dailyNumber()
+  const todaysGames = useMemo(() => gamesOfTheDay(), [today]) // eslint-disable-line react-hooks/exhaustive-deps
   const dailyInfo = useMemo(() => dailyQuizFor(today), [today])
   const dailyPlayed = results.find(r => r.mode === 'daily-quiz' && r.details?.day === today)
   // "Start here" for newcomers (popular quizzes when we know them), "Continue" for everyone else
@@ -76,20 +77,21 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
       <section className="hp-hero">
         <div className="hp-hero-text">
           <p className="hp-greet">
-            {name ? t('Welcome back, {name}', { name: name }) : isNew ? t('Catch the geo fever 🌡️') : t('Welcome back, explorer')}
-            {dailyStreak > 0 && <span className="hp-greet-streak"><Icon name="flame" size={14} /> {dailyStreak} {t('day')}{dailyStreak === 1 ? '' : 's'}</span>}
+            {name ? t('Welcome back, {name}', { name: name }) : isNew ? t('Welcome to GeoFeverr') : t('Welcome back, explorer')}
           </p>
-          <h1 className="hp-title">{t('The whole world,')}<br /><span>{t('one game.')}</span></h1>
-          <p className="hp-tagline">{t('Guess countries by flag, shape, capital or neighbours — on the globe, on maps and in quizzes.')}</p>
+          <h1 className="hp-title">{t('Geography fever.')}<br /><span>{t('No cure.')}</span></h1>
+          <p className="hp-tagline">{t('Flags, capitals, maps, mountains, empires and planets: hundreds of games on a 3D globe. Play every day and watch your temperature rise.')}</p>
           <div className="hp-ctas">
-            <button className="hp-cta-primary" onClick={onDailyQuiz}>
-              {dailyPlayed ? <><Icon name="check" size={18} /> {t('Today\'s fever: {s}', { s: `${dailyPlayed.correct}/${dailyPlayed.total}` })}</> : <>{t('Play the Daily Fever')} <Icon name="arrow" size={18} /></>}
+            <button className="hp-cta-primary" onClick={() => onSelectMode('mystery')}>
+              {t('Guess the Mystery Country')} <Icon name="arrow" size={18} />
             </button>
-            <button className="hp-cta-secondary" onClick={() => onSelectMode('mystery')}><Icon name="question" size={18} /> {t('Mystery country')}</button>
+            <button className="hp-cta-secondary" onClick={onDailyQuiz}>
+              {dailyPlayed ? <><Icon name="check" size={18} /> {t('Today\'s fever: {s}', { s: `${dailyPlayed.correct}/${dailyPlayed.total}` })}</> : <><Icon name="calendar" size={18} /> {t('Daily Fever')}</>}
+            </button>
           </div>
           {dailyInfo && (
             <p className="hp-daily-line">
-              <span className="hp-daily-num">#{dailyInfo.day}</span>
+              <span className="hp-daily-num">{t('Daily Fever')} #{dailyInfo.day}</span>
               {dailyInfo.title}{dailyInfo.region !== 'World' ? ` · ${continentName(dailyInfo.region)}` : ''}
             </p>
           )}
@@ -108,6 +110,30 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
           </div>
         </section>
       )}
+
+      {/* ── Games of the day: ten picks, the same for everyone today ── */}
+      <section className="hp-today">
+        <div className="hp-picks-head">
+          <h2>{t('Games of the day')}</h2>
+          <button className="hp-random-btn" onClick={() => { const g = randomGame(); if (g) onSelectMode(g.id) }}>
+            <Icon name="dice" size={16} /> {t('Surprise me')}
+          </button>
+        </div>
+        <div className="hp-today-grid">
+          {todaysGames.map((g, i) => {
+            const sec = GAME_GROUPS.find(x => x.id === g.group)
+            return (
+              <button key={g.id} className="hp-today-card" style={{ '--cat': sec?.color, animationDelay: `${0.03 + i * 0.03}s` }} onClick={() => onSelectMode(g.id)}>
+                <span className="hp-today-icon"><GameIcon id={g.id} size={22} /></span>
+                <span className="hp-today-body">
+                  <span className="hp-today-name">{g.label}</span>
+                  <span className="hp-today-sec">{g.sub ?? sec?.short ?? ''}</span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
 
       {/* ── The four sections ── */}
       <section className="hp-sections" aria-label={t('Sections')}>

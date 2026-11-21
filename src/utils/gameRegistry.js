@@ -100,6 +100,40 @@ export function menuGames(groupId) {
 }
 export const groupOf = (id) => ALL_GAMES.find(x => x.id === id)?.group ?? null
 
+// ── Random picks ────────────────────────────────────────────────────────────
+// Every game you can jump into: not the Daily Fever (one attempt a day) and not the section pages
+const NOT_RANDOM = new Set(['daily-quiz', 'quiz-hub', ...GAME_GROUPS.map(g => g.page)])
+export const playableGames = () => ALL_GAMES.filter(g => !NOT_RANDOM.has(g.id))
+
+/** One game at random (never the one you're on). */
+export function randomGame(notId = null) {
+  const pool = playableGames().filter(g => g.id !== notId)
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
+function seeded(seed) {
+  let t = seed >>> 0
+  return () => { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296 }
+}
+// How many of the day's games come from each section
+const DAY_MIX = { globe: 3, nameall: 1, quizzes: 4, countries: 2 }
+
+/** Day number of a local date key "YYYY-MM-DD" (or today) — changes at local midnight. */
+export function dayNumber(key) {
+  const d = key ? key.split('-').map(Number) : null
+  const x = d ? Date.UTC(d[0], d[1] - 1, d[2]) : Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())
+  return Math.round(x / 86_400_000)
+}
+
+/** The games of the day: the same picks for everyone on a given local day, mixed across sections. */
+export function gamesOfTheDay(day = dayNumber()) {
+  const rnd = seeded(day * 2654435761)
+  const shuffle = (a) => { const x = [...a]; for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [x[i], x[j]] = [x[j], x[i]] } return x }
+  const pool = playableGames()
+  const picks = Object.entries(DAY_MIX).flatMap(([group, n]) => shuffle(pool.filter(g => g.group === group)).slice(0, n))
+  return shuffle(picks)
+}
+
 const norm = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 /** Search: every word must match the label, description, category or id. Label hits rank first. */
