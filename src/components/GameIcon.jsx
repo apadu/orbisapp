@@ -30,6 +30,8 @@ const BY_ID = {
   'cities-world': 'building', 'cities-europe': 'building', 'cities-romania': 'building', 'hist-100': 'history', 'hist-1279': 'history', 'hist-1700': 'crown', 'hist-1914': 'history',
   'flags-historical': 'flag',
   'peaks': 'mountain', 'waterfalls': 'drop', 'natural-wonders': 'globe', 'extreme-points': 'pin', 'clouds': 'drop', 'climates': 'snow', 'scales': 'ruler',
+  'river-coast': 'river', atmosphere: 'layers', 'volcano-types': 'mountain', 'milky-way': 'spiral', 'star-life': 'star', 'moon-map': 'moon', 'mars-map': 'globe',
+  glaciers: 'snow', 'records-map': 'pin', 'bright-stars': 'star', zodiac: 'stars', 'scale-sort': 'sort',
   'earth-layers': 'layers', 'rock-cycle': 'cycle', plates: 'puzzle', rocks: 'mountain',
   islands: 'island', peninsulas: 'map', lakes: 'map', deserts: 'map', 'seas-map': 'map', straits: 'map',
   'daily-quiz': 'calendar', 'quiz-hub': 'flag', countries: 'map', 'globe-hub': 'globe', 'nameall-hub': 'list',

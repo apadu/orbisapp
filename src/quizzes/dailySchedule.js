@@ -53,7 +53,7 @@ export const DAILY_SCHEDULE = [
   ["solar-system", "World", 13, "diagram"],   // was ["scramble", "Europe", 20]
   ["flags-sun", "World", 12],
   ["hist-1914", "World", 16, "map"],   // was ["pop-order", "Africa", 30]
-  ["pop-order", "Asia", 30],
+  ["glaciers", "World", 15, "map"],   // was ["pop-order", "Asia", 30] (swapped 2026-11-21, before it was played)
   ["planets", "World", 13],   // was ["scramble", "Asia", 20]
   ["pop-order", "Europe", 30],
   ["volcano", "World", 10, "diagram"],   // was ["named-after", "World", 21]
@@ -63,13 +63,13 @@ export const DAILY_SCHEDULE = [
   ["earth-records", "World", 23],   // was ["language", "Oceania", 14]
   ["capitals-a-z", "Africa", 20],
   ["phys-europe", "World", 20, "map"],   // was ["drive-left", "Asia", 15]
-  ["scramble", "Africa", 20],
+  ["milky-way", "World", 12, "diagram"],   // was ["scramble", "Africa", 20] (swapped 2026-11-21, before it was played)
   ["moon-phases", "World", 9, "diagram"],   // was ["language", "Europe", 43]
   ["currency", "Oceania", 14],
   ["plates", "World", 18, "map"],   // was ["drive-left", "Oceania", 10]
   ["landlocked", "Africa", 16],
   ["phenomena", "World", 18],   // was ["caribbean", "World", 13]
-  ["missing-vowels", "Americas", 20],
+  ["records-map", "World", 20, "map"],   // was ["missing-vowels", "Americas", 20] (swapped 2026-11-21, before it was played)
   ["water-cycle", "World", 9, "diagram"],   // was ["monarchies", "World", 43]
   ["english-speaking", "World", 60],
   ["cities-world", "World", 34, "map"],   // was ["currency", "Europe", 44]
@@ -77,7 +77,7 @@ export const DAILY_SCHEDULE = [
   ["moons", "World", 15],   // was ["area", "Americas", 30]
   ["flag", "World", 20],
   ["wonders-new", "World", 8, "map"],   // was ["monarchies", "Europe", 12]
-  ["alphabet", "Oceania", 9],
+  ["moon-map", "World", 13, "diagram"],   // was ["alphabet", "Oceania", 9] (swapped 2026-11-21, before it was played)
   ["landscape", "World", 17, "diagram"],   // was ["endonyms", "Asia", 20]
   ["equator", "World", 13],
   ["currents", "World", 14, "map"],   // was ["french-speaking", "Africa", 21]
@@ -112,17 +112,17 @@ export const DAILY_SCHEDULE = [
   ["english-speaking", "Oceania", 14],
   ["geologic-time", "World", 13],   // was ["endonyms", "Asia", 20]
   ["missing-vowels", "World", 20],
-  ["rock-cycle", "World", 10, "diagram"],   // was ["capital", "Americas", 35]
+  ["river-coast", "World", 15, "diagram"],   // was ["rock-cycle", "World", 10, "diagram"] (swapped 2026-11-21, before it was played)
   ["flags-cross", "World", 13],
-  ["hist-1700", "World", 16, "map"],   // was ["island-nations", "World", 45]
+  ["mars-map", "World", 12, "diagram"],   // was ["hist-1700", "World", 16, "map"] (swapped 2026-11-21, before it was played)
   ["landlocked", "Europe", 15],
-  ["seas-map", "World", 28, "map"],   // was ["area", "Europe", 30]
+  ["atmosphere", "World", 13, "diagram"],   // was ["seas-map", "World", 28, "map"] (swapped 2026-11-21, before it was played)
   ["country-fact", "Asia", 20],
-  ["sun-anatomy", "World", 10, "diagram"],   // was ["missing-vowels", "World", 20]
+  ["bright-stars", "World", 21],   // was ["sun-anatomy", "World", 10, "diagram"] (swapped 2026-11-21, before it was played)
   ["alphabet", "Africa", 16],
-  ["phys-africa", "World", 16, "map"],   // was ["nato-members", "World", 32]
+  ["star-life", "World", 11, "diagram"],   // was ["phys-africa", "World", 16, "map"] (swapped 2026-11-21, before it was played)
   ["landlocked", "World", 45],
-  ["earth-orbit", "World", 9, "diagram"],   // was ["monarchies", "Americas", 9]
+  ["volcano-types", "World", 8, "diagram"],   // was ["earth-orbit", "World", 9, "diagram"] (swapped 2026-11-21, before it was played)
   ["missing-vowels", "Asia", 20],
   // 2026-11-21: the new map, diagram and science quizzes (appended)
   ["peninsulas", "World", 21, "map"],
@@ -141,4 +141,6 @@ export const DAILY_SCHEDULE = [
   ["scales", "World", 18],
   ["natural-wonders", "World", 26, "map"],
   ["extreme-points", "World", 22],
+  // 2026-11-21 (night): zodiac
+  ["zodiac", "World", 13],
 ]

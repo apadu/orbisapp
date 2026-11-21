@@ -11,6 +11,7 @@ import TryNext from './TryNext'
 import QuizComments from './QuizComments'
 import GameIcon from './GameIcon'
 import ShareButton, { resultText } from './ShareButton'
+import { useChallenge, ChallengeBanner, ChallengeResult, ChallengeButton } from './Challenge'
 import { t, cn } from '../i18n'
 import { plain } from '../utils/plain'
 import StateNote from './StateNote'
@@ -57,6 +58,7 @@ function TripointMap({ map, num, got, over, recent }) {
 export default function TripointQuiz({ quizId, onOpen }) {
   const quiz = TRIPOINT_QUIZZES[quizId]
   const mode = quizId
+  const ch = useChallenge(quizId)   // opened from a friend's challenge link
   const points = quiz.points
   const total = points.length * 3
   const [maps, mapError] = useMaps(points)
@@ -196,6 +198,7 @@ export default function TripointQuiz({ quizId, onOpen }) {
         </div>
         {over && statsBlock}
       </header>
+      <ChallengeBanner ch={ch} />
 
       <div className="tq-bar">
         {!over ? (
@@ -220,9 +223,11 @@ export default function TripointQuiz({ quizId, onOpen }) {
               {' '}<strong>{score}/{total}</strong> ({pct}%)
               {missed > 0 && <span className="cmq-missed-note"> · {t('{n} missed, shown in red', { n: missed })}</span>}
             </span>
+            <ChallengeResult ch={ch} score={score} total={total} ms={endReason === 'complete' ? undefined : undefined} />
             <div className="tq-result-btns">
               <button className="tq-btn tq-btn-primary" onClick={() => begin()}>{t('▶ Play again')}</button>
               <ShareButton text={() => resultText({ title: quiz.title, score, total })} />
+              <ChallengeButton mode={quizId} title={quiz.title} score={score} total={total} ms={endReason === 'complete' ? undefined : undefined} rematch={!!ch} />
             </div>
           </div>
         )}

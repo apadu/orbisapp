@@ -10,12 +10,12 @@ import { POPULATION } from '../utils/population'
 import { COUNTRY_AREA } from '../utils/countryArea'
 import { ALIASES } from '../utils/aliases'
 import { dailyNumber } from './daily'
-import { t, cn, isRo, continentName, locale } from '../i18n'
+import { t, cn, isRo, isEs, continentName, locale } from '../i18n'
 import { capName, curName, langName } from '../i18n/names'
 import { siteLink } from '../utils/share'
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
-const DISPLAY = isRo ? { 'United States of America': 'SUA' } : { 'United States of America': 'United States' }
+const DISPLAY = isRo ? { 'United States of America': 'SUA' } : isEs ? { 'United States of America': 'EE. UU.' } : { 'United States of America': 'United States' }
 export const shortName = (n) => DISPLAY[n] ?? cn(n)
 
 // ── Higher or Lower ────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ export function hlNext(pool, current, stat, streak, exclude = new Set()) {
 // ── True or False ──────────────────────────────────────────────────────────
 const sameContinent = (n, pool) => pool.filter(m => m !== n && COUNTRY_INFO[m]?.continent === COUNTRY_INFO[n]?.continent)
 const CONTINENTS = ['Africa', 'Americas', 'Asia', 'Europe', 'Oceania']
-const contLabel = (c) => isRo ? continentName(c) : (c === 'Americas' ? 'the Americas' : c)
+const contLabel = (c) => isRo || isEs ? continentName(c) : (c === 'Americas' ? 'the Americas' : c)
 const continentOf = (n) => COUNTRY_INFO[n]?.continent
 // Debatable continent → never used in "X is in <continent>" statements
 const TRANSCONTINENTAL = new Set(['Russia', 'Turkey', 'Cyprus', 'Georgia', 'Armenia', 'Azerbaijan', 'Kazakhstan', 'Egypt', 'Panama', 'Indonesia', 'Papua New Guinea', 'Timor-Leste', 'East Timor', 'Trinidad and Tobago', 'Greenland'])
@@ -140,12 +140,12 @@ export const WORDLE_TRIES = 6
 export const letters = (s) => String(s).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z]/g, '')
 
 /** The word to guess for a country in the current language. */
-export const wordleWord = (n) => letters(isRo ? cn(n) : n)
+export const wordleWord = (n) => letters(cn(n))
 
 /** Possible answers: single-word country names, 4–9 letters. */
 export function wordleTargets(countries) {
   return countries
-    .filter(n => { const w = isRo ? cn(n) : n; return /^[\p{L}]+$/u.test(w) && letters(w).length >= 4 && letters(w).length <= 9 })
+    .filter(n => { const w = cn(n); return /^[\p{L}]+$/u.test(w) && letters(w).length >= 4 && letters(w).length <= 9 })
     .sort()
 }
 

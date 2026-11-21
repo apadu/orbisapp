@@ -149,6 +149,18 @@ export const QUIZ_ITEMS = [
   { id: 'clouds', cat: 'science', icon: '☁️', label: t("Types of Clouds"), desc: t("Cirrus, cumulus, nimbostratus, cumulonimbus \u2014 11 clouds by shape and height.") },
   { id: 'climates', cat: 'science', icon: '🌦️', label: t("Climate Types"), desc: t("Equatorial, Mediterranean, monsoon, tundra \u2014 13 climates and where to find them.") },
   { id: 'scales', cat: 'science', icon: '📐', label: t("Scales and Units"), desc: t("Richter, Beaufort, Mohs, Kelvin, light-years \u2014 18 ways to measure the planet.") },
+  { id: 'river-coast', cat: 'science', icon: '🏞️', label: t("Rivers and Coasts"), desc: t("Source, tributary, oxbow lake, estuary, lagoon, sea arch \u2014 15 parts of rivers and coasts.") },
+  { id: 'atmosphere', cat: 'science', icon: '🛰️', label: t("What's Up There? The Atmosphere"), desc: t("From Everest and airliners to auroras, the ISS and GPS satellites \u2014 13 things in the sky.") },
+  { id: 'volcano-types', cat: 'science', icon: '🌋', label: t("Kinds of Volcanoes"), desc: t("Shield, stratovolcano, cinder cone, caldera, geyser \u2014 8 kinds of volcanoes.") },
+  { id: 'milky-way', cat: 'space', icon: '🌀', label: t("Our Galaxy, the Milky Way"), desc: t("The spiral arms, the black hole at the centre and the Sun \u2014 12 parts of our galaxy.") },
+  { id: 'star-life', cat: 'space', icon: '⭐', label: t("The Life of a Star"), desc: t("Nebula, red giant, supernova, black hole \u2014 11 stages from birth to death.") },
+  { id: 'moon-map', cat: 'space', icon: '🌕', label: t("Map of the Moon"), desc: t("The Sea of Tranquillity, the Ocean of Storms, Tycho, Apollo 11 \u2014 13 places on the Moon.") },
+  { id: 'mars-map', cat: 'space', icon: '🔴', label: t("Map of Mars"), desc: t("Olympus Mons, Valles Marineris, the ice caps and the rovers \u2014 12 places on Mars.") },
+  { id: 'bright-stars', cat: 'space', icon: '🌟', label: t("The Brightest Stars"), desc: t("Sirius, Canopus, Arcturus, Vega \u2014 the 21 brightest stars of the night sky.") },
+  { id: 'zodiac', cat: 'space', icon: '♈', label: t("Constellations of the Zodiac"), desc: t("Aries to Pisces \u2014 and Ophiuchus, the 13th the Sun passes through.") },
+  { id: 'glaciers', cat: 'maps', icon: '🧊', label: t("Glaciers and Ice Caps"), desc: t("Vatnaj\u00f6kull, Aletsch, Perito Moreno, Kilimanjaro \u2014 15 glaciers on the world map.") },
+  { id: 'records-map', cat: 'maps', icon: '🏆', label: t("Record-Breaking Places"), desc: t("The hottest, the wettest, the deepest, the most remote \u2014 20 record holders on the map.") },
+  { id: 'scale-sort', cat: 'science', icon: '📏', label: t("The Scale of Things"), desc: t("From a proton to the whole universe: put five things in order of size, round after round.") },
   { id: 'peninsulas',     cat: 'maps',     icon: '🗺️', label: t('Famous Peninsulas'),    desc: t('21 famous peninsulas lit up on the world map, from Iberia to Kamchatka.') },
   ...Object.values(TRIPOINT_QUIZZES).map(q => ({
     id: q.id, cat: 'puzzles', icon: '⨯', label: q.title,
@@ -191,22 +203,26 @@ export const QUIZ_GROUPS = [
     members: ['cities-world', 'cities-europe', 'cities-romania'] },
   { id: 'grp-empires', label: t('Empires through time'), desc: t('The world in AD 100, 1279, 1700 and 1914 — name the empires on the map.'),
     members: ['hist-100', 'hist-1279', 'hist-1700', 'hist-1914'] },
-  { id: 'grp-nature-wonders', label: t('Peaks, waterfalls and natural wonders'), desc: t('Famous summits, waterfalls, natural wonders and the extreme points of the continents.'),
-    members: ['peaks', 'waterfalls', 'natural-wonders', 'extreme-points'] },
+  { id: 'grp-nature-wonders', label: t('Peaks, glaciers and natural wonders'), desc: t('Famous summits, waterfalls, glaciers, natural wonders, extreme points and record-breaking places.'),
+    members: ['peaks', 'waterfalls', 'glaciers', 'natural-wonders', 'extreme-points', 'records-map'] },
   { id: 'grp-earth-inside', label: t('Inside the Earth'), desc: t('Layers, tectonic plates, plate boundaries, trenches and ridges.'),
     members: ['earth-layers', 'plates', 'plate-boundaries', 'ocean-floor'] },
-  { id: 'grp-volcanoes', label: t('Volcanoes'), desc: t('Famous volcanoes on the map and the anatomy of a volcano.'),
-    members: ['volcanoes', 'volcano'] },
+  { id: 'grp-volcanoes', label: t('Volcanoes'), desc: t('Famous volcanoes on the map, the anatomy of a volcano and its kinds.'),
+    members: ['volcanoes', 'volcano', 'volcano-types'] },
   { id: 'grp-rocks', label: t('Rocks and minerals'), desc: t('Rock types, the rock cycle and the Mohs scale.'),
     members: ['rocks', 'rock-cycle', 'minerals'] },
-  { id: 'grp-water-climate', label: t('Water, weather and climate'), desc: t('The water cycle, clouds, ocean currents, climate zones and types, and the imaginary lines.'),
-    members: ['water-cycle', 'clouds', 'currents', 'climate-zones', 'climates', 'earth-lines'] },
+  { id: 'grp-water-climate', label: t('Water, air and climate'), desc: t('The water cycle, rivers and coasts, clouds, the atmosphere, ocean currents, climates and the imaginary lines.'),
+    members: ['water-cycle', 'river-coast', 'clouds', 'atmosphere', 'currents', 'climate-zones', 'climates', 'earth-lines'] },
   { id: 'grp-planets', label: t('Planets and moons'), desc: t('The Solar System, planets by clues and the moons that orbit them.'),
     members: ['solar-system', 'planets', 'moons'] },
   { id: 'grp-sun-moon', label: t('Sun, Earth and Moon'), desc: t('Seasons, the phases of the Moon, eclipses and the inside of the Sun.'),
     members: ['earth-orbit', 'moon-phases', 'eclipses', 'sun-anatomy'] },
-  { id: 'grp-sky', label: t('Stars and the night sky'), desc: t('The sky over Romania, stars, constellations and galaxies.'),
-    members: ['sky-map', 'stars-constellations'] },
+  { id: 'grp-sky', label: t('Stars and the night sky'), desc: t('The night sky, the brightest stars, the zodiac, constellations and galaxies.'),
+    members: ['sky-map', 'bright-stars', 'zodiac', 'stars-constellations'] },
+  { id: 'grp-deep-space', label: t('Stars and galaxies'), desc: t('How stars are born and die, and the shape of our galaxy.'),
+    members: ['star-life', 'milky-way'] },
+  { id: 'grp-other-worlds', label: t('Maps of other worlds'), desc: t('The seas and craters of the Moon, the volcanoes and canyons of Mars.'),
+    members: ['moon-map', 'mars-map'] },
   { id: 'grp-tripoints', label: t('Tripoints'), desc: t('Three countries meet at one point. Zoomed-in maps, 10 points per quiz — name all three.'),
     members: Object.keys(TRIPOINT_QUIZZES), numbered: true },
 ].map(g => {
@@ -282,7 +298,7 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
   const stats = useMemo(() => summarize(results), [results])
 
   const [query,  setQuery]  = useState('')
-  const [filter, setFilter] = useState('all') // 'all' | 'unplayed'
+  const filter = 'all'
   const [cat,    setCat]    = useState(() => { try { return sessionStorage.getItem('orbis-qh-cat') ?? 'all' } catch { return 'all' } })
   const [openGroup, setOpenGroup] = useState(null)
   const [sort, setSort] = useState('default')   // default | rated | popular
@@ -321,7 +337,6 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
     return r ? { item: QUIZ_ITEMS.find(q => q.id === r.mode), result: r } : null
   }, [results])
 
-  const played = QUIZ_ITEMS.filter(q => stats[q.id]).length
   // Newest first; same day → catalogue order
   const newest = useMemo(() => QUIZ_ITEMS
     .map((it, i) => ({ it, i, d: addedOn(it.id) }))
@@ -340,16 +355,7 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
     <div className="qh">
       {/* ── Header ── */}
       <header className="qh-head">
-        <div>
-          <h1 className="qh-title">{t('Quiz Hub')}</h1>
-          <p className="qh-sub">{QUIZ_ITEMS.length} {t('quizzes · type answers in any order · pick a region')}</p>
-        </div>
-        <div className="qh-progress">
-          <div className="qh-progress-row">
-            <span><strong>{played}</strong>/{QUIZ_ITEMS.length} {t('played')}</span>
-          </div>
-          <div className="qh-progress-bar"><div style={{ width: `${(played / QUIZ_ITEMS.length) * 100}%` }} /></div>
-        </div>
+        <h1 className="qh-title">{t('Quiz Hub')}</h1>
       </header>
 
       {/* ── Daily quiz ── */}
@@ -399,11 +405,6 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
         </label>
         <div className="qh-chips">
           {/* one toggle; the category tabs below have their own "All" */}
-          <button className={`qh-chip${filter === 'unplayed' ? ' active' : ''}`} aria-pressed={filter === 'unplayed'}
-            onClick={() => setFilter(f => (f === 'unplayed' ? 'all' : 'unplayed'))}>
-            {t('Not played ({v})', { v: QUIZ_ITEMS.length - played })}
-          </button>
-          {(hasRatings || hasPlays) && <span className="qh-chip-sep" aria-hidden="true" />}
           {hasRatings && (
             <button className={`qh-chip${sort === 'rated' ? ' active' : ''}`} aria-pressed={sort === 'rated'} onClick={() => setSort(v => (v === 'rated' ? 'default' : 'rated'))}>
               ★ {t('Top rated')}
@@ -485,10 +486,9 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
           </div>
         </section>
       ) : visible.length === 0 ? (
-        <StateNote action={{ label: t('Clear filters'), onClick: () => { setQuery(''); setFilter('all') } }}>{t('No quizzes match.')}</StateNote>
+        <StateNote action={{ label: t('Clear filters'), onClick: () => setQuery('') }}>{t('No quizzes match.')}</StateNote>
       ) : QUIZ_CATEGORIES.filter(c => showsCat(c.id)).map(c => {
         const catAll = QUIZ_ITEMS.filter(it => it.cat === c.id)
-        const catPlayed = catAll.filter(it => stats[it.id]).length
         // Searching / "not played": every matching quiz, ungrouped
         const entries = filtering
           ? visible.filter(it => it.cat === c.id).map(item => ({ type: 'quiz', item }))
@@ -502,7 +502,7 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
             <div className="qh-section-head">
               <span className="qh-section-icon"><GameIcon id={QUIZ_ITEMS.find(q => q.cat === c.id)?.id} size={18} /></span>
               <h2>{c.label}</h2>
-              <span className="qh-section-count">{catPlayed}/{catAll.length}</span>
+              <span className="qh-section-count">{catAll.length}</span>
               {capped && <button className="qh-see-all" onClick={() => chooseCat(c.id)}>{t('See all ({n})', { n: entries.length })} ›</button>}
             </div>
             <div className="qh-grid">
@@ -545,7 +545,7 @@ export function QuizTile({ item, st, onSelect, rating = null }) {
   )
 }
 
-/** One card for a set of quizzes: how many of its parts you've played; opens the GroupPanel. */
+/** One card for a set of quizzes; opens the GroupPanel. */
 function QuizGroupTile({ group, stats, open, onToggle }) {
   const ids = group.members.map(m => m.id)
   const played = ids.filter(id => stats[id]).length
@@ -557,9 +557,8 @@ function QuizGroupTile({ group, stats, open, onToggle }) {
         {fresh && <span className="qh-tile-new-badge">{t('New')}</span>}
       </span>
       <span className="qh-tile-name">{group.label}</span>
-      <span className="qh-group-bar"><span style={{ width: `${(played / ids.length) * 100}%` }} /></span>
       <span className="qh-tile-foot">
-        <span className="qh-tile-tag">{t('{n} quizzes', { n: ids.length })} · {t('{n} played', { n: played })}</span>
+        <span className="qh-tile-tag">{t('{n} quizzes', { n: ids.length })}</span>
         <span className="qh-tile-play">{open ? t('Close ▴') : t('Open ▾')}</span>
       </span>
     </button>

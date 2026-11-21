@@ -5,6 +5,7 @@
 import { GAME_CATALOG } from './gameCatalog'
 import { t, locale } from '../i18n'
 import { challengeHistory } from './dailyChallenges'
+import { QUIZ_ITEMS, QUIZ_CATEGORIES } from '../components/QuizHub'
 
 // ── XP & levels ────────────────────────────────────────────────────────────
 // XP sources:
@@ -126,6 +127,36 @@ export const ACHIEVEMENTS = [
   { id: 'level-10',      icon: '🌡️', label: t('Fever'),             desc: t('Reach 38.4° (level 10)'),                            progress: p => [p.level.level, 10] },
 ]
 
+// One badge per Quiz Hub category: finish every quiz in it with at least half right.
+// Built on first use (QuizHub ↔ results ↔ this file import each other).
+const SECTION_BADGES = {
+  flags: ['Flag Master', 'Finish every flag quiz with at least half right'],
+  capitals: ['Capital Expert', 'Finish every capitals quiz with at least half right'],
+  culture: ['Globetrotter', 'Finish every culture & facts quiz with at least half right'],
+  lists: ['Archivist', 'Finish every lists & groups quiz with at least half right'],
+  numbers: ['Statistician', 'Finish every size & numbers quiz with at least half right'],
+  words: ['Wordsmith', 'Finish every names & spelling quiz with at least half right'],
+  history: ['Historian', 'Finish every world history quiz with at least half right'],
+  maps: ['Map Master', 'Finish every map quiz with at least half right'],
+  science: ['Geologist', 'Finish every Earth science quiz with at least half right'],
+  space: ['Astronomer', 'Finish every space quiz with at least half right'],
+  puzzles: ['Puzzle Master', 'Finish every puzzle with at least half right'],
+  arcade: ['Arcade Ace', 'Finish every arcade game with at least half right'],
+}
+let sectionAchievements = null
+function sectionBadges() {
+  if (sectionAchievements) return sectionAchievements
+  sectionAchievements = QUIZ_CATEGORIES.filter(c => SECTION_BADGES[c.id]).map(c => {
+    const ids = QUIZ_ITEMS.filter(q => q.cat === c.id && GAME_CATALOG[q.id]).map(q => q.id)
+    const [label, desc] = SECTION_BADGES[c.id]
+    return {
+      id: `section-${c.id}`, icon: c.icon, label: t(label), desc: `${t(desc)} (${ids.length})`, section: c.id,
+      progress: p => [ids.filter(id => (p.perMode[id]?.bestPct ?? 0) >= 0.5).length, ids.length],
+    }
+  }).filter(a => a.progress({ perMode: {} })[1] > 0)
+  return sectionAchievements
+}
+
 // ── Main derivation ────────────────────────────────────────────────────────
 export function computeProfile(results) {
   const totals  = { games: results.length, answers: 0, correct: 0, timeMs: 0 }
@@ -156,6 +187,7 @@ export function computeProfile(results) {
     m.lastPlayed = r.played_at
     m.recent.push(r.score)
     if (m.recent.length > 12) m.recent.shift()
+    if (r.completed && r.total > 0 && !r.details?.untimed) m.bestPct = Math.max(m.bestPct ?? 0, r.correct / r.total)
     if (!m.best || r.score > m.best.score || (r.score === m.best.score && (r.duration_ms ?? 1e12) < (m.best.duration_ms ?? 1e12))) m.best = r
     const fullClear = r.completed && r.total > 0 && r.correct === r.total
     if (fullClear) {
@@ -210,7 +242,7 @@ export function computeProfile(results) {
     flags,
   }
 
-  p.achievements = ACHIEVEMENTS.map(a => {
+  p.achievements = [...ACHIEVEMENTS, ...sectionBadges()].map(a => {
     const [value, target] = a.progress(p)
     return { ...a, value: Math.min(value, target), target, unlocked: value >= target }
   })

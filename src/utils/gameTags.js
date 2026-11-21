@@ -56,6 +56,7 @@ const ADDED = {
   'sky-map': '2026-11-21', 'stars-constellations': '2026-11-21', 'missions': '2026-11-21', 'phys-europe': '2026-11-21', 'phys-asia': '2026-11-21', 'phys-africa': '2026-11-21', 'phys-namerica': '2026-11-21', 'phys-samerica': '2026-11-21', 'phys-oceania': '2026-11-21', 'rivers-world': '2026-11-21', 'wonders-ancient': '2026-11-21', 'wonders-new': '2026-11-21',
   'cities-world': '2026-11-21', 'cities-europe': '2026-11-21', 'cities-romania': '2026-11-21', 'hist-100': '2026-11-21', 'hist-1279': '2026-11-21', 'hist-1700': '2026-11-21', 'hist-1914': '2026-11-21',
   'flags-historical': '2026-11-21',
+  'river-coast': '2026-11-21', 'atmosphere': '2026-11-21', 'volcano-types': '2026-11-21', 'milky-way': '2026-11-21', 'star-life': '2026-11-21', 'moon-map': '2026-11-21', 'mars-map': '2026-11-21', 'bright-stars': '2026-11-21', 'zodiac': '2026-11-21', 'glaciers': '2026-11-21', 'records-map': '2026-11-21', 'scale-sort': '2026-11-21',
   'peaks': '2026-11-21', 'waterfalls': '2026-11-21', 'natural-wonders': '2026-11-21', 'extreme-points': '2026-11-21', 'clouds': '2026-11-21', 'climates': '2026-11-21', 'scales': '2026-11-21',
   plates: '2026-11-20', 'earth-layers': '2026-11-20', 'rock-cycle': '2026-11-20', rocks: '2026-11-20',
   'flags-pick': '2026-11-20', 'flags-sprint': '2026-11-20', 'flags-survival': '2026-11-20',

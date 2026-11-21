@@ -16,6 +16,7 @@ import { inSiteLang } from '../utils/answerLang'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import ShareButton, { resultText } from './ShareButton'
+import { useChallenge, ChallengeBanner, ChallengeResult, ChallengeButton } from './Challenge'
 import StateNote from './StateNote'
 
 /**
@@ -38,6 +39,7 @@ const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart
 export default function CountryMapQuiz({ quizId, onOpen }) {
   const quiz = COUNTRY_MAP_QUIZZES[quizId]
   const mode = quizId
+  const ch = useChallenge(quizId)   // opened from a friend's challenge link
   const { map, kind } = quiz
 
   // Items to find: every subdivision (or every one that has a seat, in seats mode)
@@ -216,6 +218,7 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
         </div>
         {over && statsBlock}
       </header>
+      <ChallengeBanner ch={ch} />
 
       {ready && <ReadyOptions options={options} values={setup} onChange={changeSetup} />}
       {ready && <AttemptNote mode={quizId} />}
@@ -245,10 +248,12 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
               {' '}<strong>{score}/{total}</strong> ({pct}%)
               {endReason !== 'complete' && missedCount > 0 && <span className="cmq-missed-note"> · {t('{n} missed, shown in red', { n: missedCount })}</span>}
             </span>
+            <ChallengeResult ch={ch} score={score} total={total} ms={endReason === 'complete' ? elapsed : undefined} />
             <div className="tq-result-btns">
               <button className="tq-btn tq-btn-primary" onClick={() => start({ time: timed ? '5' : 'free' })}>{t('▶ Play again')}</button>
               <button className="tq-btn" onClick={backToStart}>{plain(t('⚙ Settings'))}</button>
               <ShareButton text={() => resultText({ title: quiz.title, score, total, extra: endReason === 'complete' ? fmt(Math.round(elapsed / 1000)) : null })} />
+              <ChallengeButton mode={quizId} title={quiz.title} score={score} total={total} ms={endReason === 'complete' ? elapsed : undefined} rematch={!!ch} />
             </div>
           </div>
         )}

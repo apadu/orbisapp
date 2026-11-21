@@ -17,6 +17,7 @@ import { countryGame } from '../data/countryPages'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import ShareButton, { resultText } from './ShareButton'
+import { useChallenge, ChallengeBanner, ChallengeResult, ChallengeButton } from './Challenge'
 import StateNote from './StateNote'
 
 const MIN_ROWS = 5
@@ -116,6 +117,8 @@ export default function TableQuiz(props) {
 function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen }) {
   const quiz = TABLE_QUIZZES[quizId]
   const mode = daily ? 'daily-quiz' : quizId   // results / XP bucket
+  const ch = useChallenge(daily ? null : quizId)   // opened from a friend's challenge link
+  const seedRef = useRef(null)                     // the random selection of this game (sent in challenges)
 
   // Regions with enough rows to be worth playing
   const regionCounts = useMemo(() => {
@@ -189,9 +192,11 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
   const prepare = useCallback((reg, n = size) => {
     let built = quiz.build({ countries: countryNames, region: reg })
     if (quiz.sample && built.length > n) {
-      // fresh random selection every play
+      // fresh random selection every play (seeded, so a challenge link can replay the same one)
       const a = [...built]
-      const rnd = daily ? seededRandom(daily.seed) : Math.random
+      const seed = daily ? daily.seed : ch?.seed != null && (ch.r ?? 'World') === reg && ch.z === n ? ch.seed : Math.floor(Math.random() * 2 ** 31)
+      seedRef.current = seed
+      const rnd = seededRandom(seed)
       for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
       built = a.slice(0, n)
     }
@@ -207,7 +212,7 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
     setUntimed(false)
     setConfirmUntimed(false)
     return built
-  }, [quiz, daily, countryNames, size])
+  }, [quiz, daily, countryNames, size, ch])
 
   // Start the clock on the board that's laid out
   const begin = useCallback((typed, built = rows, reg = region) => {
@@ -346,10 +351,11 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
   // Board first: lay out the (empty) quiz with the saved options; Start / typing begins it
   useEffect(() => {
     if (daily || phase !== 'setup' || !countryNames.length) return
-    const n = sizeOf(setup)
+    // A friend's challenge sets the region and size of the game
+    const n = ch?.z && quiz.sample ? ch.z : sizeOf(setup)
     setSize(n)
-    prepare(quiz.region ?? setup.region ?? 'World', n)
-  }, [phase, setup, countryNames.length]) // eslint-disable-line react-hooks/exhaustive-deps
+    prepare(quiz.region ?? ch?.r ?? setup.region ?? 'World', n)
+  }, [phase, setup, countryNames.length, ch]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (daily) return
@@ -410,6 +416,7 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
         </div>
         {over && !daily && statsBlock}
       </header>
+      {!daily && <ChallengeBanner ch={ch} />}
 
       {confirmUntimed && (
         <div className="tq-modal-backdrop" onClick={() => setConfirmUntimed(false)}>
@@ -461,10 +468,12 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
               {endReason === 'complete' ? plain(t('🎉 Perfect — you got them all!')) : endReason === 'time' ? plain(t('⌛ Time\'s up!')) : plain(t('🏳️ You gave up.'))}
               {' '}<strong>{score}/{total}</strong> ({pct}%)
             </span>
+            <ChallengeResult ch={ch} score={score} total={total} ms={endReason === 'complete' ? result?.durationMs : undefined} />
             <div className="tq-result-btns">
               <button className="tq-btn tq-btn-primary" onClick={() => start(region)}>{t('▶ Play again')}</button>
               <button className="tq-btn" onClick={() => setPhase('setup')}>{plain(t('⚙ Settings'))}</button>
               <ShareButton text={() => resultText({ title: quiz.title + (region !== 'World' && !quiz.region ? ` · ${continentName(region)}` : ''), score, total })} />
+              {!untimed && <ChallengeButton mode={quizId} title={quiz.title} score={score} total={total} ms={endReason === 'complete' ? result?.durationMs : undefined} region={region} size={quiz.sample ? rows.length : undefined} seed={quiz.sample ? seedRef.current : undefined} rematch={!!ch} />}
             </div>
           </div>
         )}

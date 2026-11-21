@@ -217,5 +217,19 @@ export const LANDFORM_QUIZZES = {
     placeholder: t('Type a natural wonder…'),
     set: 'natural_wonders',
   },
+  'glaciers': {
+    id: 'glaciers', file: 'glaciers.json', icon: '🧊',
+    title: t('Glaciers and Ice Caps'),
+    prompt: t('Name the glaciers and ice caps marked on the map'),
+    placeholder: t('Type a glacier…'),
+    set: 'glaciers',
+  },
+  'records-map': {
+    id: 'records-map', file: 'records.json', icon: '🏆',
+    title: t('Record-Breaking Places'),
+    prompt: t('Find the place that holds each record on the map'),
+    placeholder: t('Type a place…'),
+    set: 'records',
+  },
 }
 export const LANDFORM_IDS = new Set(Object.keys(LANDFORM_QUIZZES))

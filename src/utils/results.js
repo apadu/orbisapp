@@ -256,6 +256,13 @@ export async function setResultsUser(userId) {
 }
 
 /** Leaderboard rows from the server (best score per user). */
+/** The weekly board: points across all games since Monday 00:00 UTC (see supabase/weekly.sql). */
+export async function fetchWeeklyBoard(limit = 50) {
+  if (!supabase) return { rows: [], error: 'offline' }
+  const { data, error } = await supabase.rpc('get_weekly_board', { p_limit: limit })
+  return { rows: data ?? [], error: error?.message ?? null, missing: /get_weekly_board|PGRST202|function/i.test(error?.message ?? '') }
+}
+
 export async function fetchLeaderboard(mode, period = 'all', sinceISO = null) {
   if (!supabase) return { rows: [], error: 'offline' }
   const since = sinceISO ? sinceISO : period === 'week'

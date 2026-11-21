@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
 import { levelForXp, computeXp, feverTemp } from '../utils/profileData'
 import { t, lang, setLang, LANGS } from '../i18n'
+import { installMode, promptInstall, onInstallChange } from '../utils/install'
 import { plain } from '../utils/plain'
 
 function useLevel() {
@@ -22,6 +23,10 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
   const auth = useAuth()
   const level = useLevel()
   const [open, setOpen] = useState(false)
+  const [, rerender] = useState(0)
+  useEffect(() => onInstallChange(() => rerender(x => x + 1)), [])
+  const [iosHelp, setIosHelp] = useState(false)
+  const install = installMode()
   const ref = useRef(null)
 
   useEffect(() => {
@@ -69,6 +74,9 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
               </button>
             ))}
           </div>
+          {install === 'prompt' && <button role="menuitem" onClick={item(promptInstall)}>{plain(t('📲 Install the app'))}</button>}
+          {install === 'ios' && <button role="menuitem" onClick={() => setIosHelp(v => !v)}>{plain(t('📲 Install the app'))}</button>}
+          {install === 'ios' && iosHelp && <p className="um-ios-help">{t('In Safari, tap the Share button, then “Add to Home Screen”.')}</p>}
           {onOpenInfo && <button role="menuitem" onClick={item(() => onOpenInfo('privacy'))}>{plain(t('🔒 Privacy & terms'))}</button>}
           <a role="menuitem" href="https://forms.gle/hDpMyhns9PD7ghdBA" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>{plain(t('🐛 Report a bug'))}</a>
           <div className="um-sep" />

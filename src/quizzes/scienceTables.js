@@ -5,7 +5,7 @@
 import { isRo } from '../i18n'
 import { ROCKS, ROCK_TYPES } from '../data/rocks'
 import { MINERALS, RECORDS, PHENOMENA, PERIODS, BIOMES } from '../data/earthTables'
-import { PLANETS, MOONS, MISSIONS, SKY } from '../data/spaceTables'
+import { PLANETS, MOONS, MISSIONS, SKY, BRIGHT_STARS, ZODIAC } from '../data/spaceTables'
 import { HISTORICAL_FLAGS } from '../data/historicalFlags'
 import { EXTREME_POINTS, CLIMATES, SCALES } from '../data/worldTables'
 
@@ -52,6 +52,8 @@ export const SCIENCE_BUILDS = {
   'extreme-points': earthTable(EXTREME_POINTS, { seed: 15 }),
   climates: earthTable(CLIMATES, { seed: 17 }),
   scales: earthTable(SCALES, { seed: 19 }),
+  'bright-stars': earthTable(BRIGHT_STARS, { shuffle: false }),
+  zodiac: earthTable(ZODIAC, { shuffle: false }),
   'flags-historical': () => seededShuffle(HISTORICAL_FLAGS, 13).map(r => ({
     id: r.id,
     hint: { type: 'histflag', value: r.id },

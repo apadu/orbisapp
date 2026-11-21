@@ -11,6 +11,7 @@
 import { t } from '../i18n'
 import { EARTH_DIAGRAMS } from './diagramsEarth'
 import { SPACE_DIAGRAMS } from './diagramsSpace'
+import { MORE_DIAGRAMS } from './diagramsMore'
 
 // ── Layers of the Earth ─────────────────────────────────────────────────────
 // A half globe cut open, centre on the bottom edge. Not to scale: the crust and the
@@ -229,5 +230,6 @@ export const DIAGRAM_QUIZZES = {
   },
   ...EARTH_DIAGRAMS,
   ...SPACE_DIAGRAMS,
+  ...MORE_DIAGRAMS,
 }
 export const DIAGRAM_IDS = new Set(Object.keys(DIAGRAM_QUIZZES))

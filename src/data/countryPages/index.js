@@ -1,24 +1,4 @@
 import { t, isRo } from '../../i18n'
-import { ROMANIA_PAGE } from './romania'
-import { MOLDOVA_PAGE } from './moldova'
-import { USA_PAGE } from './usa'
-import { ITALY_PAGE } from './italy'
-import { FRANCE_PAGE } from './france'
-import { GERMANY_PAGE } from './germany'
-import { SPAIN_PAGE } from './spain'
-import { JAPAN_PAGE } from './japan'
-import { UNITED_KINGDOM_PAGE } from './unitedKingdom'
-import { POLAND_PAGE } from './poland'
-import { HUNGARY_PAGE } from './hungary'
-import { BRAZIL_PAGE } from './brazil'
-import { CANADA_PAGE } from './canada'
-import { AUSTRALIA_PAGE } from './australia'
-import { MEXICO_PAGE } from './mexico'
-import { INDIA_PAGE } from './india'
-import { CHINA_PAGE } from './china'
-import { RUSSIA_PAGE } from './russia'
-import { ARGENTINA_PAGE } from './argentina'
-import { TURKEY_PAGE } from './turkey'
 import { ROMANIA } from '../countryMaps/romania'
 import { MOLDOVA } from '../countryMaps/moldova'
 import { USA } from '../countryMaps/usa'
@@ -40,6 +20,55 @@ import { RUSSIA } from '../countryMaps/russia'
 import { ARGENTINA } from '../countryMaps/argentina'
 import { TURKEY } from '../countryMaps/turkey'
 
+// What the hubs, menus and icons need is here; the full page (facts, the 20 questions…) is
+// loaded only when the country page or its quiz is opened (see LOAD), to keep it out of the
+// first download.
+const META = {
+  ro: { flag: "🇷🇴", name: {"en": "Romania", "ro": "România"}, tagline: {"en": "Carpathians in the middle, the Danube in the south, the Black Sea in the east.", "ro": "Carpații la mijloc, Dunărea la sud, Marea Neagră la est."} },
+  md: { flag: "🇲🇩", name: {"en": "Moldova", "ro": "Republica Moldova"}, tagline: {"en": "Between the Prut and the Dniester: hills, vineyards and the world's largest wine collection.", "ro": "Între Prut și Nistru: dealuri, podgorii și cea mai mare colecție de vinuri din lume."} },
+  us: { flag: "🇺🇸", name: {"en": "United States", "ro": "Statele Unite ale Americii"}, tagline: {"en": "From Alaska's glaciers to the Florida Keys: 50 states across six time zones.", "ro": "De la ghețarii din Alaska la insulele Floridei: 50 de state, pe șase fusuri orare."} },
+  it: { flag: "🇮🇹", name: {"en": "Italy", "ro": "Italia"}, tagline: {"en": "The boot of Europe: 20 regions, two microstates inside it and Europe's highest active volcano.", "ro": "Cizma Europei: 20 de regiuni, două microstate în interior și cel mai înalt vulcan activ din Europa."} },
+  fr: { flag: "🇫🇷", name: {"en": "France", "ro": "Franța"}, tagline: {"en": "From the Channel to the Riviera: 13 regions, Western Europe's highest peak and the world's most visited city.", "ro": "De la Canalul Mânecii la Coasta de Azur: 13 regiuni, cel mai înalt vârf din Europa de Vest și cel mai vizitat oraș din lume."} },
+  de: { flag: "🇩🇪", name: {"en": "Germany", "ro": "Germania"}, tagline: {"en": "From the North Sea to the Alps: 16 states, nine neighbours and the most people in the EU.", "ro": "De la Marea Nordului la Alpi: 16 landuri, nouă vecini și cea mai mare populație din UE."} },
+  es: { flag: "🇪🇸", name: {"en": "Spain", "ro": "Spania"}, tagline: {"en": "From the Pyrenees to the Canary Islands: 17 autonomous communities, four languages and Gaudí's unfinished basilica.", "ro": "De la Pirinei la Insulele Canare: 17 comunități autonome, patru limbi și bazilica neterminată a lui Gaudí."} },
+  jp: { flag: "🇯🇵", name: {"en": "Japan", "ro": "Japonia"}, tagline: {"en": "Four main islands and thousands of small ones: 47 prefectures from snowy Hokkaido to tropical Okinawa.", "ro": "Patru insule mari și mii de insule mici: 47 de prefecturi, de la Hokkaido cel înzăpezit la Okinawa cea tropicală."} },
+  gb: { flag: "🇬🇧", name: {"en": "United Kingdom", "ro": "Regatul Unit"}, tagline: {"en": "Four nations on two islands: from the Scottish Highlands to the white cliffs of Dover.", "ro": "Patru națiuni pe două insule: din Highlands-ul scoțian până la falezele albe din Dover."} },
+  pl: { flag: "🇵🇱", name: {"en": "Poland", "ro": "Polonia"}, tagline: {"en": "From the Baltic dunes to the Tatra peaks: 16 voivodeships, seven neighbours and a thousand years of history.", "ro": "De la dunele Balticii la vârfurile Tatra: 16 voievodate, șapte vecini și o mie de ani de istorie."} },
+  hu: { flag: "🇭🇺", name: {"en": "Hungary", "ro": "Ungaria"}, tagline: {"en": "Lake Balaton, the Danube through Budapest and the great plain: 19 counties and a capital in the middle.", "ro": "Lacul Balaton, Dunărea prin Budapesta și marea câmpie: 19 comitate și o capitală la mijloc."} },
+  br: { flag: "🇧🇷", name: {"en": "Brazil", "ro": "Brazilia"}, tagline: {"en": "Half of South America: the Amazon, Rio's beaches and 26 states around a capital built from scratch.", "ro": "Jumătate din America de Sud: Amazonul, plajele din Rio și 26 de state în jurul unei capitale construite de la zero."} },
+  ca: { flag: "🇨🇦", name: {"en": "Canada", "ro": "Canada"}, tagline: {"en": "The second-largest country on Earth: 10 provinces, 3 northern territories and the longest coastline in the world.", "ro": "A doua cea mai mare țară de pe Pământ: 10 provincii, 3 teritorii nordice și cea mai lungă coastă din lume."} },
+  au: { flag: "🇦🇺", name: {"en": "Australia", "ro": "Australia"}, tagline: {"en": "A country the size of a continent: six states, two territories, the Outback and the Great Barrier Reef.", "ro": "O țară cât un continent: șase state, două teritorii, Outback-ul și Marea Barieră de Corali."} },
+  mx: { flag: "🇲🇽", name: {"en": "Mexico", "ro": "Mexic"}, tagline: {"en": "Aztec and Maya cities, two oceans and 31 states around one of the largest cities on Earth.", "ro": "Orașe aztece și maya, două oceane și 31 de state în jurul unuia dintre cele mai mari orașe de pe Pământ."} },
+  in: { flag: "🇮🇳", name: {"en": "India", "ro": "India"}, tagline: {"en": "The most populous country on Earth: from the Himalayas to Kerala, 28 states and 8 union territories.", "ro": "Cea mai populată țară de pe Pământ: de la Himalaya la Kerala, 28 de state și 8 teritorii unionale."} },
+  cn: { flag: "🇨🇳", name: {"en": "China", "ro": "China"}, tagline: {"en": "The Great Wall, the Yangtze and 31 provinces, regions and cities — from Tibet to Shanghai.", "ro": "Marele Zid, Yangtze și 31 de provincii, regiuni și municipii — de la Tibet la Shanghai."} },
+  ru: { flag: "🇷🇺", name: {"en": "Russia", "ro": "Rusia"}, tagline: {"en": "The largest country on Earth: 11 time zones, from the Baltic to the Bering Strait.", "ro": "Cea mai mare țară de pe Pământ: 11 fusuri orare, de la Marea Baltică la Strâmtoarea Bering."} },
+  ar: { flag: "🇦🇷", name: {"en": "Argentina", "ro": "Argentina"}, tagline: {"en": "Tango, the Andes and Patagonia: 23 provinces from the Iguazú Falls to Tierra del Fuego.", "ro": "Tango, Anzii și Patagonia: 23 de provincii, de la Cascadele Iguazú la Țara de Foc."} },
+  tr: { flag: "🇹🇷", name: {"en": "Turkey", "ro": "Turcia"}, tagline: {"en": "Between Europe and Asia: Istanbul, Cappadocia and 81 provinces from Edirne to Ararat.", "ro": "Între Europa și Asia: Istanbul, Cappadocia și 81 de provincii, de la Edirne la Ararat."} },
+}
+/** The full page data of each country, loaded on demand */
+export const LOAD_PAGE = {
+  ro: () => import('./romania').then(m => m.ROMANIA_PAGE),
+  md: () => import('./moldova').then(m => m.MOLDOVA_PAGE),
+  us: () => import('./usa').then(m => m.USA_PAGE),
+  it: () => import('./italy').then(m => m.ITALY_PAGE),
+  fr: () => import('./france').then(m => m.FRANCE_PAGE),
+  de: () => import('./germany').then(m => m.GERMANY_PAGE),
+  es: () => import('./spain').then(m => m.SPAIN_PAGE),
+  jp: () => import('./japan').then(m => m.JAPAN_PAGE),
+  gb: () => import('./unitedKingdom').then(m => m.UNITED_KINGDOM_PAGE),
+  pl: () => import('./poland').then(m => m.POLAND_PAGE),
+  hu: () => import('./hungary').then(m => m.HUNGARY_PAGE),
+  br: () => import('./brazil').then(m => m.BRAZIL_PAGE),
+  ca: () => import('./canada').then(m => m.CANADA_PAGE),
+  au: () => import('./australia').then(m => m.AUSTRALIA_PAGE),
+  mx: () => import('./mexico').then(m => m.MEXICO_PAGE),
+  in: () => import('./india').then(m => m.INDIA_PAGE),
+  cn: () => import('./china').then(m => m.CHINA_PAGE),
+  ru: () => import('./russia').then(m => m.RUSSIA_PAGE),
+  ar: () => import('./argentina').then(m => m.ARGENTINA_PAGE),
+  tr: () => import('./turkey').then(m => m.TURKEY_PAGE),
+}
+
 /**
  * Country pages: one hub per country (facts, an explorable map, its games) plus its
  * 20-question quiz. Add a country: write ./<country>.js like romania.js, build its map
@@ -47,26 +76,26 @@ import { TURKEY } from '../countryMaps/turkey'
  * here (page + its games) and in GAME_CATALOG.
  */
 export const COUNTRY_PAGES = {
-  'country-ro': { slug: 'romania', page: ROMANIA_PAGE, map: ROMANIA, games: ['ro-counties', 'ro-seats', 'ro-quiz'] },
-  'country-md': { slug: 'moldova', page: MOLDOVA_PAGE, map: MOLDOVA, games: ['md-raions', 'md-quiz'] },
-  'country-us': { slug: 'usa', page: USA_PAGE, map: USA, games: ['us-states', 'us-capitals', 'us-quiz'] },
-  'country-it': { slug: 'italy', page: ITALY_PAGE, map: ITALY, games: ['it-regions', 'it-capitals', 'it-quiz'] },
-  'country-fr': { slug: 'france', page: FRANCE_PAGE, map: FRANCE, games: ['fr-regions', 'fr-capitals', 'fr-quiz'] },
-  'country-de': { slug: 'germany', page: GERMANY_PAGE, map: GERMANY, games: ['de-states', 'de-capitals', 'de-quiz'] },
-  'country-es': { slug: 'spain', page: SPAIN_PAGE, map: SPAIN, games: ['es-regions', 'es-capitals', 'es-quiz'] },
-  'country-jp': { slug: 'japan', page: JAPAN_PAGE, map: JAPAN, games: ['jp-prefectures', 'jp-capitals', 'jp-quiz'] },
-  'country-gb': { slug: 'united-kingdom', page: UNITED_KINGDOM_PAGE, map: UNITED_KINGDOM, games: ['gb-regions', 'gb-quiz'] },
-  'country-pl': { slug: 'poland', page: POLAND_PAGE, map: POLAND, games: ['pl-voivodeships', 'pl-capitals', 'pl-quiz'] },
-  'country-hu': { slug: 'hungary', page: HUNGARY_PAGE, map: HUNGARY, games: ['hu-counties', 'hu-seats', 'hu-quiz'] },
-  'country-br': { slug: 'brazil', page: BRAZIL_PAGE, map: BRAZIL, games: ['br-states', 'br-capitals', 'br-quiz'] },
-  'country-ca': { slug: 'canada', page: CANADA_PAGE, map: CANADA, games: ['ca-provinces', 'ca-capitals', 'ca-quiz'] },
-  'country-au': { slug: 'australia', page: AUSTRALIA_PAGE, map: AUSTRALIA, games: ['au-states', 'au-capitals', 'au-quiz'] },
-  'country-mx': { slug: 'mexico', page: MEXICO_PAGE, map: MEXICO, games: ['mx-states', 'mx-capitals', 'mx-quiz'] },
-  'country-in': { slug: 'india', page: INDIA_PAGE, map: INDIA, games: ['in-states', 'in-capitals', 'in-quiz'] },
-  'country-cn': { slug: 'china', page: CHINA_PAGE, map: CHINA, games: ['cn-provinces', 'cn-capitals', 'cn-quiz'] },
-  'country-ru': { slug: 'russia', page: RUSSIA_PAGE, map: RUSSIA, games: ['ru-subjects', 'ru-quiz'] },
-  'country-ar': { slug: 'argentina', page: ARGENTINA_PAGE, map: ARGENTINA, games: ['ar-provinces', 'ar-capitals', 'ar-quiz'] },
-  'country-tr': { slug: 'turkey', page: TURKEY_PAGE, map: TURKEY, games: ['tr-provinces', 'tr-quiz'] },
+  'country-ro': { slug: 'romania', page: META.ro, load: LOAD_PAGE.ro, map: ROMANIA, games: ['ro-counties', 'ro-seats', 'ro-quiz'] },
+  'country-md': { slug: 'moldova', page: META.md, load: LOAD_PAGE.md, map: MOLDOVA, games: ['md-raions', 'md-quiz'] },
+  'country-us': { slug: 'usa', page: META.us, load: LOAD_PAGE.us, map: USA, games: ['us-states', 'us-capitals', 'us-quiz'] },
+  'country-it': { slug: 'italy', page: META.it, load: LOAD_PAGE.it, map: ITALY, games: ['it-regions', 'it-capitals', 'it-quiz'] },
+  'country-fr': { slug: 'france', page: META.fr, load: LOAD_PAGE.fr, map: FRANCE, games: ['fr-regions', 'fr-capitals', 'fr-quiz'] },
+  'country-de': { slug: 'germany', page: META.de, load: LOAD_PAGE.de, map: GERMANY, games: ['de-states', 'de-capitals', 'de-quiz'] },
+  'country-es': { slug: 'spain', page: META.es, load: LOAD_PAGE.es, map: SPAIN, games: ['es-regions', 'es-capitals', 'es-quiz'] },
+  'country-jp': { slug: 'japan', page: META.jp, load: LOAD_PAGE.jp, map: JAPAN, games: ['jp-prefectures', 'jp-capitals', 'jp-quiz'] },
+  'country-gb': { slug: 'united-kingdom', page: META.gb, load: LOAD_PAGE.gb, map: UNITED_KINGDOM, games: ['gb-regions', 'gb-quiz'] },
+  'country-pl': { slug: 'poland', page: META.pl, load: LOAD_PAGE.pl, map: POLAND, games: ['pl-voivodeships', 'pl-capitals', 'pl-quiz'] },
+  'country-hu': { slug: 'hungary', page: META.hu, load: LOAD_PAGE.hu, map: HUNGARY, games: ['hu-counties', 'hu-seats', 'hu-quiz'] },
+  'country-br': { slug: 'brazil', page: META.br, load: LOAD_PAGE.br, map: BRAZIL, games: ['br-states', 'br-capitals', 'br-quiz'] },
+  'country-ca': { slug: 'canada', page: META.ca, load: LOAD_PAGE.ca, map: CANADA, games: ['ca-provinces', 'ca-capitals', 'ca-quiz'] },
+  'country-au': { slug: 'australia', page: META.au, load: LOAD_PAGE.au, map: AUSTRALIA, games: ['au-states', 'au-capitals', 'au-quiz'] },
+  'country-mx': { slug: 'mexico', page: META.mx, load: LOAD_PAGE.mx, map: MEXICO, games: ['mx-states', 'mx-capitals', 'mx-quiz'] },
+  'country-in': { slug: 'india', page: META.in, load: LOAD_PAGE.in, map: INDIA, games: ['in-states', 'in-capitals', 'in-quiz'] },
+  'country-cn': { slug: 'china', page: META.cn, load: LOAD_PAGE.cn, map: CHINA, games: ['cn-provinces', 'cn-capitals', 'cn-quiz'] },
+  'country-ru': { slug: 'russia', page: META.ru, load: LOAD_PAGE.ru, map: RUSSIA, games: ['ru-subjects', 'ru-quiz'] },
+  'country-ar': { slug: 'argentina', page: META.ar, load: LOAD_PAGE.ar, map: ARGENTINA, games: ['ar-provinces', 'ar-capitals', 'ar-quiz'] },
+  'country-tr': { slug: 'turkey', page: META.tr, load: LOAD_PAGE.tr, map: TURKEY, games: ['tr-provinces', 'tr-quiz'] },
 }
 export const COUNTRY_PAGE_IDS = new Set(Object.keys(COUNTRY_PAGES))
 

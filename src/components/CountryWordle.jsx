@@ -8,7 +8,7 @@ import { msToNextDaily } from '../quizzes/daily'
 import { COUNTRY_INFO } from '../utils/countryInfo'
 import { startSession, trackAnswer, finishGame, loadResults } from '../utils/results'
 import { playCorrect, playWrong, playWin } from '../utils/sounds'
-import { t, isRo, continentName } from '../i18n'
+import { t, isRo, isEs, continentName } from '../i18n'
 import { plain } from '../utils/plain'
 import Icon from './Icon'
 import { shareText } from '../utils/share'
@@ -17,7 +17,7 @@ import StateNote from './StateNote'
 const MODE = 'country-wordle'
 const KEYS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']
 const HINT_AFTER = 3
-const stateKey = (day) => isRo ? `orbis-wordle-ro-${day}` : `orbis-wordle-${day}`
+const stateKey = (day) => isRo ? `orbis-wordle-ro-${day}` : isEs ? `orbis-wordle-es-${day}` : `orbis-wordle-${day}`
 
 const RULES = [
   t('Guess the country in 6 tries. Every guess must be a real country with the right number of letters.'),

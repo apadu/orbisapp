@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { COUNTRY_PAGES, countryGame } from '../data/countryPages'
 import { loadResults } from '../utils/results'
 import { useCountryMap, divName } from './countryMap/useCountryMap'
@@ -25,7 +25,17 @@ function bestFor(mode) {
 
 /** A country's hub: key facts, a map you can explore, and its games. */
 export default function CountryPage({ pageId, onOpen }) {
-  const { page, map, games } = COUNTRY_PAGES[pageId]
+  const entry = COUNTRY_PAGES[pageId]
+  const { map, games } = entry
+  // The full page (facts…) loads on demand; until then the header shows the name and tagline
+  const [full, setFull] = useState(null)
+  useEffect(() => {
+    let live = true
+    setFull(null)
+    entry.load().then(p => { if (live) setFull(p) }).catch(() => {})
+    return () => { live = false }
+  }, [entry])
+  const page = full ?? entry.page
   const { drawn, error } = useCountryMap(map)
   const [hover, setHover] = useState(null)
   const byId = useMemo(() => Object.fromEntries(map.divisions.map(d => [d.id, d])), [map])
@@ -43,7 +53,7 @@ export default function CountryPage({ pageId, onOpen }) {
       </header>
 
       <section className="ctry-facts">
-        {page.facts.map((f, i) => (
+        {(page.facts ?? []).map((f, i) => (
           <div key={i} className="ctry-fact">
             <span className="ctry-fact-icon" aria-hidden="true"><Icon name={FACT_ICON[f.icon] ?? 'globe'} size={22} /></span>
             <span className="ctry-fact-label">{pick(f.label)}</span>

@@ -16,6 +16,7 @@ import { t, isRo } from '../i18n'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import ShareButton, { resultText } from './ShareButton'
+import { useChallenge, ChallengeBanner, ChallengeResult, ChallengeButton } from './Challenge'
 import StateNote from './StateNote'
 
 /**
@@ -212,11 +213,12 @@ function LandformMap({ world, map, numberOf, found, recent, over, focus, title, 
 export default function LandformQuiz({ quizId, onOpen, daily = null }) {
   const quiz = LANDFORM_QUIZZES[quizId]
   const mode = daily ? 'daily-quiz' : quizId
+  const ch = useChallenge(daily ? null : quizId)   // opened from a friend's challenge link
 
   const items = useMemo(() => LANDFORMS[quiz.set].map(d => {
     const name = (isRo && d.ro) || d.name
     const pool = isRo ? [d.ro ?? d.name, ...(d.roAlt ?? d.alt ?? [])] : [d.name, ...(d.alt ?? [])]
-    return { id: d.id, answer: name, accepts: pool.flatMap(shortForms) }
+    return { id: d.id, answer: name, accepts: pool.flatMap(shortForms), hint: (isRo && d.roHint) || d.hint || null }
   }), [quiz])
   const index = useMemo(() => {
     const m = new Map()
@@ -263,7 +265,7 @@ export default function LandformQuiz({ quizId, onOpen, daily = null }) {
   const prevRef = useRef([])
   const pendingRef = useRef(null)
   const startedAt = useRef(0)
-  const [colsRef, cols] = useColumns(250)
+  const [colsRef, cols] = useColumns(items.some(x => x.hint) ? 400 : 250)   // clues need wider cells
 
   const start = useCallback((values, typed, reshuffle = false) => {
     const isTimed = values?.time !== 'free'
@@ -404,6 +406,7 @@ export default function LandformQuiz({ quizId, onOpen, daily = null }) {
         </div>
         {over && statsBlock}
       </header>
+      <ChallengeBanner ch={ch} />
 
       {ready && !daily && <ReadyOptions options={options} values={setup} onChange={changeSetup} />}
       {ready && !daily && <AttemptNote mode={quizId} />}
@@ -434,10 +437,12 @@ export default function LandformQuiz({ quizId, onOpen, daily = null }) {
               {' '}<strong>{score}/{total}</strong> ({pct}%)
               {endReason !== 'complete' && missedCount > 0 && <span className="cmq-missed-note"> · {t('{n} missed, shown in red', { n: missedCount })}</span>}
             </span>
+            <ChallengeResult ch={ch} score={score} total={total} ms={endReason === 'complete' ? elapsed : undefined} />
             <div className="tq-result-btns">
               <button className="tq-btn tq-btn-primary" onClick={() => start({ time: timed ? '5' : 'free' }, '', true)}>{t('▶ Play again')}</button>
               <button className="tq-btn" onClick={backToStart}>{plain(t('⚙ Settings'))}</button>
               <ShareButton text={() => resultText({ title: quiz.title, score, total, extra: endReason === 'complete' ? fmt(Math.round(elapsed / 1000)) : null })} />
+              <ChallengeButton mode={quizId} title={quiz.title} score={score} total={total} ms={endReason === 'complete' ? elapsed : undefined} rematch={!!ch} />
             </div>
           </div>
         )}
@@ -453,7 +458,7 @@ export default function LandformQuiz({ quizId, onOpen, daily = null }) {
         <LandformMap world={world} map={map} numberOf={numberOf} found={found} recent={recent} over={over} focus={focus} title={quiz.title} bounds={quiz.view} />
       )}
 
-      <div className="tq-table lfq-table">
+      <div className={`tq-table lfq-table${items.some(x => x.hint) ? ' lfq-hinted' : ''}`}>
         <div ref={colsRef} className="tq-cols" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
           {order.map((id, i) => {
             const it = itemById[id]
@@ -463,6 +468,7 @@ export default function LandformQuiz({ quizId, onOpen, daily = null }) {
               <div key={id} className={`tq-row lfq-row${cls}`} style={cellOf(i, order.length, cols)}
                 onMouseEnter={() => setFocus(id)} onMouseLeave={() => setFocus(f => (f === id ? null : f))}>
                 <span className="lfq-num">{i + 1}</span>
+                {it.hint && <span className="lfq-hint">{it.hint}</span>}
                 <span className="tq-answer">{ok || over ? it.answer : ''}</span>
               </div>
             )

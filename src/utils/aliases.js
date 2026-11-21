@@ -1,5 +1,5 @@
 import { COUNTRY_RO, RO_ALIASES } from '../i18n/countriesRo'
-import { isRo } from '../i18n'
+import { isRo, isEs, langData } from '../i18n'
 
 // Answers follow the site language: in English only English names count, in Romanian only
 // Romanian names (plus a couple of international abbreviations). Never a mix — so "Brazil"
@@ -68,12 +68,16 @@ const key = (s) => stripDiacritics(normalizeInput(s))
 const RO_INTL = { usa: 'United States of America', uk: 'United Kingdom' }
 
 /** The country's name in the site language (keys stay English everywhere). */
-export const localName = (name) => (isRo ? COUNTRY_RO[name] ?? name : name)
+export const localName = (name) => (isRo ? COUNTRY_RO[name] ?? name : isEs ? langData.countries?.[name] ?? name : name)
 
 // typed spelling (normalised, no diacritics) → canonical name, for the current language only
 const LOOKUP = {}
 const ALT_BY_COUNTRY = {}
-if (isRo) {
+if (isEs) {
+  // Spanish: Spanish names and spellings (the dictionaries are loaded before this module runs)
+  for (const [en, es] of Object.entries(langData.countries ?? {})) LOOKUP[key(es)] = en
+  for (const [alias, en] of Object.entries(langData.countryAliases ?? {})) { LOOKUP[key(alias)] ??= en; (ALT_BY_COUNTRY[en] ??= []).push(alias) }
+} else if (isRo) {
   for (const [en, ro] of Object.entries(COUNTRY_RO)) LOOKUP[key(ro)] = en
   for (const [alias, en] of Object.entries({ ...RO_ALIASES, ...RO_INTL })) { LOOKUP[key(alias)] ??= en; (ALT_BY_COUNTRY[en] ??= []).push(alias) }
 } else {

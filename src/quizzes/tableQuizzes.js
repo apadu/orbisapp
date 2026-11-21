@@ -31,28 +31,9 @@ import { countryAnswers } from '../utils/aliases'
 import { inSiteLang } from '../utils/answerLang'
 import { capName, capitalAnswers, curName, curSpellings, langName, langSpellings } from '../i18n/names'
 import { LIST_QUIZZES } from './listQuizzes'
-import { ROMANIA_PAGE } from '../data/countryPages/romania'
-import { MOLDOVA_PAGE } from '../data/countryPages/moldova'
-import { USA_PAGE } from '../data/countryPages/usa'
-import { ITALY_PAGE } from '../data/countryPages/italy'
-import { FRANCE_PAGE } from '../data/countryPages/france'
-import { GERMANY_PAGE } from '../data/countryPages/germany'
-import { SPAIN_PAGE } from '../data/countryPages/spain'
-import { JAPAN_PAGE } from '../data/countryPages/japan'
-import { UNITED_KINGDOM_PAGE } from '../data/countryPages/unitedKingdom'
-import { POLAND_PAGE } from '../data/countryPages/poland'
-import { HUNGARY_PAGE } from '../data/countryPages/hungary'
-import { BRAZIL_PAGE } from '../data/countryPages/brazil'
-import { MEXICO_PAGE } from '../data/countryPages/mexico'
-import { INDIA_PAGE } from '../data/countryPages/india'
-import { CHINA_PAGE } from '../data/countryPages/china'
-import { RUSSIA_PAGE } from '../data/countryPages/russia'
-import { ARGENTINA_PAGE } from '../data/countryPages/argentina'
-import { TURKEY_PAGE } from '../data/countryPages/turkey'
-import { CANADA_PAGE } from '../data/countryPages/canada'
-import { AUSTRALIA_PAGE } from '../data/countryPages/australia'
 import { WAR_QUIZZES } from './warQuizzes'
-import { t, cn, isRo, locale } from '../i18n'
+import { t, cn, isRo, lang, locale } from '../i18n'
+import { LOAD_PAGE } from '../data/countryPages'
 
 export const REGIONS = ['World', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania']
 
@@ -65,7 +46,7 @@ export function norm(s) {
 export { countryAnswers }
 
 // Word puzzles use the name in the current language
-const word = (n) => isRo ? cn(n) : n
+const word = (n) => cn(n)
 
 const inRegion = (name, region) => region === 'World' || COUNTRY_INFO[name]?.continent === region
 
@@ -241,39 +222,41 @@ for (const [id, q] of Object.entries({ ...LIST_QUIZZES, ...WAR_QUIZZES })) {
 }
 
 // Country quizzes: 20 questions about one country, typed answers (data/countryPages)
-const countryQuiz = (page, title, prompt) => ({
+// The questions live in each country's page file, loaded when the quiz opens (TableQuiz waits for load)
+const countryQuiz = (loadPage, title, prompt) => ({
   title, prompt, icon: '❓', regions: false, timeLimit: 5 * 60,
   columns: { hint: t('Question'), answer: t('Answer') },
-  build: () => page.questions.map(q => ({
+  build: () => [],
+  load: () => loadPage().then(page => () => page.questions.map(q => ({
     id: q.id,
     hint: { type: 'text', value: isRo ? q.q.ro : q.q.en, long: true },
     answers: inSiteLang(q.answers, q.show),
     display: isRo ? q.show.ro : q.show.en,
-  })),
+  }))),
 })
-TABLE_QUIZZES['ro-quiz'] = countryQuiz(ROMANIA_PAGE, t('Quiz: Romania'), t('Answer 20 questions about Romania'))
-TABLE_QUIZZES['md-quiz'] = countryQuiz(MOLDOVA_PAGE, t('Quiz: Moldova'), t('Answer 20 questions about Moldova'))
-TABLE_QUIZZES['us-quiz'] = countryQuiz(USA_PAGE, t('Quiz: United States'), t('Answer 20 questions about the United States'))
-TABLE_QUIZZES['it-quiz'] = countryQuiz(ITALY_PAGE, t('Quiz: Italy'), t('Answer 20 questions about Italy'))
-TABLE_QUIZZES['fr-quiz'] = countryQuiz(FRANCE_PAGE, t('Quiz: France'), t('Answer 20 questions about France'))
-TABLE_QUIZZES['de-quiz'] = countryQuiz(GERMANY_PAGE, t('Quiz: Germany'), t('Answer 20 questions about Germany'))
-TABLE_QUIZZES['es-quiz'] = countryQuiz(SPAIN_PAGE, t('Quiz: Spain'), t('Answer 20 questions about Spain'))
-TABLE_QUIZZES['jp-quiz'] = countryQuiz(JAPAN_PAGE, t('Quiz: Japan'), t('Answer 20 questions about Japan'))
-TABLE_QUIZZES['gb-quiz'] = countryQuiz(UNITED_KINGDOM_PAGE, t('Quiz: United Kingdom'), t('Answer 20 questions about the United Kingdom'))
-TABLE_QUIZZES['pl-quiz'] = countryQuiz(POLAND_PAGE, t('Quiz: Poland'), t('Answer 20 questions about Poland'))
-TABLE_QUIZZES['hu-quiz'] = countryQuiz(HUNGARY_PAGE, t('Quiz: Hungary'), t('Answer 20 questions about Hungary'))
-TABLE_QUIZZES['br-quiz'] = countryQuiz(BRAZIL_PAGE, t('Quiz: Brazil'), t('Answer 20 questions about Brazil'))
-TABLE_QUIZZES['ca-quiz'] = countryQuiz(CANADA_PAGE, t('Quiz: Canada'), t('Answer 20 questions about Canada'))
-TABLE_QUIZZES['au-quiz'] = countryQuiz(AUSTRALIA_PAGE, t('Quiz: Australia'), t('Answer 20 questions about Australia'))
-TABLE_QUIZZES['mx-quiz'] = countryQuiz(MEXICO_PAGE, t("Quiz: Mexico"), t("Answer 20 questions about Mexico"))
-TABLE_QUIZZES['in-quiz'] = countryQuiz(INDIA_PAGE, t("Quiz: India"), t("Answer 20 questions about India"))
-TABLE_QUIZZES['cn-quiz'] = countryQuiz(CHINA_PAGE, t("Quiz: China"), t("Answer 20 questions about China"))
-TABLE_QUIZZES['ru-quiz'] = countryQuiz(RUSSIA_PAGE, t("Quiz: Russia"), t("Answer 20 questions about Russia"))
-TABLE_QUIZZES['ar-quiz'] = countryQuiz(ARGENTINA_PAGE, t("Quiz: Argentina"), t("Answer 20 questions about Argentina"))
-TABLE_QUIZZES['tr-quiz'] = countryQuiz(TURKEY_PAGE, t("Quiz: Turkey"), t("Answer 20 questions about Turkey"))
+TABLE_QUIZZES['ro-quiz'] = countryQuiz(LOAD_PAGE.ro, t('Quiz: Romania'), t('Answer 20 questions about Romania'))
+TABLE_QUIZZES['md-quiz'] = countryQuiz(LOAD_PAGE.md, t('Quiz: Moldova'), t('Answer 20 questions about Moldova'))
+TABLE_QUIZZES['us-quiz'] = countryQuiz(LOAD_PAGE.us, t('Quiz: United States'), t('Answer 20 questions about the United States'))
+TABLE_QUIZZES['it-quiz'] = countryQuiz(LOAD_PAGE.it, t('Quiz: Italy'), t('Answer 20 questions about Italy'))
+TABLE_QUIZZES['fr-quiz'] = countryQuiz(LOAD_PAGE.fr, t('Quiz: France'), t('Answer 20 questions about France'))
+TABLE_QUIZZES['de-quiz'] = countryQuiz(LOAD_PAGE.de, t('Quiz: Germany'), t('Answer 20 questions about Germany'))
+TABLE_QUIZZES['es-quiz'] = countryQuiz(LOAD_PAGE.es, t('Quiz: Spain'), t('Answer 20 questions about Spain'))
+TABLE_QUIZZES['jp-quiz'] = countryQuiz(LOAD_PAGE.jp, t('Quiz: Japan'), t('Answer 20 questions about Japan'))
+TABLE_QUIZZES['gb-quiz'] = countryQuiz(LOAD_PAGE.gb, t('Quiz: United Kingdom'), t('Answer 20 questions about the United Kingdom'))
+TABLE_QUIZZES['pl-quiz'] = countryQuiz(LOAD_PAGE.pl, t('Quiz: Poland'), t('Answer 20 questions about Poland'))
+TABLE_QUIZZES['hu-quiz'] = countryQuiz(LOAD_PAGE.hu, t('Quiz: Hungary'), t('Answer 20 questions about Hungary'))
+TABLE_QUIZZES['br-quiz'] = countryQuiz(LOAD_PAGE.br, t('Quiz: Brazil'), t('Answer 20 questions about Brazil'))
+TABLE_QUIZZES['ca-quiz'] = countryQuiz(LOAD_PAGE.ca, t('Quiz: Canada'), t('Answer 20 questions about Canada'))
+TABLE_QUIZZES['au-quiz'] = countryQuiz(LOAD_PAGE.au, t('Quiz: Australia'), t('Answer 20 questions about Australia'))
+TABLE_QUIZZES['mx-quiz'] = countryQuiz(LOAD_PAGE.mx, t("Quiz: Mexico"), t("Answer 20 questions about Mexico"))
+TABLE_QUIZZES['in-quiz'] = countryQuiz(LOAD_PAGE.in, t("Quiz: India"), t("Answer 20 questions about India"))
+TABLE_QUIZZES['cn-quiz'] = countryQuiz(LOAD_PAGE.cn, t("Quiz: China"), t("Answer 20 questions about China"))
+TABLE_QUIZZES['ru-quiz'] = countryQuiz(LOAD_PAGE.ru, t("Quiz: Russia"), t("Answer 20 questions about Russia"))
+TABLE_QUIZZES['ar-quiz'] = countryQuiz(LOAD_PAGE.ar, t("Quiz: Argentina"), t("Answer 20 questions about Argentina"))
+TABLE_QUIZZES['tr-quiz'] = countryQuiz(LOAD_PAGE.tr, t("Quiz: Turkey"), t("Answer 20 questions about Turkey"))
 
 // Localise country names shown in the tables (keys / ids stay English)
-if (isRo) {
+if (lang !== 'en') {
   for (const q of Object.values(TABLE_QUIZZES)) {
     const build = q.build
     q.build = (ctx) => build(ctx).map(r => ({
@@ -303,6 +286,8 @@ Object.assign(TABLE_QUIZZES, {
   'extreme-points': lazyTable('extreme-points', { title: t('Extreme Points of the Continents'), icon: '🧭', prompt: t('Name the northernmost, southernmost, easternmost and westernmost points of each continent'), columns: { hint: t('Description'), extra: t('Country'), answer: t('Place') } }),
   climates: lazyTable('climates', { title: t('Climate Types'), icon: '🌦️', prompt: t('Name each type of climate from its description and two example cities'), columns: { hint: t('Description'), extra: t('Example'), answer: t('Climate') } }),
   scales: lazyTable('scales', { title: t('Scales and Units'), icon: '📐', prompt: t('Name the scale or unit from its description — what it measures is in the middle'), columns: { hint: t('Description'), extra: t('Measures'), answer: t('Scale') } }),
+  'bright-stars': lazyTable('bright-stars', { title: t('The Brightest Stars'), icon: '🌟', prompt: t('Name the brightest stars of the night sky, from Sirius down'), columns: { hint: t('Description'), extra: t('Constellation'), answer: t('Star') } }),
+  zodiac: lazyTable('zodiac', { title: t('Constellations of the Zodiac'), icon: '♈', prompt: t('Name the constellations the Sun passes in front of during the year'), columns: { hint: t('Description'), extra: t('Symbol'), answer: t('Constellation') } }),
   'flags-historical': lazyTable('flags-historical', { title: t('Historical Flags'), icon: '🏴', prompt: t('Name the country or state that flew each flag'), columns: { hint: t('Flag'), extra: t('Years'), answer: t('Country') } }),
 })
 

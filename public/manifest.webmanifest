@@ -1,15 +1,69 @@
 {
   "name": "GeoFeverr — Catch the geo fever",
   "short_name": "GeoFeverr",
-  "description": "70+ geography games on a living 3D globe.",
+  "description": "Hundreds of geography games on a 3D globe: flags, capitals, maps, mountains, empires and planets.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0D1A2B",
   "theme_color": "#0D1A2B",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "/",
+  "orientation": "any",
+  "categories": [
+    "games",
+    "education"
+  ],
+  "shortcuts": [
+    {
+      "name": "Daily Fever",
+      "short_name": "Daily",
+      "url": "/daily",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Mystery Country",
+      "short_name": "Mystery",
+      "url": "/play/mystery",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Quiz Hub",
+      "short_name": "Quizzes",
+      "url": "/quiz",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }

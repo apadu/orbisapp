@@ -65,6 +65,12 @@ const PATHS = {
   user:     <><circle cx="12" cy="8" r="3.5" /><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7" /></>,
   cycle: <><path d="M20 12a8 8 0 0 1-13.7 5.6" /><path d="M4 12a8 8 0 0 1 13.7-5.6" /><path d="M17.5 2.5v4h-4" /><path d="M6.5 21.5v-4h4" /></>,
   layers:   <><path d="m12 3 9 5-9 5-9-5z" /><path d="m3 13 9 5 9-5" /></>,
+  trophy:   <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" />,
+  close:    <path d="M6 6l12 12M18 6 6 18" />,
+  moon:     <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" />,
+  spiral:   <path d="M12 12a1.5 1.5 0 1 1 1.5 1.5A3 3 0 1 1 15 9a4.5 4.5 0 1 1-6.4 6.4A6 6 0 1 1 18 6.8" />,
+  star:     <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />,
+  sort:     <path d="M4 20h3V14H4zM10.5 20h3V9h-3zM17 20h3V4h-3z" />,
   tripoint: <><rect x="3.5" y="3.5" width="17" height="17" rx="2" /><path d="M12 13 7 3.5M12 13l8.5-3M12 13l-1.5 7.5" /><circle cx="12" cy="13" r="1.8" fill="currentColor" /></>,
 }
 

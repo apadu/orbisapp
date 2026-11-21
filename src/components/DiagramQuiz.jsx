@@ -21,6 +21,7 @@ import { t, isRo } from '../i18n'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import ShareButton, { resultText } from './ShareButton'
+import { useChallenge, ChallengeBanner, ChallengeResult, ChallengeButton } from './Challenge'
 
 /**
  * Diagram quizzes (layers of the Earth, the rock cycle…): a drawing with numbered parts and a
@@ -51,8 +52,27 @@ function Diagram({ quiz, items, numberOf, found, recent, over, focus }) {
   const shown = (id) => found.has(id) || over
   const cls = (id) => `${stateOf(id)}${focus === id ? ' focus' : ''}`
   const [x, y, w, h] = quiz.viewBox
+  // On a phone the drawing is fitted to the screen: badges grow so they stay tappable/readable,
+  // and a zoom button lets you see the drawing bigger (then it scrolls sideways).
+  const wrapRef = useRef(null)
+  const [px, setPx] = useState(1000)
+  const [zoomed, setZoomed] = useState(false)
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(([e]) => setPx(e.contentRect.width))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const narrow = px < 640
+  const k = narrow && !zoomed ? Math.min(2, Math.max(1, (w / px) * 0.5)) : 1
   return (
-    <div className="dgq-wrap">
+    <div ref={wrapRef} className={`dgq-wrap${narrow ? ' narrow' : ''}${zoomed ? ' zoomed' : ''}`}>
+      {narrow && (
+        <button type="button" className="dgq-zoom" onClick={() => setZoomed(z => !z)} aria-pressed={zoomed}>
+          {zoomed ? t('Fit to screen') : t('Zoom in')}
+        </button>
+      )}
       <svg className="dgq-svg" viewBox={quiz.viewBox.join(' ')} role="img" aria-label={quiz.title} style={{ '--ar': w / h }}>
         <rect x={x} y={y} width={w} height={h} className="dgq-bg" />
         {quiz.draw({ cls, shown, name: (id) => nameOf[id] })}
@@ -60,7 +80,7 @@ function Diagram({ quiz, items, numberOf, found, recent, over, focus }) {
           {quiz.items.map(p => (
             <g key={p.id} className={`dgq-part${cls(p.id)}`}>
               {p.leader && <path d={`M${p.leader[0]} ${p.leader[1]} L${p.badge[0]} ${p.badge[1]}`} className="dgq-leader" />}
-              <g className={`lfq-badge${cls(p.id)}`} transform={`translate(${p.badge[0]} ${p.badge[1]})`}>
+              <g className={`lfq-badge${cls(p.id)}`} transform={`translate(${p.badge[0]} ${p.badge[1]}) scale(${k})`}>
                 <circle r={15} style={{ strokeWidth: 2.4 }} />
                 <text style={{ fontSize: 17 }} dy={6}>{numberOf[p.id]}</text>
               </g>
@@ -92,6 +112,7 @@ const shuffled = (a) => {
 export default function DiagramQuiz({ quizId, onOpen, daily = null }) {
   const quiz = DIAGRAM_QUIZZES[quizId]
   const mode = daily ? 'daily-quiz' : quizId
+  const ch = useChallenge(daily ? null : quizId)   // opened from a friend's challenge link
 
   const items = useMemo(() => quiz.items.map(d => {
     const name = (isRo && d.ro) || d.name
@@ -272,6 +293,7 @@ export default function DiagramQuiz({ quizId, onOpen, daily = null }) {
         </div>
         {over && statsBlock}
       </header>
+      <ChallengeBanner ch={ch} />
 
       {ready && !daily && <ReadyOptions options={options} values={setup} onChange={changeSetup} />}
       {ready && !daily && <AttemptNote mode={quizId} />}
@@ -302,10 +324,12 @@ export default function DiagramQuiz({ quizId, onOpen, daily = null }) {
               {' '}<strong>{score}/{total}</strong> ({pct}%)
               {endReason !== 'complete' && missedCount > 0 && <span className="cmq-missed-note"> · {t('{n} missed, shown in red', { n: missedCount })}</span>}
             </span>
+            <ChallengeResult ch={ch} score={score} total={total} ms={endReason === 'complete' ? elapsed : undefined} />
             <div className="tq-result-btns">
               <button className="tq-btn tq-btn-primary" onClick={() => start({ time: timed ? '5' : 'free' }, '', true)}>{t('▶ Play again')}</button>
               <button className="tq-btn" onClick={backToStart}>{plain(t('⚙ Settings'))}</button>
               <ShareButton text={() => resultText({ title: quiz.title, score, total, extra: endReason === 'complete' ? fmt(Math.round(elapsed / 1000)) : null })} />
+              <ChallengeButton mode={quizId} title={quiz.title} score={score} total={total} ms={endReason === 'complete' ? elapsed : undefined} rematch={!!ch} />
             </div>
           </div>
         )}

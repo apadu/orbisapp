@@ -91,6 +91,7 @@ const DailyQuiz = lazy(() => import('./components/DailyQuiz'))
 const HigherLower = lazy(() => import('./components/HigherLower'))
 const TrueFalse = lazy(() => import('./components/TrueFalse'))
 const FlagArena = lazy(() => import('./components/FlagArena'))
+const SortQuiz = lazy(() => import('./components/SortQuiz'))
 const CountryWordle = lazy(() => import('./components/CountryWordle'))
 
 // Map data: served from /data (see `npm run fetch-maps`), remote fallback in src/data/sources.js
@@ -161,7 +162,7 @@ const QUIZ_MODES = new Set([
   ...COUNTRY_PAGE_IDS,
   'countries', 'globe-hub', 'nameall-hub',
   'daily-quiz',
-  'higher-lower', 'true-false', 'country-wordle',
+  'higher-lower', 'true-false', 'country-wordle', 'scale-sort',
   'flags-pick', 'flags-sprint', 'flags-survival',
 ])
 
@@ -1246,6 +1247,8 @@ export default function App() {
               <DailyQuiz countryNames={gameCountryNames} onPlayQuiz={playQuizFromDaily} />
             ) : mode === 'higher-lower' ? (
               <HigherLower key={mode} countryNames={gameCountryNames} />
+            ) : mode === 'scale-sort' ? (
+              <SortQuiz key={mode} />
             ) : mode === 'true-false' ? (
               <TrueFalse key={mode} countryNames={gameCountryNames} />
             ) : mode === 'flags-pick' || mode === 'flags-sprint' || mode === 'flags-survival' ? (
