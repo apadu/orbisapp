@@ -92,6 +92,7 @@ const HigherLower = lazy(() => import('./components/HigherLower'))
 const TrueFalse = lazy(() => import('./components/TrueFalse'))
 const FlagArena = lazy(() => import('./components/FlagArena'))
 const SortQuiz = lazy(() => import('./components/SortQuiz'))
+const Duel = lazy(() => import('./components/Duel'))
 const CountryWordle = lazy(() => import('./components/CountryWordle'))
 
 // Map data: served from /data (see `npm run fetch-maps`), remote fallback in src/data/sources.js
@@ -162,7 +163,7 @@ const QUIZ_MODES = new Set([
   ...COUNTRY_PAGE_IDS,
   'countries', 'globe-hub', 'nameall-hub',
   'daily-quiz',
-  'higher-lower', 'true-false', 'country-wordle', 'scale-sort',
+  'higher-lower', 'true-false', 'country-wordle', 'scale-sort', 'duel',
   'flags-pick', 'flags-sprint', 'flags-survival',
 ])
 
@@ -1249,7 +1250,7 @@ export default function App() {
             <span className="quiz-nav-title">
               {mode === 'daily-quiz' ? t('Daily Fever') : mode === 'countries' ? t('Countries') : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all') : COUNTRY_PAGE_IDS.has(mode) ? (isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en) : COUNTRY_MAP_IDS.has(mode) ? COUNTRY_MAP_QUIZZES[mode].title : TRIPOINT_IDS.has(mode) ? TRIPOINT_QUIZZES[mode].title : LANDFORM_IDS.has(mode) ? GAME_CATALOG[mode]?.label : DIAGRAM_IDS.has(mode) ? GAME_CATALOG[mode]?.label : TABLE_QUIZ_IDS.has(mode) ? TABLE_QUIZZES[mode].title : QUIZ_MODES.has(mode) ? GAME_CATALOG[mode]?.label ?? t(QUIZ_LABELS[mode]) : t('Quiz Hub')}
             </span>
-            {QUIZ_MODES.has(mode) && !TABLE_QUIZ_IDS.has(mode) && !COUNTRY_PAGE_IDS.has(mode) && !SECTION_PAGES.has(mode) && <RulesHint className="rules-hint-quiz" />}
+            {QUIZ_MODES.has(mode) && mode !== 'duel' && !TABLE_QUIZ_IDS.has(mode) && !COUNTRY_PAGE_IDS.has(mode) && !SECTION_PAGES.has(mode) && <RulesHint className="rules-hint-quiz" />}
           </div>
 
           <div className="quiz-content"><Suspense fallback={null}>
@@ -1261,6 +1262,8 @@ export default function App() {
               <HigherLower key={mode} countryNames={gameCountryNames} />
             ) : mode === 'scale-sort' ? (
               <SortQuiz key={mode} />
+            ) : mode === 'duel' ? (
+              <Duel />
             ) : mode === 'true-false' ? (
               <TrueFalse key={mode} countryNames={gameCountryNames} />
             ) : mode === 'flags-pick' || mode === 'flags-sprint' || mode === 'flags-survival' ? (

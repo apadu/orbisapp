@@ -1,0 +1,42 @@
+/**
+ * Iran: the 31 provinces (ostan), keyed by ISO 3166-2 code (= `id` in public/data/maps/ir.json;
+ * Alborz, which shares Tehran's code in Natural Earth, is IR-32). `seat` = provincial capital.
+ */
+export const IRAN = {
+  id: 'ir',
+  file: 'ir.json',
+  country: 'Iran',
+  divisions: [
+    { id: 'IR-32', name: 'Alborz', seat: 'Karaj' },
+    { id: 'IR-03', name: 'Ardabil', alt: ['Ardebil'], seat: 'Ardabil', seatAlt: ['Ardebil'] },
+    { id: 'IR-06', name: 'Bushehr', alt: ['Bushire'], seat: 'Bushehr', seatAlt: ['Bushire'] },
+    { id: 'IR-08', name: 'Chaharmahal and Bakhtiari', ro: 'Chaharmahal și Bakhtiari', alt: ['Chaharmahal', 'Chahar Mahall and Bakhtiari', 'Chaharmahal va Bakhtiari'], seat: 'Shahrekord', seatAlt: ['Shahr-e Kord', 'Shahr e Kord'] },
+    { id: 'IR-01', name: 'East Azerbaijan', ro: 'Azerbaidjanul de Est', alt: ['East Azarbaijan', 'Azarbayjan-e Sharqi'], seat: 'Tabriz' },
+    { id: 'IR-04', name: 'Isfahan', alt: ['Esfahan', 'Ispahan'], seat: 'Isfahan', seatAlt: ['Esfahan', 'Ispahan'] },
+    { id: 'IR-14', name: 'Fars', alt: ['Pars'], seat: 'Shiraz' },
+    { id: 'IR-19', name: 'Gilan', alt: ['Guilan'], seat: 'Rasht' },
+    { id: 'IR-27', name: 'Golestan', seat: 'Gorgan' },
+    { id: 'IR-24', name: 'Hamadan', alt: ['Hamedan'], seat: 'Hamadan', seatAlt: ['Hamedan'] },
+    { id: 'IR-23', name: 'Hormozgan', seat: 'Bandar Abbas' },
+    { id: 'IR-05', name: 'Ilam', seat: 'Ilam' },
+    { id: 'IR-15', name: 'Kerman', seat: 'Kerman' },
+    { id: 'IR-17', name: 'Kermanshah', seat: 'Kermanshah' },
+    { id: 'IR-10', name: 'Khuzestan', alt: ['Khuzistan'], seat: 'Ahvaz', seatAlt: ['Ahwaz'] },
+    { id: 'IR-18', name: 'Kohgiluyeh and Boyer-Ahmad', ro: 'Kohgiluyeh și Boyer-Ahmad', alt: ['Kohgiluyeh', 'Kohgiluyeh and Buyer Ahmad', 'Kohgiluyeh va Boyer-Ahmad'], seat: 'Yasuj', seatAlt: ['Yasouj'] },
+    { id: 'IR-16', name: 'Kurdistan', ro: 'Kurdistan', alt: ['Kordestan'], seat: 'Sanandaj' },
+    { id: 'IR-20', name: 'Lorestan', alt: ['Luristan'], seat: 'Khorramabad' },
+    { id: 'IR-22', name: 'Markazi', alt: ['Central'], seat: 'Arak' },
+    { id: 'IR-21', name: 'Mazandaran', seat: 'Sari' },
+    { id: 'IR-31', name: 'North Khorasan', ro: 'Khorasanul de Nord', alt: ['Khorasan-e Shomali'], seat: 'Bojnord', seatAlt: ['Bojnurd'] },
+    { id: 'IR-28', name: 'Qazvin', alt: ['Ghazvin'], seat: 'Qazvin', seatAlt: ['Ghazvin'] },
+    { id: 'IR-26', name: 'Qom', alt: ['Ghom'], seat: 'Qom', seatAlt: ['Ghom'] },
+    { id: 'IR-30', name: 'Razavi Khorasan', ro: 'Khorasan Razavi', alt: ['Khorasan Razavi', 'Khorasan-e Razavi'], seat: 'Mashhad', seatAlt: ['Meshed', 'Mashad'] },
+    { id: 'IR-12', name: 'Semnan', seat: 'Semnan' },
+    { id: 'IR-13', name: 'Sistan and Baluchestan', ro: 'Sistan și Baluchestan', alt: ['Sistan', 'Sistan-Baluchestan', 'Sistan va Baluchestan', 'Baluchistan'], seat: 'Zahedan' },
+    { id: 'IR-29', name: 'South Khorasan', ro: 'Khorasanul de Sud', alt: ['Khorasan-e Jonubi'], seat: 'Birjand' },
+    { id: 'IR-07', name: 'Tehran', ro: 'Teheran', alt: ['Teheran'], seat: 'Tehran', seatRo: 'Teheran', seatAlt: ['Teheran'] },
+    { id: 'IR-02', name: 'West Azerbaijan', ro: 'Azerbaidjanul de Vest', alt: ['West Azarbaijan', 'Azarbayjan-e Gharbi'], seat: 'Urmia', seatAlt: ['Orumiyeh', 'Urumieh'] },
+    { id: 'IR-25', name: 'Yazd', seat: 'Yazd' },
+    { id: 'IR-11', name: 'Zanjan', seat: 'Zanjan' },
+  ],
+}

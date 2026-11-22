@@ -11,7 +11,6 @@
  * On sign-in, guest rows are uploaded to the account (deduped by client_id).
  */
 import { supabase } from '../lib/supabase'
-import { itemKey } from './profileData'
 
 const GUEST_KEY  = 'orbis_results_guest'
 const userKey    = (id) => `orbis_results_${id}`
@@ -39,24 +38,7 @@ function writeKey(key, rows) {
   try { localStorage.setItem(key, JSON.stringify(rows.slice(0, MAX_LOCAL))) } catch {}
 }
 
-// Items (mode|country/key) the player has already answered correctly — no XP the second time
-let known = null
-function knownSet() {
-  if (known) return known
-  known = new Set()
-  for (const r of readKey(storeKey())) {
-    if (r.details?.untimed) continue   // untimed games never count as 'known'
-    for (const a of r.details?.answers ?? []) {
-      if (!a.ok) continue
-      const k = itemKey(r.mode, a)
-      if (k) known.add(k)
-    }
-  }
-  return known
-}
-
 function emit() {
-  known = null // rebuilt lazily from the (possibly changed) store
   for (const fn of listeners) { try { fn() } catch {} }
 }
 
@@ -133,17 +115,8 @@ export function trackAnswer(mode, country, ok, pts = 0, key = null, opts = {}) {
   if (country)  s.answers.push({ c: country, ok: !!ok })
   else if (key) s.answers.push({ k: key, ok: !!ok })
 
-  // First time this item is answered correctly in this game? (→ earns XP)
-  let firstTime = false
-  if (ok) {
-    const k = itemKey(mode, { c: country, k: key })
-    const set = knownSet()
-    firstTime = k ? !set.has(k) : true
-    if (k) set.add(k)
-  }
-
   if (!opts.silent) {
-    const evt = { mode, country, key, ok: !!ok, pts: pts || 0, streak: s.run, firstTime, at: Date.now() }
+    const evt = { mode, country, key, ok: !!ok, pts: pts || 0, streak: s.run, at: Date.now() }
     for (const fn of answerListeners) { try { fn(evt) } catch {} }
   }
 }
@@ -261,6 +234,13 @@ export async function fetchWeeklyBoard(limit = 50) {
   if (!supabase) return { rows: [], error: 'offline' }
   const { data, error } = await supabase.rpc('get_weekly_board', { p_limit: limit })
   return { rows: data ?? [], error: error?.message ?? null, missing: /get_weekly_board|PGRST202|function/i.test(error?.message ?? '') }
+}
+
+/** "Don't Say What I Say": matches won per player since a date (null = all time) */
+export async function fetchDuelBoard(sinceISO = null, limit = 50) {
+  if (!supabase) return { rows: [], error: 'offline' }
+  const { data, error } = await supabase.rpc('get_duel_board', { p_since: sinceISO, p_limit: limit })
+  return { rows: data ?? [], error: error?.message ?? null, missing: /get_duel_board|PGRST202|function/i.test(error?.message ?? '') }
 }
 
 export async function fetchLeaderboard(mode, period = 'all', sinceISO = null) {

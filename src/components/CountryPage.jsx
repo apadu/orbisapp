@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { COUNTRY_PAGES, countryGame } from '../data/countryPages'
 import { loadResults } from '../utils/results'
+import { bestByMode, countryProgress, DONE_AT } from '../utils/countryProgress'
 import { useCountryMap, divName } from './countryMap/useCountryMap'
 import { t, isRo } from '../i18n'
 import GameIcon from './GameIcon'
 import Icon from './Icon'
 import { plain } from '../utils/plain'
 import StateNote from './StateNote'
+import { duelCategoryFor, presetDuelCategory } from '../utils/duelCategories'
 
 // The facts' emoji in the data files → line icons
 const FACT_ICON = { '🏛️': 'building', '👥': 'people', '📐': 'ruler', '🗺️': 'map', '⛰️': 'mountain', '💶': 'coin', '💴': 'coin', '💵': 'coin', '🗣️': 'speech', '📅': 'calendar' }
@@ -41,6 +43,9 @@ export default function CountryPage({ pageId, onOpen }) {
   const byId = useMemo(() => Object.fromEntries(map.divisions.map(d => [d.id, d])), [map])
   const gameItems = games.map(countryGame).filter(Boolean)
   const h = hover ? byId[hover] : null
+  const bestAcc = useMemo(() => bestByMode(), [])
+  const prog = countryProgress(pageId, bestAcc)
+  const duelCat = games.map(duelCategoryFor).find(Boolean)   // its map game as a multiplayer category
 
   return (
     <div className="ctry">
@@ -99,20 +104,35 @@ export default function CountryPage({ pageId, onOpen }) {
         </section>
 
         <section className="ctry-games">
-          <h2>{plain(t('Play'))}</h2>
+          <div className="ctry-games-head">
+            <h2>{plain(t('Play'))}</h2>
+            <span className={`ctry-prog cpm-st cpm-st-${prog.status}`}>
+              {prog.status === 'perfect' ? t('Perfect') : prog.status === 'done' ? t('Completed') : t('{done} / {total} completed', { done: prog.done, total: prog.total })}
+            </span>
+          </div>
           {gameItems.map(g => {
             const best = bestFor(g.id)
             return (
               <button key={g.id} className="ctry-game" onClick={() => onOpen(g.id)}>
                 <span className="ctry-game-icon" aria-hidden="true"><GameIcon id={g.id} size={24} /></span>
                 <span className="ctry-game-body">
-                  <span className="ctry-game-title">{g.label}</span>
+                  <span className="ctry-game-title">{g.label}{(bestAcc[g.id] ?? -1) >= DONE_AT && <span className="ctry-game-done" title={t('Completed')}> ✓</span>}</span>
                   {best && <span className="ctry-game-best">{t('Best')}: {best}</span>}
                 </span>
                 <span className="ctry-game-go" aria-hidden="true">▸</span>
               </button>
             )
           })}
+          {duelCat && (
+            <button className="ctry-game ctry-duel" onClick={() => { presetDuelCategory(duelCat); onOpen('duel') }}>
+              <span className="ctry-game-icon" aria-hidden="true"><GameIcon id="duel" size={24} /></span>
+              <span className="ctry-game-body">
+                <span className="ctry-game-title">{t('Play with friends')}</span>
+                <span className="ctry-game-best">{t('Don\'t Say What I Say')}</span>
+              </span>
+              <span className="ctry-game-go" aria-hidden="true">▸</span>
+            </button>
+          )}
         </section>
       </div>
     </div>

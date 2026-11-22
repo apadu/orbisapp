@@ -366,7 +366,7 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
         plain(t('⌨️ {prompt} — any order, no Enter needed', { prompt: quiz.prompt })),
         plain(t('⏱ The clock depends on how many answers there are')),
         plain(t('🏳️ Give up any time to see what you missed')),
-        plain(t('✨ XP only for answers you haven\'t got before')),
+        plain(t('✨ XP when you finish the quiz')),
       ],
     })
   }, [quizId]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -426,7 +426,7 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
             <ul>
               <li>{plain(t('⏸ The clock stops for the rest of this game.'))}</li>
               <li>{plain(t('🔒 You can\'t turn it back on until you start a new game.'))}</li>
-              <li>{plain(t('🚫 This game earns'))} <strong>{t('no XP')}</strong> {t('— including answers you\'ve already given — and won\'t count for leaderboards.')}</li>
+              <li>{plain(t('🚫 This game earns'))} <strong>{t('no XP')}</strong> {t('and won\'t count for leaderboards.')}</li>
             </ul>
             <div className="tq-modal-btns">
               <button className="tq-btn" onClick={() => setConfirmUntimed(false)}>{t('Keep the timer')}</button>

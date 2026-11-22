@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchLeaderboard, fetchWeeklyBoard } from '../../utils/results'
+import { fetchLeaderboard, fetchWeeklyBoard, fetchDuelBoard } from '../../utils/results'
 import { GAME_CATALOG, CAT_LABELS } from '../../utils/gameCatalog'
 import { useAuth } from '../../auth/AuthContext'
 import { t, locale } from '../../i18n'
@@ -86,6 +86,64 @@ function WeeklyBoard() {
   )
 }
 
+/** "Don't Say What I Say": matches won. compact = the short version on the game's own page */
+export function DuelBoard({ compact = false }) {
+  const { user, backendEnabled } = useAuth()
+  const [period, setPeriod] = useState('week')
+  const [rows, setRows] = useState([])
+  const [state, setState] = useState('loading')
+  const [tries, setTries] = useState(0)
+  useEffect(() => {
+    if (!backendEnabled) return
+    let live = true
+    setState('loading')
+    const since = period === 'week' ? new Date(Date.now() - 7 * 864e5).toISOString() : null
+    fetchDuelBoard(since, compact ? 5 : 50).then(({ rows, error, missing }) => {
+      if (!live) return
+      setRows(rows)
+      setState(missing ? 'missing' : error ? 'error' : 'idle')
+    })
+    return () => { live = false }
+  }, [period, compact, backendEnabled, tries])
+  if (!backendEnabled) return null
+  if (compact && state !== 'idle') return null          // the game page only shows it when there's something to show
+  if (compact && rows.length === 0) return null
+  return (
+    <div className={`lb-duel${compact ? ' compact' : ''}`}>
+      <div className="lb-weekly-head">
+        <div>
+          <h3>{compact ? t('Most wins this week') : t('Don\'t Say What I Say')}</h3>
+          {!compact && <p>{t('Matches won. Every player\'s result counts once the match ends.')}</p>}
+        </div>
+        {!compact && (
+          <div className="lb-periods">
+            {PERIODS.filter(p => p.id !== 'today').map(p => (
+              <button key={p.id} className={`lb-period${period === p.id ? ' active' : ''}`} onClick={() => setPeriod(p.id)}>{p.label}</button>
+            ))}
+          </div>
+        )}
+      </div>
+      {state === 'loading' && <StateNote kind="loading" compact>{t('Loading…')}</StateNote>}
+      {state === 'missing' && <StateNote compact>{t('This board will appear here soon.')}</StateNote>}
+      {state === 'error' && <StateNote kind="error" compact action={{ label: t('Try again'), onClick: () => setTries(n => n + 1) }}>{t('Couldn\'t load the leaderboard. Try again in a moment.')}</StateNote>}
+      {state === 'idle' && rows.length === 0 && <StateNote compact>{t('No wins yet — invite a friend and be the first!')}</StateNote>}
+      {state === 'idle' && rows.length > 0 && (
+        <div className="lb-table">
+          <div className="lb-row lb-header"><span>#</span><span>{t('Player')}</span><span>{t('Wins')}</span><span>{t('Matches')}</span></div>
+          {rows.map(r => (
+            <div key={r.user_id} className={`lb-row${r.user_id === user?.id ? ' lb-me' : ''}${r.rank <= 3 ? ` lb-top${r.rank}` : ''}`}>
+              <span className="lb-rank">{r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</span>
+              <Player r={r} />
+              <span className="lb-score">{Number(r.wins).toLocaleString(locale)}</span>
+              <span className="lb-extra">{Number(r.matches).toLocaleString(locale)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Leaderboard({ initialMode = 'flag' }) {
   const { backendEnabled } = useAuth()
   const [view, setView] = useState('week')
@@ -97,8 +155,9 @@ export default function Leaderboard({ initialMode = 'flag' }) {
       <div className="lb-views">
         <button className={`lb-view${view === 'week' ? ' active' : ''}`} onClick={() => setView('week')}>{t('Fever of the week')}</button>
         <button className={`lb-view${view === 'games' ? ' active' : ''}`} onClick={() => setView('games')}>{t('By game')}</button>
+        <button className={`lb-view${view === 'duel' ? ' active' : ''}`} onClick={() => setView('duel')}>{t('Don\'t Say What I Say')}</button>
       </div>
-      {view === 'week' ? <WeeklyBoard /> : <GameBoard initialMode={initialMode} />}
+      {view === 'week' ? <WeeklyBoard /> : view === 'duel' ? <DuelBoard /> : <GameBoard initialMode={initialMode === 'duel' ? 'flag' : initialMode} />}
     </>
   )
 }
@@ -131,7 +190,7 @@ function GameBoard({ initialMode }) {
   const unit = GAME_CATALOG[mode]?.unit
   const isQuiz = GAME_CATALOG[mode]?.cat === 'quiz' && !unit
   const groups = Object.entries(CAT_LABELS).map(([cat, label]) => ({
-    label, items: Object.entries(GAME_CATALOG).filter(([, g]) => g.cat === cat),
+    label, items: Object.entries(GAME_CATALOG).filter(([id, g]) => g.cat === cat && id !== 'duel'),   // the duel has its own board (wins)
   }))
 
   return (

@@ -1,0 +1,45 @@
+/**
+ * Colombia: 32 departments and the Capital District of Bogotá, keyed by ISO 3166-2 code
+ * (= `id` in public/data/maps/co.json). `seat` = departmental capital. San Andrés is drawn
+ * as an inset closer to the mainland; Malpelo island isn't on the map.
+ */
+export const COLOMBIA = {
+  id: 'co',
+  file: 'co.json',
+  country: 'Colombia',
+  divisions: [
+    { id: 'CO-AMA', name: 'Amazonas', seat: 'Leticia' },
+    { id: 'CO-ANT', name: 'Antioquia', seat: 'Medellín' },
+    { id: 'CO-ARA', name: 'Arauca', seat: 'Arauca' },
+    { id: 'CO-ATL', name: 'Atlántico', seat: 'Barranquilla' },
+    { id: 'CO-DC', name: 'Bogotá', alt: ['Bogota', 'Bogotá D.C.', 'Capital District', 'Distrito Capital'], city: true },
+    { id: 'CO-BOL', name: 'Bolívar', seat: 'Cartagena', seatAlt: ['Cartagena de Indias'] },
+    { id: 'CO-BOY', name: 'Boyacá', seat: 'Tunja' },
+    { id: 'CO-CAL', name: 'Caldas', seat: 'Manizales' },
+    { id: 'CO-CAQ', name: 'Caquetá', seat: 'Florencia' },
+    { id: 'CO-CAS', name: 'Casanare', seat: 'Yopal' },
+    { id: 'CO-CAU', name: 'Cauca', seat: 'Popayán' },
+    { id: 'CO-CES', name: 'Cesar', seat: 'Valledupar' },
+    { id: 'CO-CHO', name: 'Chocó', seat: 'Quibdó' },
+    { id: 'CO-COR', name: 'Córdoba', seat: 'Montería' },
+    { id: 'CO-CUN', name: 'Cundinamarca', seat: 'Bogotá', seatAlt: ['Bogota'] },
+    { id: 'CO-GUA', name: 'Guainía', seat: 'Inírida', seatAlt: ['Puerto Inírida'] },
+    { id: 'CO-GUV', name: 'Guaviare', seat: 'San José del Guaviare' },
+    { id: 'CO-HUI', name: 'Huila', seat: 'Neiva' },
+    { id: 'CO-LAG', name: 'La Guajira', alt: ['Guajira'], seat: 'Riohacha' },
+    { id: 'CO-MAG', name: 'Magdalena', seat: 'Santa Marta' },
+    { id: 'CO-MET', name: 'Meta', seat: 'Villavicencio' },
+    { id: 'CO-NAR', name: 'Nariño', seat: 'Pasto', seatAlt: ['San Juan de Pasto'] },
+    { id: 'CO-NSA', name: 'Norte de Santander', seat: 'Cúcuta' },
+    { id: 'CO-PUT', name: 'Putumayo', seat: 'Mocoa' },
+    { id: 'CO-QUI', name: 'Quindío', seat: 'Armenia' },
+    { id: 'CO-RIS', name: 'Risaralda', seat: 'Pereira' },
+    { id: 'CO-SAP', name: 'San Andrés and Providencia', ro: 'San Andrés și Providencia', alt: ['San Andrés', 'San Andres', 'San Andrés y Providencia', 'San Andrés, Providencia y Santa Catalina'], seat: 'San Andrés', seatAlt: ['San Andres'] },
+    { id: 'CO-SAN', name: 'Santander', seat: 'Bucaramanga' },
+    { id: 'CO-SUC', name: 'Sucre', seat: 'Sincelejo' },
+    { id: 'CO-TOL', name: 'Tolima', seat: 'Ibagué' },
+    { id: 'CO-VAC', name: 'Valle del Cauca', alt: ['Valle'], seat: 'Cali', seatAlt: ['Santiago de Cali'] },
+    { id: 'CO-VAU', name: 'Vaupés', seat: 'Mitú' },
+    { id: 'CO-VID', name: 'Vichada', seat: 'Puerto Carreño' },
+  ],
+}

@@ -9,38 +9,18 @@ import { QUIZ_ITEMS, QUIZ_CATEGORIES } from '../components/QuizHub'
 
 // ── XP & levels ────────────────────────────────────────────────────────────
 // XP sources:
-//   • 2 XP per correct answer — only the FIRST time you get a given item right in a
-//     given game (naming France in Name All twice gives XP once)
-//   • 15 XP per finished game
+//   • 15 XP per finished game (answers themselves earn nothing)
 //   • daily challenges: 20 / 35 / 60 XP (easy / medium / hard), +40 bonus when all three are done
 //     (days before the new quests: 30 XP each)
 // Untimed games earn nothing. Everything is recomputed from the saved results.
-export const XP_PER_NEW = 2
 export const XP_PER_GAME = 15
-
-export function itemKey(mode, a) {
-  const id = a.c ?? a.k
-  return id ? `${mode}|${id}` : null
-}
 
 /** Total XP from a results list (newest-first, as stored). */
 export function computeXp(results) {
-  const seen = new Set()
   let xp = 0
-  for (let i = results.length - 1; i >= 0; i--) {
-    const r = results[i]
+  for (const r of results) {
     if (r.details?.untimed) continue          // untimed games earn no XP
     if (r.completed) xp += XP_PER_GAME
-    const answers = r.details?.answers ?? []
-    let itemizedOk = 0
-    for (const a of answers) {
-      if (!a.ok) continue
-      itemizedOk++
-      const key = itemKey(r.mode, a)
-      if (key && !seen.has(key)) { seen.add(key); xp += XP_PER_NEW }
-    }
-    // Correct answers that weren't itemized (older data) still count
-    xp += Math.max(0, r.correct - itemizedOk) * XP_PER_NEW
   }
   for (const day of Object.values(challengeHistory(results))) xp += day.xp
   return xp
@@ -124,6 +104,8 @@ export const ACHIEVEMENTS = [
   { id: 'connections',   icon: '🧩', label: t('Perfect Connection'), desc: t('Solve Connections with no mistakes'),       progress: p => [p.flags.connPerfect ? 1 : 0, 1] },
   { id: 'polyglot',      icon: '🗣️', label: t('Polyglot'),          desc: t('Score 90%+ on a full Endonyms round'),       progress: p => [p.flags.polyglot ? 1 : 0, 1] },
   { id: 'bullseye',      icon: '📍', label: t('Bullseye'),          desc: t('Hit 25 countries dead-on in Pinpoint'),      progress: p => [p.flags.locateHits, 25] },
+  { id: 'duel-win',      icon: '👥', label: t('Mind Reader'),       desc: t('Win a match of Don\'t Say What I Say'),     progress: p => [p.flags.duelWins, 1] },
+  { id: 'duel-10',       icon: '🧠', label: t('Unpredictable'),     desc: t('Win 10 matches of Don\'t Say What I Say'),  progress: p => [p.flags.duelWins, 10] },
   { id: 'level-10',      icon: '🌡️', label: t('Fever'),             desc: t('Reach 38.4° (level 10)'),                            progress: p => [p.level.level, 10] },
 ]
 
@@ -147,7 +129,7 @@ let sectionAchievements = null
 function sectionBadges() {
   if (sectionAchievements) return sectionAchievements
   sectionAchievements = QUIZ_CATEGORIES.filter(c => SECTION_BADGES[c.id]).map(c => {
-    const ids = QUIZ_ITEMS.filter(q => q.cat === c.id && GAME_CATALOG[q.id]).map(q => q.id)
+    const ids = QUIZ_ITEMS.filter(q => q.cat === c.id && GAME_CATALOG[q.id] && q.id !== 'duel').map(q => q.id)   // a multiplayer match isn't a quiz to master
     const [label, desc] = SECTION_BADGES[c.id]
     return {
       id: `section-${c.id}`, icon: c.icon, label: t(label), desc: `${t(desc)} (${ids.length})`, section: c.id,
@@ -164,7 +146,7 @@ export function computeProfile(results) {
   const mastery = {}
   const heatmap = {}
   const days    = new Set()
-  const flags   = { worldClear: false, speedrun: false, mystery3: false, flagRun: 0, perfectQuiz: false, connPerfect: false, polyglot: false, locateHits: 0 }
+  const flags   = { duelWins: 0, worldClear: false, speedrun: false, mystery3: false, flagRun: 0, perfectQuiz: false, connPerfect: false, polyglot: false, locateHits: 0 }
   let xp = 0
 
   // results are newest-first; iterate oldest-first so "recent" arrays end with the latest
@@ -210,7 +192,8 @@ export function computeProfile(results) {
     }
     if (r.mode === 'mystery' && r.correct > 0 && meta.guesses && meta.guesses <= 3) flags.mystery3 = true
     if (r.mode === 'flag') flags.flagRun = Math.max(flags.flagRun, maxRun(meta.answers))
-    if (GAME_CATALOG[r.mode]?.cat === 'quiz' && r.completed && r.total >= 10 && r.correct === r.total) flags.perfectQuiz = true
+    if (GAME_CATALOG[r.mode]?.cat === 'quiz' && r.mode !== 'duel' && r.completed && r.total >= 10 && r.correct === r.total) flags.perfectQuiz = true
+    if (r.mode === 'duel' && r.completed && meta.won) flags.duelWins += 1
     if (r.mode === 'connections' && r.correct > 0 && meta.mistakes === 0) flags.connPerfect = true
     if (r.mode === 'endonyms' && r.completed && r.total >= 15 && r.correct / r.total >= 0.9) flags.polyglot = true
     if (r.mode === 'locate') flags.locateHits += r.correct

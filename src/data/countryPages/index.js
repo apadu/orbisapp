@@ -19,6 +19,17 @@ import { CHINA } from '../countryMaps/china'
 import { RUSSIA } from '../countryMaps/russia'
 import { ARGENTINA } from '../countryMaps/argentina'
 import { TURKEY } from '../countryMaps/turkey'
+import { SOUTH_KOREA } from '../countryMaps/southKorea'
+import { EGYPT } from '../countryMaps/egypt'
+import { NIGERIA } from '../countryMaps/nigeria'
+import { SOUTH_AFRICA } from '../countryMaps/southAfrica'
+import { THAILAND } from '../countryMaps/thailand'
+import { PERU } from '../countryMaps/peru'
+import { COLOMBIA } from '../countryMaps/colombia'
+import { IRAN } from '../countryMaps/iran'
+import { GREECE } from '../countryMaps/greece'
+import { SWEDEN } from '../countryMaps/sweden'
+import { PORTUGAL } from '../countryMaps/portugal'
 
 // What the hubs, menus and icons need is here; the full page (facts, the 20 questions…) is
 // loaded only when the country page or its quiz is opened (see LOAD), to keep it out of the
@@ -44,6 +55,17 @@ const META = {
   ru: { flag: "🇷🇺", name: {"en": "Russia", "ro": "Rusia"}, tagline: {"en": "The largest country on Earth: 11 time zones, from the Baltic to the Bering Strait.", "ro": "Cea mai mare țară de pe Pământ: 11 fusuri orare, de la Marea Baltică la Strâmtoarea Bering."} },
   ar: { flag: "🇦🇷", name: {"en": "Argentina", "ro": "Argentina"}, tagline: {"en": "Tango, the Andes and Patagonia: 23 provinces from the Iguazú Falls to Tierra del Fuego.", "ro": "Tango, Anzii și Patagonia: 23 de provincii, de la Cascadele Iguazú la Țara de Foc."} },
   tr: { flag: "🇹🇷", name: {"en": "Turkey", "ro": "Turcia"}, tagline: {"en": "Between Europe and Asia: Istanbul, Cappadocia and 81 provinces from Edirne to Ararat.", "ro": "Între Europa și Asia: Istanbul, Cappadocia și 81 de provincii, de la Edirne la Ararat."} },
+  kr: { flag: "🇰🇷", name: {"en": "South Korea", "ro": "Coreea de Sud"}, tagline: {"en": "Seoul, Busan and the volcanic island of Jeju: 17 provinces and cities on the southern half of a peninsula.", "ro": "Seul, Busan și insula vulcanică Jeju: 17 provincii și orașe pe jumătatea de sud a unei peninsule."} },
+  eg: { flag: "🇪🇬", name: {"en": "Egypt", "ro": "Egipt"}, tagline: {"en": "The Nile, the Pyramids and the Suez Canal: 27 governorates from the Mediterranean to Aswan.", "ro": "Nilul, Piramidele și Canalul Suez: 27 de guvernorate, de la Mediterana la Aswan."} },
+  ng: { flag: "🇳🇬", name: {"en": "Nigeria", "ro": "Nigeria"}, tagline: {"en": "Africa's most populous country: Lagos, the Niger Delta and 36 states around a capital built in the 1980s.", "ro": "Cea mai populată țară din Africa: Lagos, Delta Nigerului și 36 de state în jurul unei capitale construite în anii 1980."} },
+  za: { flag: "🇿🇦", name: {"en": "South Africa", "ro": "Africa de Sud"}, tagline: {"en": "Three capitals, 12 official languages and two oceans: 9 provinces from Table Mountain to Kruger.", "ro": "Trei capitale, 12 limbi oficiale și două oceane: 9 provincii, de la Muntele Masă la Kruger."} },
+  th: { flag: "🇹🇭", name: {"en": "Thailand", "ro": "Thailanda"}, tagline: {"en": "Temples, islands and the Mekong: Bangkok and 76 provinces from Chiang Rai to the Malay border.", "ro": "Temple, insule și Mekongul: Bangkok și 76 de provincii, de la Chiang Rai la granița cu Malaysia."} },
+  pe: { flag: "🇵🇪", name: {"en": "Peru", "ro": "Peru"}, tagline: {"en": "Machu Picchu, Lake Titicaca and the Amazon: 24 departments, Lima and Callao, from the desert coast to the Andes.", "ro": "Machu Picchu, Lacul Titicaca și Amazonul: 24 de departamente, Lima și Callao, de la coasta deșertică la Anzi."} },
+  co: { flag: "🇨🇴", name: {"en": "Colombia", "ro": "Columbia"}, tagline: {"en": "Coffee, emeralds and two coasts: 32 departments and Bogotá, from the Caribbean to the Amazon.", "ro": "Cafea, smaralde și două coaste: 32 de departamente și Bogotá, de la Caraibe la Amazon."} },
+  ir: { flag: "🇮🇷", name: {"en": "Iran", "ro": "Iran"}, tagline: {"en": "Ancient Persia: Persepolis, Isfahan and the Caspian, 31 provinces between the mountains and the Gulf.", "ro": "Vechea Persie: Persepolis, Isfahan și Marea Caspică, 31 de provincii între munți și Golf."} },
+  gr: { flag: "🇬🇷", name: {"en": "Greece", "ro": "Grecia"}, tagline: {"en": "The Acropolis, Olympus and some 6,000 islands: 13 regions and the monks' republic of Mount Athos.", "ro": "Acropola, Olimpul și circa 6.000 de insule: 13 regiuni și republica monahală de pe Muntele Athos."} },
+  se: { flag: "🇸🇪", name: {"en": "Sweden", "ro": "Suedia"}, tagline: {"en": "From the Øresund Bridge to Lapland: 21 counties of lakes, forests and the midnight sun.", "ro": "De la Podul Øresund la Laponia: 21 de comitate cu lacuri, păduri și soarele de la miezul nopții."} },
+  pt: { flag: "🇵🇹", name: {"en": "Portugal", "ro": "Portugalia"}, tagline: {"en": "Lisbon, Porto and the Atlantic islands: 18 districts plus the Azores and Madeira.", "ro": "Lisabona, Porto și insulele din Atlantic: 18 districte plus Azorele și Madeira."} },
 }
 /** The full page data of each country, loaded on demand */
 export const LOAD_PAGE = {
@@ -67,6 +89,17 @@ export const LOAD_PAGE = {
   ru: () => import('./russia').then(m => m.RUSSIA_PAGE),
   ar: () => import('./argentina').then(m => m.ARGENTINA_PAGE),
   tr: () => import('./turkey').then(m => m.TURKEY_PAGE),
+  kr: () => import('./southKorea').then(m => m.SOUTH_KOREA_PAGE),
+  eg: () => import('./egypt').then(m => m.EGYPT_PAGE),
+  ng: () => import('./nigeria').then(m => m.NIGERIA_PAGE),
+  za: () => import('./southAfrica').then(m => m.SOUTH_AFRICA_PAGE),
+  th: () => import('./thailand').then(m => m.THAILAND_PAGE),
+  pe: () => import('./peru').then(m => m.PERU_PAGE),
+  co: () => import('./colombia').then(m => m.COLOMBIA_PAGE),
+  ir: () => import('./iran').then(m => m.IRAN_PAGE),
+  gr: () => import('./greece').then(m => m.GREECE_PAGE),
+  se: () => import('./sweden').then(m => m.SWEDEN_PAGE),
+  pt: () => import('./portugal').then(m => m.PORTUGAL_PAGE),
 }
 
 /**
@@ -96,6 +129,17 @@ export const COUNTRY_PAGES = {
   'country-ru': { slug: 'russia', page: META.ru, load: LOAD_PAGE.ru, map: RUSSIA, games: ['ru-subjects', 'ru-quiz'] },
   'country-ar': { slug: 'argentina', page: META.ar, load: LOAD_PAGE.ar, map: ARGENTINA, games: ['ar-provinces', 'ar-capitals', 'ar-quiz'] },
   'country-tr': { slug: 'turkey', page: META.tr, load: LOAD_PAGE.tr, map: TURKEY, games: ['tr-provinces', 'tr-quiz'] },
+  'country-kr': { slug: 'south-korea', page: META.kr, load: LOAD_PAGE.kr, map: SOUTH_KOREA, games: ['kr-provinces', 'kr-capitals', 'kr-quiz'] },
+  'country-eg': { slug: 'egypt', page: META.eg, load: LOAD_PAGE.eg, map: EGYPT, games: ['eg-governorates', 'eg-capitals', 'eg-quiz'] },
+  'country-ng': { slug: 'nigeria', page: META.ng, load: LOAD_PAGE.ng, map: NIGERIA, games: ['ng-states', 'ng-capitals', 'ng-quiz'] },
+  'country-za': { slug: 'south-africa', page: META.za, load: LOAD_PAGE.za, map: SOUTH_AFRICA, games: ['za-provinces', 'za-capitals', 'za-quiz'] },
+  'country-th': { slug: 'thailand', page: META.th, load: LOAD_PAGE.th, map: THAILAND, games: ['th-provinces', 'th-quiz'] },
+  'country-pe': { slug: 'peru', page: META.pe, load: LOAD_PAGE.pe, map: PERU, games: ['pe-regions', 'pe-capitals', 'pe-quiz'] },
+  'country-co': { slug: 'colombia', page: META.co, load: LOAD_PAGE.co, map: COLOMBIA, games: ['co-departments', 'co-capitals', 'co-quiz'] },
+  'country-ir': { slug: 'iran', page: META.ir, load: LOAD_PAGE.ir, map: IRAN, games: ['ir-provinces', 'ir-capitals', 'ir-quiz'] },
+  'country-gr': { slug: 'greece', page: META.gr, load: LOAD_PAGE.gr, map: GREECE, games: ['gr-regions', 'gr-capitals', 'gr-quiz'] },
+  'country-se': { slug: 'sweden', page: META.se, load: LOAD_PAGE.se, map: SWEDEN, games: ['se-counties', 'se-capitals', 'se-quiz'] },
+  'country-pt': { slug: 'portugal', page: META.pt, load: LOAD_PAGE.pt, map: PORTUGAL, games: ['pt-districts', 'pt-quiz'] },
 }
 export const COUNTRY_PAGE_IDS = new Set(Object.keys(COUNTRY_PAGES))
 
@@ -157,6 +201,37 @@ export const COUNTRY_GAMES = [
   { id: 'ar-quiz', icon: '❓', label: t("Quiz: Argentina"), desc: t("20 questions, from tango to Patagonia.") },
   { id: 'tr-provinces', icon: '🗺️', label: t("Provinces of Turkey"), desc: t("81 provinces from Edirne to Hakk\u00e2ri. Most share their capital's name.") },
   { id: 'tr-quiz', icon: '❓', label: t("Quiz: Turkey"), desc: t("20 questions, from Cappadocia to Hagia Sophia.") },
+  { id: 'kr-provinces', icon: '🗺️', label: t("Provinces of South Korea"), desc: t("9 provinces and 8 big cities, from Seoul to Jeju.") },
+  { id: 'kr-capitals', icon: '🏛️', label: t("Provincial Capitals of South Korea"), desc: t("Suwon, Jeonju, Andong… the capital of every province.") },
+  { id: 'kr-quiz', icon: '❓', label: t("Quiz: South Korea"), desc: t("20 questions, from kimchi to the DMZ.") },
+  { id: 'eg-governorates', icon: '🗺️', label: t("Governorates of Egypt"), desc: t("27 governorates, from Alexandria to the New Valley.") },
+  { id: 'eg-capitals', icon: '🏛️', label: t("Governorate Capitals of Egypt"), desc: t("Hurghada, Mansoura, Tanta… the capital of every governorate.") },
+  { id: 'eg-quiz', icon: '❓', label: t("Quiz: Egypt"), desc: t("20 questions, from the Pyramids to the Suez Canal.") },
+  { id: 'ng-states', icon: '🗺️', label: t("States of Nigeria"), desc: t("36 states and the capital territory, from Sokoto to Rivers.") },
+  { id: 'ng-capitals', icon: '🏛️', label: t("State Capitals of Nigeria"), desc: t("Ikeja, not Lagos. Then Ibadan, Enugu, Maiduguri…") },
+  { id: 'ng-quiz', icon: '❓', label: t("Quiz: Nigeria"), desc: t("20 questions, from Nollywood to the Niger Delta.") },
+  { id: 'za-provinces', icon: '🗺️', label: t("Provinces of South Africa"), desc: t("9 provinces from the Western Cape to Limpopo.") },
+  { id: 'za-capitals', icon: '🏛️', label: t("Provincial Capitals of South Africa"), desc: t("Johannesburg, Pietermaritzburg, Bhisho… every provincial capital.") },
+  { id: 'za-quiz', icon: '❓', label: t("Quiz: South Africa"), desc: t("20 questions, from Table Mountain to Robben Island.") },
+  { id: 'th-provinces', icon: '🗺️', label: t("Provinces of Thailand"), desc: t("Bangkok and 76 provinces, each named after its capital.") },
+  { id: 'th-quiz', icon: '❓', label: t("Quiz: Thailand"), desc: t("20 questions, from Ayutthaya to Songkran.") },
+  { id: 'pe-regions', icon: '🗺️', label: t("Regions of Peru"), desc: t("24 departments plus Lima and Callao, from Tumbes to Tacna.") },
+  { id: 'pe-capitals', icon: '🏛️', label: t("Regional Capitals of Peru"), desc: t("Trujillo, Iquitos, Huancayo… the capital of every department.") },
+  { id: 'pe-quiz', icon: '❓', label: t("Quiz: Peru"), desc: t("20 questions, from Machu Picchu to ceviche.") },
+  { id: 'co-departments', icon: '🗺️', label: t("Departments of Colombia"), desc: t("32 departments and Bogotá, from La Guajira to Amazonas.") },
+  { id: 'co-capitals', icon: '🏛️', label: t("Departmental Capitals of Colombia"), desc: t("Medellín, Cali, Barranquilla… and Mitú. Every departmental capital.") },
+  { id: 'co-quiz', icon: '❓', label: t("Quiz: Colombia"), desc: t("20 questions, from coffee to García Márquez.") },
+  { id: 'ir-provinces', icon: '🗺️', label: t("Provinces of Iran"), desc: t("31 provinces, from Gilan on the Caspian to Hormozgan on the Gulf.") },
+  { id: 'ir-capitals', icon: '🏛️', label: t("Provincial Capitals of Iran"), desc: t("Tabriz, Shiraz, Mashhad… the capital of every province.") },
+  { id: 'ir-quiz', icon: '❓', label: t("Quiz: Iran"), desc: t("20 questions, from Persepolis to Nowruz.") },
+  { id: 'gr-regions', icon: '🗺️', label: t("Regions of Greece"), desc: t("13 regions and Mount Athos, from Thrace to Crete.") },
+  { id: 'gr-capitals', icon: '🏛️', label: t("Regional Capitals of Greece"), desc: t("Thessaloniki, Patras, Heraklion… and Ermoupoli. Every regional capital.") },
+  { id: 'gr-quiz', icon: '❓', label: t("Quiz: Greece"), desc: t("20 questions, from the Parthenon to Santorini.") },
+  { id: 'se-counties', icon: '🗺️', label: t("Counties of Sweden"), desc: t("21 counties, from Skåne to Norrbotten.") },
+  { id: 'se-capitals', icon: '🏛️', label: t("County Seats of Sweden"), desc: t("Malmö, Umeå, Visby… the seat of every county.") },
+  { id: 'se-quiz', icon: '❓', label: t("Quiz: Sweden"), desc: t("20 questions, from ABBA to the Nobel Prize.") },
+  { id: 'pt-districts', icon: '🗺️', label: t("Districts of Portugal"), desc: t("18 districts plus the Azores and Madeira.") },
+  { id: 'pt-quiz', icon: '❓', label: t("Quiz: Portugal"), desc: t("20 questions, from Vasco da Gama to fado.") },
 ]
 const gameById = Object.fromEntries(COUNTRY_GAMES.map(g => [g.id, g]))
 export const countryGame = (id) => gameById[id] ?? null

@@ -51,6 +51,18 @@ const COUNTRY_CONFIG = {
   RU: { simplify: '6%', minIsland: '1500km2', box: '19,38,180,82', filter: "iso_3166_2.indexOf('RU-') === 0 && iso_3166_2 !== 'RU-X01~'" },
   AR: { simplify: '12%', minIsland: '200km2' },
   TR: { simplify: '15%' },
+  KR: { simplify: '15%', minIsland: '60km2' },
+  EG: { simplify: '15%' },
+  NG: { simplify: '15%' },
+  ZA: { simplify: '15%', minIsland: '400km2' },   // no Prince Edward Islands, 1,800 km south
+  TH: { simplify: '15%', minIsland: '20km2' },
+  PE: { simplify: '12%', ids: { 'Lima Province': 'PE-LMA' } },   // Natural Earth gives Lima region and Lima city the same code
+  // Colombia: no Malpelo island (CO-X01~); San Andrés moved next to the mainland as an inset
+  CO: { simplify: '12%', filter: "iso_3166_2 !== 'CO-X01~'", ids: { 'Bogota': 'CO-DC' }, shift: { 'CO-SAP': [3, -1.2] } },
+  IR: { simplify: '12%', minIsland: '50km2', ids: { 'Alborz': 'IR-32' } },   // Tehran and Alborz share a code in Natural Earth
+  GR: { simplify: '15%', minIsland: '15km2' },
+  SE: { simplify: '10%', minIsland: '30km2' },
+  PT: { simplify: '15%', shift: { 'PT-20': [17.8, -3.0], 'PT-30': [5.3, 5.1] } },   // the Azores and Madeira as insets
 }
 const COUNTRIES = new URL('../public/data/ne_50m_admin_0_countries.geojson', import.meta.url)
 const OUT = new URL('../public/data/maps/', import.meta.url)

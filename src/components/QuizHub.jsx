@@ -84,6 +84,7 @@ export const QUIZ_ITEMS = [
   { id: 'gulf-states', cat: 'lists', icon: '🛢️', label: t('Gulf States'), desc: t('6 Gulf Cooperation Council members. Iraq and Iran aren\'t among them.') },
   { id: 'smallest', cat: 'numbers', icon: '🔬', label: t('Smallest Countries'), desc: t('The 20 smallest. Vatican City could fit into Central Park 7 times.') },
   { id: 'least-populous', cat: 'numbers', icon: '🧍', label: t('Least Populous'), desc: t('The 20 tiniest populations. Tuvalu has about 11,000 people.') },
+  { id: 'duel',           cat: 'arcade',   icon: '👥', label: t('Don\'t Say What I Say'), desc: t('With friends: name things from a category, never the same as the others.') },
   { id: 'higher-lower',   cat: 'arcade',   icon: '⚖️', label: t('Higher or Lower'),      desc: t('More people? Bigger? One wrong call ends the streak.') },
   { id: 'flags-pick',     cat: 'flags',    icon: '🎯', label: t('Pick the Flag'),        desc: t('A country name and four flags — pick the right one. 20 rounds.') },
   { id: 'flags-sprint',   cat: 'flags',    icon: '⚡', label: t('Fever Sprint'),          desc: t('One flag at a time — name as many as you can before the clock runs out.') },

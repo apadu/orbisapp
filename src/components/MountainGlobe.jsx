@@ -1,9 +1,10 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import * as THREE from 'three'
-import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER, SMALL_SCREEN, TEX_SCALE } from '../utils/globeFx'
+import { prepareTexture, globeMaterial, addAtmosphere, addLights, SMALL_SCREEN, TEX_SCALE } from '../utils/globeFx'
 import { geoEquirectangular, geoPath } from 'd3-geo'
 import GlobeControls from './GlobeControls'
 import { rangeName } from '../i18n/names'
+import { RANGE_INDEX } from '../data/mountainRelief'
 
 const CANVAS_W = 4096
 const CANVAS_H = 2048
@@ -15,153 +16,116 @@ function lonLatToXY(lon, lat) {
   ]
 }
 
-const DEG_TO_PX = CANVAS_W / 360
-
-// Deterministic pseudo-random: 0..1 for any integer
-function pr(x) {
-  return ((Math.sin(x * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
-}
-
-// ── Old-map style ─────────────────────────────────────────────────────────
-// Parchment land, muted sea, and each range drawn as a sinuous ridge spine with
-// hachures (short strokes running downslope), darker on the "shadow" side —
-// the way 18th/19th-century maps showed relief.
+// ── Relief map ───────────────────────────────────────────────────────────
+// The map is pre-rendered (scripts/build-relief.py): parchment land with real shaded relief
+// from NASA elevation data. Each range is its real high ground, stored as an index image
+// (ranges.png: pixel value = range number, see data/mountainRelief.js). Unfound ranges get a
+// faint sepia wash and outline, found ones turn green, missed ones red.
 const PALETTE = {
-  sea:        '#86a9b8',
-  land:       '#e9dcb9',
-  border:     'rgba(110, 80, 45, 0.45)',
-  ink:        'rgba(92, 62, 34, 0.9)',     // unfound ranges: sepia ink
-  found:      'rgba(24, 110, 40, 0.95)',
-  foundWash:  'rgba(57, 160, 60, 0.28)',
-  missed:     'rgba(170, 30, 30, 0.95)',
-  missedWash: 'rgba(220, 60, 60, 0.25)',
+  sea:   '#86a9b8',
+  land:  '#e9dcb9',
+  border: 'rgba(110, 80, 45, 0.45)',
+  ink:   'rgba(92, 62, 34, 0.9)',
+  found: 'rgba(24, 110, 40, 0.95)',
+  missed: 'rgba(170, 30, 30, 0.95)',
+}
+// [fill, edge] RGBA per state
+const OVERLAY = {
+  unfound: [[120, 80, 40, 40], [92, 62, 34, 200]],
+  found:   [[40, 160, 60, 130], [20, 105, 40, 245]],
+  missed:  [[205, 50, 50, 120], [165, 25, 25, 245]],
 }
 
-function drawMountainRange(ctx, feature, state) {
-  const { NAME, cLon, cLat, rx, ry, rotDeg } = feature.properties
-  const [cx, cy] = lonLatToXY(cLon, cLat)
-  const rxPx = rx * DEG_TO_PX
-  const halfW = Math.max(ry * DEG_TO_PX, 12)
-  const seed = Math.round(Math.abs(cLon * 13 + cLat * 7)) % 100
+const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '')
+let assetsPromise = null
+/** → { base: HTMLImageElement, W, H, pixels: Int32Array (index of every range pixel), ids, edge } */
+function loadAssets() {
+  return (assetsPromise ??= (async () => {
+    const img = (src) => new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = fail; i.src = src })
+    const [map, idxImg] = await Promise.all([
+      img(`${base}/data/relief/base-${SMALL_SCREEN ? '2k' : '4k'}.jpg`),
+      img(`${base}/data/relief/ranges.png`),
+    ])
+    const W = idxImg.width, H = idxImg.height
+    const c = document.createElement('canvas'); c.width = W; c.height = H
+    const cx = c.getContext('2d', { willReadFrequently: true })
+    cx.drawImage(idxImg, 0, 0)
+    const rgba = cx.getImageData(0, 0, W, H).data
+    const idx = new Uint8Array(W * H)
+    for (let p = 0, n = W * H; p < n; p++) idx[p] = rgba[p * 4]
+    // only the range pixels are touched on every redraw
+    const list = []
+    for (let p = 0; p < idx.length; p++) if (idx[p]) list.push(p)
+    const pixels = Int32Array.from(list)
+    const ids = new Uint8Array(pixels.length), edge = new Uint8Array(pixels.length)
+    pixels.forEach((p, k) => {
+      const v = idx[p]
+      ids[k] = v
+      const x = p % W
+      edge[k] = (x === 0 || idx[p - 1] !== v || x === W - 1 || idx[p + 1] !== v || idx[p - W] !== v || idx[p + W] !== v) ? 1 : 0
+    })
+    return { base: map, W, H, pixels, ids, edge }
+  })().catch(e => { assetsPromise = null; throw e }))
+}
 
-  const ink  = state === 'found' ? PALETTE.found : state === 'missed' ? PALETTE.missed : PALETTE.ink
-  const wash = state === 'found' ? PALETTE.foundWash : state === 'missed' ? PALETTE.missedWash : null
-
-  // Ridge spine: gentle S-curve along the range axis
-  const spineY = (x) => halfW * 0.28 * Math.sin((x / rxPx) * Math.PI * 1.25 + seed)
-
-  ctx.save()
-  ctx.translate(cx, cy)
-  ctx.rotate(-rotDeg * Math.PI / 180)
-  ctx.lineCap = 'round'
-
-  // Soft colour wash under found / missed ranges
-  if (wash) {
-    ctx.beginPath()
-    ctx.ellipse(0, 0, rxPx + halfW * 0.6, halfW * 1.5, 0, 0, Math.PI * 2)
-    ctx.fillStyle = wash
-    ctx.fill()
+let overlayCanvas = null
+function drawOverlay(ctx, assets, foundNames, missedNames) {
+  const { W, H, pixels, ids, edge } = assets
+  if (!overlayCanvas) { overlayCanvas = document.createElement('canvas'); overlayCanvas.width = W; overlayCanvas.height = H }
+  const oc = overlayCanvas.getContext('2d')
+  const data = oc.createImageData(W, H)
+  const d = data.data
+  // state of each range number
+  const state = new Array(256).fill(OVERLAY.unfound)
+  for (const [name, { i }] of Object.entries(RANGE_INDEX)) {
+    if (foundNames.has(name)) state[i] = OVERLAY.found
+    else if (missedNames.has(name)) state[i] = OVERLAY.missed
   }
+  for (let k = 0; k < pixels.length; k++) {
+    const col = state[ids[k]][edge[k]]
+    const o = pixels[k] * 4
+    d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = col[3]
+  }
+  oc.putImageData(data, 0, 0)
+  ctx.imageSmoothingEnabled = true
+  ctx.drawImage(overlayCanvas, 0, 0, CANVAS_W, CANVAS_H)
+}
 
-  // Hachures: tapered wedges radiating downslope from the crest.
-  // Shadow flank = longer, denser, darker; lit flank = short and sparse.
+function drawLabel(ctx, name, ink) {
+  const pos = RANGE_INDEX[name]
+  if (!pos) return
+  const [x, y] = lonLatToXY(pos.lon, pos.lat)
+  const label = rangeName(name)
+  ctx.font = 'italic 600 30px Georgia, "Times New Roman", serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = 6
+  ctx.strokeStyle = 'rgba(240, 230, 200, 0.92)'
+  ctx.strokeText(label, x, y)
   ctx.fillStyle = ink
-  ctx.strokeStyle = ink
-  const step = Math.max(4, Math.min(7, rxPx / 45))
-  let i = 0
-  for (let x = -rxPx; x <= rxPx; x += step, i++) {
-    const t = (x + rxPx) / (2 * rxPx)
-    const env = Math.sin(Math.PI * t) ** 0.55
-    if (env < 0.1) continue
-    const y0 = spineY(x)
-    const alt = i % 2 === 0 ? 1 : 0.62                      // long/short rhythm
-    for (const side of [-1, 1]) {
-      const shadow = side === 1
-      if (!shadow && i % 2 === 1) continue                  // lit side: every other stroke
-      const r = pr(i * 3 + (shadow ? 7 : 1) + seed)
-      const len = halfW * env * alt * (0.6 + 0.5 * r) * (shadow ? 1.15 : 0.7)
-      const ang = (t - 0.5) * 0.9 * side + (r - 0.5) * 0.25 // fan outwards toward the ends
-      const tipX = x + Math.sin(ang) * len
-      const tipY = y0 + side * Math.cos(ang) * len
-      const base = shadow ? 2.1 : 1.2
-      ctx.beginPath()
-      ctx.moveTo(x - base, y0)
-      ctx.lineTo(x + base, y0)
-      ctx.lineTo(tipX, tipY)
-      ctx.closePath()
-      ctx.fill()
-    }
-    // Occasional spur: a longer branching ridge on the shadow side
-    if (env > 0.5 && pr(i * 17 + seed) > 0.86) {
-      const len = halfW * 1.35 * env
-      const dir = (t - 0.5) * 1.2
-      ctx.lineWidth = 1.6
-      ctx.beginPath()
-      ctx.moveTo(x, y0)
-      ctx.quadraticCurveTo(x + dir * len * 0.3, y0 + len * 0.5, x + dir * len * 0.6, y0 + len)
-      ctx.stroke()
-    }
-  }
-
-  // Ridge crest line
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  for (let x = -rxPx * 0.96; x <= rxPx * 0.96; x += 6) {
-    const y = spineY(x)
-    if (x === -rxPx * 0.96) ctx.moveTo(x, y); else ctx.lineTo(x, y)
-  }
-  ctx.stroke()
-
-  // Copperplate-style label once revealed
-  if (state !== 'unfound') {
-    const size = Math.max(22, Math.min(34, rxPx / 6))
-    ctx.font = `italic 600 ${size}px Georgia, "Times New Roman", serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
-    // keep text upright
-    const upsideDown = Math.cos(rotDeg * Math.PI / 180) < 0
-    if (upsideDown) ctx.rotate(Math.PI)
-    ctx.lineWidth = 5
-    ctx.strokeStyle = 'rgba(233, 220, 185, 0.9)'
-    ctx.strokeText(rangeName(NAME), 0, halfW * 1.05)
-    ctx.fillStyle = ink
-    ctx.fillText(rangeName(NAME), 0, halfW * 1.05)
-  }
-
-  ctx.restore()
+  ctx.fillText(label, x, y)
 }
 
-function redrawMountains(canvas, countries, ranges, foundNames, missedNames) {
-  const ctx  = canvas.getContext('2d')
+function redrawMountains(canvas, countries, foundNames, missedNames, assets) {
+  const ctx = canvas.getContext('2d')
   ctx.setTransform(canvas.width / CANVAS_W, 0, 0, canvas.height / CANVAS_H, 0, 0)   // drawn in 4096-px units at any texture size
-  const proj = geoEquirectangular()
-    .scale(CANVAS_W / (2 * Math.PI))
-    .translate([CANVAS_W / 2, CANVAS_H / 2])
-  const path = geoPath().projection(proj).context(ctx)
 
-  // Sea
-  ctx.fillStyle = PALETTE.sea
-  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
-
-  // Land (parchment) + faint borders
-  for (const f of countries) {
-    ctx.beginPath()
-    path(f)
+  if (assets) {
+    ctx.drawImage(assets.base, 0, 0, CANVAS_W, CANVAS_H)
+    drawOverlay(ctx, assets, foundNames, missedNames)
+  } else {
+    // until the relief map arrives: plain sea and land
+    const path = geoPath().projection(geoEquirectangular().scale(CANVAS_W / (2 * Math.PI)).translate([CANVAS_W / 2, CANVAS_H / 2])).context(ctx)
+    ctx.fillStyle = PALETTE.sea
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
     ctx.fillStyle = PALETTE.land
-    ctx.fill()
     ctx.strokeStyle = PALETTE.border
     ctx.lineWidth = 0.8
-    ctx.stroke()
+    for (const f of countries) { ctx.beginPath(); path(f); ctx.fill(); ctx.stroke() }
   }
-
-  for (const f of ranges) {
-    const name = f.properties.NAME
-    if (!foundNames.has(name) && !missedNames.has(name)) drawMountainRange(ctx, f, 'unfound')
-  }
-  for (const f of ranges) {
-    if (foundNames.has(f.properties.NAME))  drawMountainRange(ctx, f, 'found')
-    if (missedNames.has(f.properties.NAME)) drawMountainRange(ctx, f, 'missed')
-  }
+  for (const name of foundNames) drawLabel(ctx, name, PALETTE.found)
+  for (const name of missedNames) drawLabel(ctx, name, PALETTE.missed)
 }
 
 export default function MountainGlobe({ countries, ranges, foundNames, missedNames, spinEnabled = true }) {
@@ -177,6 +141,16 @@ export default function MountainGlobe({ countries, ranges, foundNames, missedNam
   const autoTimer  = useRef(null)
   const spinRef    = useRef(spinEnabled)
   useEffect(() => { spinRef.current = spinEnabled }, [spinEnabled])
+
+  // The relief map and the ranges image load once; redraw when they arrive
+  const assetsRef = useRef(null)
+  const [assetsReady, setAssetsReady] = useState(false)
+  useEffect(() => {
+    let live = true
+    loadAssets().then(a => { if (live) { assetsRef.current = a; setAssetsReady(true) } }).catch(() => {})
+    return () => { live = false }
+  }, [])
+
 
   // Init Three.js scene
   useEffect(() => {
@@ -208,7 +182,7 @@ export default function MountainGlobe({ countries, ranges, foundNames, missedNam
     texture.minFilter  = SMALL_SCREEN ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter
     texture.generateMipmaps = !SMALL_SCREEN
     texRef.current = texture
-    redrawMountains(offscreen, countries, ranges, new Set(), new Set())
+    redrawMountains(offscreen, countries, new Set(), new Set(), assetsRef.current)
     texture.needsUpdate = true
 
     const sphere = new THREE.Mesh(
@@ -256,9 +230,9 @@ export default function MountainGlobe({ countries, ranges, foundNames, missedNam
   // Redraw when found/missed sets change
   useEffect(() => {
     if (!canvasRef.current || !texRef.current) return
-    redrawMountains(canvasRef.current, countries, ranges, foundNames, missedNames)
+    redrawMountains(canvasRef.current, countries, foundNames, missedNames, assetsRef.current)
     texRef.current.needsUpdate = true
-  }, [foundNames, missedNames, countries, ranges])
+  }, [foundNames, missedNames, countries, ranges, assetsReady])
 
   const pauseAutoRotate = useCallback(() => {
     autoRotate.current = false

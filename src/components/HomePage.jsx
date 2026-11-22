@@ -95,6 +95,15 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
               {dailyInfo.title}{dailyInfo.region !== 'World' ? ` · ${continentName(dailyInfo.region)}` : ''}
             </p>
           )}
+          {/* Multiplayer: a compact card under the main buttons */}
+          <button className="hp-duel" onClick={() => onSelectMode('duel')}>
+            <span className="hp-duel-icon"><Icon name="people" size={20} /></span>
+            <span className="hp-duel-body">
+              <span className="hp-duel-kicker">{t('Play with friends')} <span className="hp-duel-new">{t('New')}</span></span>
+              <span className="hp-duel-title">{t('Don\'t Say What I Say')}</span>
+            </span>
+            <Icon name="arrow" size={16} />
+          </button>
         </div>
       </section>
 

@@ -124,6 +124,7 @@ const CREDITS = [
   ['geoBoundaries', 'https://www.geoboundaries.org', { en: 'Districts of Moldova (data from UNHCR / OCHA) — CC BY 3.0 IGO', ro: 'Raioanele Republicii Moldova (date UNHCR / OCHA) — CC BY 3.0 IGO' }],
   ['Flagpedia / flagcdn.com', 'https://flagpedia.net', { en: 'Flag images', ro: 'Imaginile steagurilor' }],
   ['historical-basemaps (A. Ourednik)', 'https://github.com/aourednik/historical-basemaps', { en: 'Historical world maps (AD 100, 1279, 1700, 1914, 1920) — GPL-3.0', ro: 'Hărțile istorice ale lumii (anii 100, 1279, 1700, 1914, 1920) — GPL-3.0' }],
+  ['NASA Blue Marble (Visible Earth)', 'https://visibleearth.nasa.gov', { en: 'Elevation data for the shaded relief of the mountain-ranges globe — public domain', ro: 'Datele de altitudine pentru relieful globului cu lanțuri muntoase — domeniu public' }],
   ['PB2002 (Peter Bird) via fraxen/tectonicplates', 'https://github.com/fraxen/tectonicplates', { en: 'Tectonic plates — ODC-By 1.0', ro: 'Plăcile tectonice — ODC-By 1.0' }],
   ['World Bank Open Data', 'https://data.worldbank.org', { en: 'Population figures', ro: 'Datele despre populație' }],
   ['IANA Time Zone Database', 'https://www.iana.org/time-zones', { en: 'Time zones (via your browser)', ro: 'Fusurile orare (prin browserul tău)' }],
