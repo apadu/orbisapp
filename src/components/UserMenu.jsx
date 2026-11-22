@@ -70,10 +70,11 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
           <div className="um-lang" role="group" aria-label={t('Language')}>
             {LANGS.map(l => (
               <button key={l.id} className={lang === l.id ? 'active' : ''} onClick={() => { if (lang !== l.id) setLang(l.id) }}>
-                {l.flag} {l.id.toUpperCase()}
+                {l.flag} {l.id.toUpperCase()}{l.beta && <sup className="um-beta">beta</sup>}
               </button>
             ))}
           </div>
+          {LANGS.find(l => l.id === lang)?.beta && <p className="um-ios-help">{t('Spanish is in beta: some pages are still in English.')}</p>}
           {install === 'prompt' && <button role="menuitem" onClick={item(promptInstall)}>{plain(t('📲 Install the app'))}</button>}
           {install === 'ios' && <button role="menuitem" onClick={() => setIosHelp(v => !v)}>{plain(t('📲 Install the app'))}</button>}
           {install === 'ios' && iosHelp && <p className="um-ios-help">{t('In Safari, tap the Share button, then “Add to Home Screen”.')}</p>}

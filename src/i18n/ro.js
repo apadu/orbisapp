@@ -2239,4 +2239,8 @@ export const RO = {
   "No wins yet — invite a friend and be the first!": "Nicio victorie încă — invită un prieten și fii primul!",
   "Wins": "Victorii",
   "Matches": "Meciuri",
+  "15 points for every game you finish — the same as your XP.": "15 puncte pentru fiecare joc terminat — la fel ca XP-ul tău.",
+  "Best: {n}%": "Record: {n}%",
+  "New for you": "Nou pentru tine",
+  "Spanish is in beta: some pages are still in English.": "Spaniola e în beta: unele pagini sunt încă în engleză.",
 }

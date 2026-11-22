@@ -14,7 +14,7 @@ let COUNTRY = COUNTRY_RO
 export const langData = { names: null, countries: null, countryAliases: null }
 
 const KEY = 'orbis-lang'
-export const LANGS = [{ id: 'en', label: 'English', flag: '🇬🇧' }, { id: 'ro', label: 'Română', flag: '🇷🇴' }, { id: 'es', label: 'Español', flag: '🇪🇸' }]
+export const LANGS = [{ id: 'en', label: 'English', flag: '🇬🇧' }, { id: 'ro', label: 'Română', flag: '🇷🇴' }, { id: 'es', label: 'Español', flag: '🇪🇸', beta: true }]   // beta: the country pages and their quizzes are still in English
 
 function readLang() {
   try { const l = localStorage.getItem(KEY); return l === 'ro' || l === 'es' ? l : 'en' } catch { return 'en' }

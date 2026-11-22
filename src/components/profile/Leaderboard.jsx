@@ -59,7 +59,7 @@ function WeeklyBoard() {
       <div className="lb-weekly-head">
         <div>
           <h3>{t('Fever of the week')}</h3>
-          <p>{t('Points from every game you play: 2 per correct answer, 15 per finished game.')}</p>
+          <p>{t('15 points for every game you finish — the same as your XP.')}</p>
         </div>
         <span className="lb-reset">{t('Starts over in {d}d {h}h', left)}</span>
       </div>

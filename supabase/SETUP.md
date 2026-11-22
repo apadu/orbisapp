@@ -5,6 +5,7 @@ Until you finish these steps, the app works in guest-only mode, with stats saved
 ## 1. Create the Supabase project
 1. Go to [supabase.com](https://supabase.com) and create a new project (the free tier is fine).
 2. Open **SQL Editor**, then **New query**. Paste in all of `supabase/schema.sql` and click **Run**.
+   An existing project: run `supabase/hardening.sql`, `weekly.sql` and `duel.sql` once each instead.
 
 ## 2. Add the keys to the app
 1. In Supabase, open **Project Settings**, then **API**. Copy the **Project URL** and the **anon public** key.

@@ -179,6 +179,27 @@ export default function AdminPage() {
     return () => clearInterval(id)
   }, [load])
 
+  // Players hidden from the leaderboards (supabase/moderation.sql)
+  const [hidden, setHidden] = useState(null)        // Set of usernames, or null if moderation.sql isn't installed
+  const [hideErr, setHideErr] = useState(null)
+  useEffect(() => {
+    if (!supabase || !user) return
+    supabase.rpc('admin_hidden_players').then(({ data, error }) => {
+      if (error) { setHidden(null); setHideErr(/admin_hidden_players|function|schema cache/i.test(error.message) ? 'Rulează supabase/moderation.sql ca să poți ascunde jucători din clasamente.' : error.message) }
+      else { setHidden(new Set((data ?? []).map(r => r.username))); setHideErr(null) }
+    })
+  }, [user, loadedAt])
+  const toggleHidden = async (username) => {
+    const hide = !hidden?.has(username)
+    if (hide && !window.confirm(`Ascunzi jucătorul ${username} din toate clasamentele? Rezultatele lui rămân salvate; îl poți arăta din nou oricând.`)) return
+    const { error } = await supabase.rpc('admin_set_player_hidden', { p_username: username, p_hidden: hide })
+    if (error) { setHideErr(error.message); return }
+    setHidden(h => { const n = new Set(h); if (hide) n.add(username); else n.delete(username); return n })
+  }
+  const HideBtn = ({ username }) => hidden && username
+    ? <button className={`adm-btn adm-btn-sm${hidden.has(username) ? ' adm-btn-primary' : ''}`} onClick={() => toggleHidden(username)}>{hidden.has(username) ? 'Arată' : 'Ascunde'}</button>
+    : null
+
   const resolve = async (message) => {
     const { error } = await supabase.rpc('admin_resolve_error', { p_message: message })
     if (!error) setData(d => ({ ...d, errors: d.errors.filter(e => e.message !== message), totals: { ...d.totals, open_errors: Math.max(0, d.totals.open_errors - 1) } }))
@@ -261,9 +282,13 @@ export default function AdminPage() {
           <h3>Utilizatori <span className="adm-muted">(ultimii 50 înscriși)</span></h3>
           <input className="adm-search" placeholder="Caută nume sau email…" value={userQuery} onChange={e => setUserQuery(e.target.value)} />
         </div>
+        {hideErr && <p className="adm-muted">{hideErr}</p>}
+        {hidden && hidden.size > 0 && (
+          <p className="adm-muted">Ascunși din clasamente: {[...hidden].map(n => <span key={n} className="adm-hidden-chip">{n} <button onClick={() => toggleHidden(n)} title="Arată din nou">×</button></span>)}</p>
+        )}
         <div className="adm-table-wrap">
           <table className="adm-table">
-            <thead><tr><th>Utilizator</th><th>Email</th><th>Cont</th><th>Înscris</th><th>Ultima conectare</th><th className="num">Jocuri</th><th>Ultimul joc</th></tr></thead>
+            <thead><tr><th>Utilizator</th><th>Email</th><th>Cont</th><th>Înscris</th><th>Ultima conectare</th><th className="num">Jocuri</th><th>Ultimul joc</th><th>Clasamente</th></tr></thead>
             <tbody>
               {users.map(u => (
                 <tr key={u.username}>
@@ -274,9 +299,10 @@ export default function AdminPage() {
                   <td>{ago(u.last_sign_in_at)}</td>
                   <td className="num">{fmtN(u.games)}</td>
                   <td>{ago(u.last_played)}</td>
+                  <td><HideBtn username={u.username} />{hidden?.has(u.username) && <span className="adm-muted"> ascuns</span>}</td>
                 </tr>
               ))}
-              {users.length === 0 && <tr><td colSpan={7} className="adm-empty">Niciun rezultat</td></tr>}
+              {users.length === 0 && <tr><td colSpan={8} className="adm-empty">Niciun rezultat</td></tr>}
             </tbody>
           </table>
         </div>
@@ -289,7 +315,7 @@ export default function AdminPage() {
           {data.flagged_results.length === 0 ? <p className="adm-empty">✓ Niciunul</p> : (
             <div className="adm-table-wrap">
               <table className="adm-table">
-                <thead><tr><th>Jucător</th><th>Joc</th><th className="num">Scor</th><th className="num">Corecte</th><th className="num">Timp</th><th>Când</th></tr></thead>
+                <thead><tr><th>Jucător</th><th>Joc</th><th className="num">Scor</th><th className="num">Corecte</th><th className="num">Timp</th><th>Când</th><th></th></tr></thead>
                 <tbody>
                   {data.flagged_results.map((r, i) => (
                     <tr key={i}>
@@ -297,6 +323,7 @@ export default function AdminPage() {
                       <td className="num">{r.correct}/{r.total}</td>
                       <td className="num">{r.duration_ms != null ? `${Math.round(r.duration_ms / 1000)} s` : '—'}</td>
                       <td>{fmtDate(r.played_at)}</td>
+                      <td><HideBtn username={r.username} /></td>
                     </tr>
                   ))}
                 </tbody>

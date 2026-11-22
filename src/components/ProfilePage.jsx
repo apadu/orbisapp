@@ -143,7 +143,7 @@ function AccountDialog({ auth, username, onClose, onDelete }) {
           <div className="pp-account-row">
             <span>{t('Language')}</span>
             <span className="pp-account-lang">
-              {LANGS.map(l => <button key={l.id} className={lang === l.id ? 'active' : ''} onClick={() => { if (lang !== l.id) setLang(l.id) }}>{l.label}</button>)}
+              {LANGS.map(l => <button key={l.id} className={lang === l.id ? 'active' : ''} onClick={() => { if (lang !== l.id) setLang(l.id) }}>{l.label}{l.beta && <sup className="um-beta">beta</sup>}</button>)}
             </span>
           </div>
           <div className="pp-account-row"><span>{t('Sign out of this device')}</span><button className="tq-btn" onClick={() => { onClose(); auth.signOut() }}>{t('Sign out')}</button></div>

@@ -2239,4 +2239,8 @@ export const ES = {
   "No wins yet — invite a friend and be the first!": "Aún no hay victorias: ¡invita a un amigo y sé el primero!",
   "Wins": "Victorias",
   "Matches": "Partidas",
+  "15 points for every game you finish — the same as your XP.": "15 puntos por cada juego que terminas, igual que tu XP.",
+  "Best: {n}%": "Récord: {n}%",
+  "New for you": "Nuevo para ti",
+  "Spanish is in beta: some pages are still in English.": "El español está en beta: algunas páginas siguen en inglés.",
 }

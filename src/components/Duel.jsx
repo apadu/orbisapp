@@ -165,12 +165,14 @@ function useDuelRoom(code, name) {
     const ch = supabase.channel(`geofeverr-duel-${code}`, { config: { broadcast: { self: true }, presence: { key: me } } })
     chRef.current = ch
     ch.on('presence', { event: 'sync' }, () => {
-      const list = Object.values(ch.presenceState()).map(metas => metas[0]).filter(Boolean)
+      // names come from other people's browsers: keep them short and plain
+      const list = Object.values(ch.presenceState()).map(metas => metas[0]).filter(m => m && typeof m.id === 'string')
+        .map(m => ({ id: m.id.slice(0, 20), name: String(m.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 20) || t('Player'), joinedAt: Number(m.joinedAt) || 0 }))
       list.sort((a, b) => a.joinedAt - b.joinedAt || (a.id < b.id ? -1 : 1))
       setPresent(list)
     })
     ch.on('broadcast', { event: 'state' }, ({ payload }) => {
-      if (payload.from === me) return
+      if (payload.from === me || !payload.state?.settings || !Array.isArray(payload.state.order)) return
       gRef.current = payload.state
       setG(payload.state)
       deadlineRef.current = Date.now() + (payload.remaining ?? 0)

@@ -4,7 +4,7 @@ import { isRo, t } from '../i18n'
 // feedback form doubles as the contact channel.
 export const CONTACT_EMAIL = ''                       // e.g. 'hello@yourdomain.com'
 const CONTACT_FORM = 'https://forms.gle/hDpMyhns9PD7ghdBA'
-const UPDATED = '2026-10-29'
+const UPDATED = '2026-11-23'
 
 function Contact() {
   return CONTACT_EMAIL
@@ -26,6 +26,13 @@ const PRIVACY_EN = () => (
       <li><b>Game results</b> — scores, answers, time played and dates, so your stats, XP and leaderboard positions follow you across devices.</li>
     </ul>
     <p>Your username and best scores are public on leaderboards. Your email is never shown to other players.</p>
+    <p>If you sign in with <b>Google</b>, Google shares your name, email address and profile picture with us. We keep the email, a username made from your name and the picture.</p>
+    <h2>Comments and ratings</h2>
+    <p>Comments you post under a quiz are public, together with your username and picture. You can edit or delete them at any time. If other players report a comment, we may hide it. Quiz ratings are private: only the average is shown.</p>
+    <h2>Playing with friends (“Don't Say What I Say”)</h2>
+    <p>In a room, the other players see the name you type and your answers once each round ends. Answers travel live through Supabase Realtime and are not stored. Public rooms are listed with their code, the host's name and the category. Your match result is saved like any other game; if you're signed in, wins count on the public wins board.</p>
+    <h2>Anonymous quiz statistics</h2>
+    <p>When you finish a quiz, its score is also counted anonymously (no account, device or session attached) so we can show how you did compared to everyone else.</p>
     <h2>Service providers</h2>
     <ul>
       <li><b>Supabase</b> — database and sign-in (stores the account data above).</li>
@@ -58,6 +65,13 @@ const PRIVACY_RO = () => (
       <li><b>Rezultatele jocurilor</b> — scoruri, răspunsuri, durată și date, ca statisticile, XP-ul și locul în clasamente să te urmeze pe orice dispozitiv.</li>
     </ul>
     <p>Numele de utilizator și cele mai bune scoruri sunt publice în clasamente. Emailul nu este afișat niciodată altor jucători.</p>
+    <p>Dacă te conectezi cu <b>Google</b>, Google ne transmite numele, adresa de email și poza de profil. Păstrăm emailul, un nume de utilizator făcut din numele tău și poza.</p>
+    <h2>Comentarii și note</h2>
+    <p>Comentariile scrise sub un quiz sunt publice, împreună cu numele de utilizator și poza ta. Le poți modifica sau șterge oricând. Dacă alți jucători raportează un comentariu, îl putem ascunde. Notele date quizurilor sunt private: se afișează doar media.</p>
+    <h2>Jocul cu prietenii („Nu spune ce spun eu”)</h2>
+    <p>Într-o cameră, ceilalți jucători văd numele pe care îl scrii și răspunsurile tale, după ce se termină fiecare rundă. Răspunsurile circulă în timp real prin Supabase Realtime și nu sunt stocate. Camerele publice apar în listă cu codul, numele gazdei și categoria. Rezultatul meciului se salvează ca orice alt joc; dacă ești conectat, victoriile apar în clasamentul public de victorii.</p>
+    <h2>Statistici anonime ale quizurilor</h2>
+    <p>Când termini un quiz, scorul este numărat și anonim (fără cont, dispozitiv sau sesiune) ca să-ți putem arăta cum te-ai descurcat față de ceilalți.</p>
     <h2>Furnizori</h2>
     <ul>
       <li><b>Supabase</b> — baza de date și autentificarea (stochează datele de cont de mai sus).</li>
@@ -89,6 +103,8 @@ const TERMS_EN = () => (
       <li>Usernames must not be offensive, impersonate others or contain personal data of other people. We may remove usernames or accounts that break this rule.</li>
       <li>You can delete your account at any time from your profile.</li>
     </ul>
+    <h2>Comments and playing with others</h2>
+    <p>Be respectful. No insults, hate, spam, ads or other people's personal data — in comments, in usernames or in the names you use in multiplayer rooms. We may hide comments and remove accounts that break this rule.</p>
     <h2>Fair play</h2>
     <p>Don't cheat, automate games or tamper with scores. Results that look impossible are automatically left out of leaderboards, and we may remove scores or accounts that abuse the game.</p>
     <h2>Availability</h2>
@@ -109,6 +125,8 @@ const TERMS_RO = () => (
       <li>Numele de utilizator nu trebuie să fie jignitor, să se dea drept altcineva sau să conțină date personale ale altor oameni. Putem elimina numele sau conturile care încalcă regula.</li>
       <li>Îți poți șterge contul oricând, din profil.</li>
     </ul>
+    <h2>Comentarii și jocul cu alții</h2>
+    <p>Fii respectuos. Fără jigniri, ură, spam, reclame sau date personale ale altor oameni — în comentarii, în numele de utilizator sau în numele folosite în camerele de joc. Putem ascunde comentariile și elimina conturile care încalcă regula.</p>
     <h2>Joc corect</h2>
     <p>Nu trișa, nu automatiza jocurile și nu modifica scorurile. Rezultatele imposibile sunt excluse automat din clasamente, iar scorurile sau conturile care abuzează de joc pot fi eliminate.</p>
     <h2>Disponibilitate</h2>

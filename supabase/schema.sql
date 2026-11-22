@@ -139,6 +139,13 @@ create trigger game_results_check
   for each row execute function public.check_game_result();
 
 -- ── Leaderboard: best score per user for a mode, optionally since a date ────
+-- Players an admin has hidden from every leaderboard (cheating, offensive names…)
+create table if not exists public.hidden_players (
+  user_id   uuid primary key references auth.users(id) on delete cascade,
+  hidden_at timestamptz not null default now()
+);
+alter table public.hidden_players enable row level security;   -- no policies: only the admin functions touch it
+
 create or replace function public.get_leaderboard(
   p_mode  text,
   p_since timestamptz default null,
@@ -167,6 +174,7 @@ as $$
       and r.total > 0
       and coalesce((r.details->>'untimed')::boolean, false) = false   -- untimed games don't rank
       and r.flagged = false                                             -- implausible results don't rank
+      and not exists (select 1 from public.hidden_players h where h.user_id = r.user_id)   -- hidden by an admin
       and (p_since is null or r.played_at >= p_since)
     order by r.user_id, r.score desc, r.duration_ms asc nulls last, r.played_at asc
   )
@@ -848,7 +856,7 @@ revoke all on function public.admin_quiz_ratings() from public, anon;
 grant execute on function public.admin_quiz_ratings() to authenticated;
 
 -- ── Weekly board: everyone's points across all games, reset every Monday 00:00 UTC ──
--- Points: 2 per correct answer (at most 200 counted per game) + 15 per finished game.
+-- Points: 15 per finished game, the same as the XP in the app (answers themselves earn nothing).
 -- Same rules as the other boards: untimed and flagged games don't count.
 -- Run this once in the Supabase SQL editor (it is also at the end of schema.sql).
 create or replace function public.get_weekly_board(p_limit integer default 50)
@@ -866,13 +874,14 @@ security definer set search_path = public
 as $$
   with week as (
     select r.user_id,
-           sum(least(r.correct, 200)) * 2 + 15 * count(*) filter (where r.completed) as points,
+           15 * count(*) filter (where r.completed) as points,
            count(*) as games
     from public.game_results r
     where r.played_at >= date_trunc('week', now() at time zone 'utc') at time zone 'utc'
       and r.played_at <= now() + interval '10 minutes'
       and r.total > 0
       and r.flagged = false
+      and not exists (select 1 from public.hidden_players h where h.user_id = r.user_id)
       and coalesce((r.details->>'untimed')::boolean, false) = false
     group by r.user_id
   )
@@ -886,3 +895,185 @@ as $$
 $$;
 
 grant execute on function public.get_weekly_board(integer) to anon, authenticated;
+
+-- ── Hardening before launch ──────────────────────────────────────────────────
+-- Run this once in the Supabase SQL editor (safe to run again). It is also at the end of schema.sql.
+
+-- 1. Avatars: only Google profile pictures.
+--    A sign-up through the API could otherwise put any image URL in its metadata, and avatars
+--    are shown to everyone on the leaderboards and in the comments.
+create or replace function public.safe_avatar(u text)
+returns text language sql immutable as $$
+  select case when u ~ '^https://[a-z0-9-]+\.googleusercontent\.com/[^\s"''<>]*$' then u end
+$$;
+
+update public.profiles set avatar_url = public.safe_avatar(avatar_url)
+where avatar_url is not null and avatar_url is distinct from public.safe_avatar(avatar_url);
+
+alter table public.profiles drop constraint if exists profiles_avatar_google;
+alter table public.profiles add constraint profiles_avatar_google
+  check (avatar_url is null or avatar_url = public.safe_avatar(avatar_url));
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  base text;
+  candidate text;
+begin
+  base := coalesce(
+    new.raw_user_meta_data->>'username',
+    split_part(coalesce(new.raw_user_meta_data->>'full_name', new.email), '@', 1),
+    'explorer'
+  );
+  base := left(regexp_replace(lower(base), '[^a-z0-9_]', '', 'g'), 18);
+  if char_length(base) < 3 then base := 'explorer'; end if;
+
+  candidate := base;
+  while exists (select 1 from public.profiles where username = candidate) loop
+    candidate := base || floor(random() * 10000)::int;
+  end loop;
+
+  insert into public.profiles (id, username, avatar_url)
+  values (new.id, candidate, public.safe_avatar(new.raw_user_meta_data->>'avatar_url'));
+  return new;
+end;
+$$;
+
+-- 2. Flood guards on the tables anyone can write to (no account needed).
+--    Extra rows beyond the limits are dropped silently, so a script can't fill the database.
+create index if not exists page_views_session_idx on public.page_views (session_id, created_at desc);
+
+create or replace function public.page_views_guard()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if (select count(*) from public.page_views where created_at > now() - interval '1 minute') >= 1000
+     or (select count(*) from public.page_views where session_id = new.session_id and created_at > now() - interval '1 minute') >= 30 then
+    return null;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists page_views_guard on public.page_views;
+create trigger page_views_guard before insert on public.page_views
+  for each row execute function public.page_views_guard();
+
+create or replace function public.client_errors_guard()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if (select count(*) from public.client_errors where created_at > now() - interval '1 minute') >= 120 then
+    return null;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists client_errors_guard on public.client_errors;
+create trigger client_errors_guard before insert on public.client_errors
+  for each row execute function public.client_errors_guard();
+
+-- 3. Comments: editing is rate-limited too (posting already is: 3 a minute, 60 a day)
+create or replace function public.quiz_comment_edit()
+returns trigger
+language plpgsql
+as $$
+begin
+  if current_user in ('authenticated', 'anon') and not public.is_admin() then
+    new.quiz := old.quiz; new.user_id := old.user_id; new.parent_id := old.parent_id;
+    new.created_at := old.created_at; new.like_count := old.like_count; new.hidden := old.hidden;
+    if new.body is distinct from old.body and old.edited_at is not null and old.edited_at > now() - interval '10 seconds' then
+      raise exception 'rate_limited';
+    end if;
+  end if;
+  if new.body is distinct from old.body then new.edited_at := now(); new.body := btrim(new.body); end if;
+  return new;
+end;
+$$;
+
+
+-- ── Moderation (also in moderation.sql) ──
+-- Admin: hide or show a player on every leaderboard (by username)
+create or replace function public.admin_set_player_hidden(p_username text, p_hidden boolean)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare uid uuid;
+begin
+  if not public.is_admin() then raise exception 'not_admin'; end if;
+  select id into uid from public.profiles where lower(username) = lower(trim(p_username));
+  if uid is null then raise exception 'no_such_player'; end if;
+  if p_hidden then
+    insert into public.hidden_players (user_id) values (uid) on conflict do nothing;
+  else
+    delete from public.hidden_players where user_id = uid;
+  end if;
+end;
+$$;
+revoke all on function public.admin_set_player_hidden(text, boolean) from public, anon;
+grant execute on function public.admin_set_player_hidden(text, boolean) to authenticated;
+
+-- Admin: who is hidden
+create or replace function public.admin_hidden_players()
+returns table (username text, hidden_at timestamptz)
+language plpgsql
+stable
+security definer set search_path = public
+as $$
+begin
+  if not public.is_admin() then raise exception 'not_admin'; end if;
+  return query
+    select p.username, h.hidden_at
+    from public.hidden_players h join public.profiles p on p.id = h.user_id
+    order by h.hidden_at desc;
+end;
+$$;
+revoke all on function public.admin_hidden_players() from public, anon;
+grant execute on function public.admin_hidden_players() to authenticated;
+
+-- ── "Don't Say What I Say" board (also in duel.sql) ──
+create or replace function public.get_duel_board(p_since timestamptz default null, p_limit integer default 50)
+returns table (
+  rank       bigint,
+  user_id    uuid,
+  username   text,
+  avatar_url text,
+  wins       bigint,
+  matches    bigint
+)
+language sql
+stable
+security definer set search_path = public
+as $$
+  with per_day as (
+    select r.user_id,
+           least(count(*) filter (where coalesce((r.details->>'won')::boolean, false)), 30) as wins,   -- at most 30 a day
+           count(*) as matches
+    from public.game_results r
+    where r.mode = 'duel'
+      and r.completed
+      and r.flagged = false
+      and not exists (select 1 from public.hidden_players h where h.user_id = r.user_id)
+      and (p_since is null or r.played_at >= p_since)
+      and r.played_at <= now() + interval '10 minutes'
+    group by r.user_id, (r.played_at at time zone 'utc')::date
+  ), m as (
+    select user_id, sum(wins)::bigint as wins, sum(matches)::bigint as matches from per_day group by user_id
+  )
+  select rank() over (order by m.wins desc, m.matches asc) as rank,
+         m.user_id, p.username, p.avatar_url, m.wins, m.matches
+  from m
+  join public.profiles p on p.id = m.user_id
+  where m.wins > 0
+  order by rank
+  limit least(p_limit, 100);
+$$;
+
+grant execute on function public.get_duel_board(timestamptz, integer) to anon, authenticated;

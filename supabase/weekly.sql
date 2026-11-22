@@ -1,7 +1,14 @@
 -- ── Weekly board: everyone's points across all games, reset every Monday 00:00 UTC ──
--- Points: 2 per correct answer (at most 200 counted per game) + 15 per finished game.
+-- Points: 15 per finished game, the same as the XP in the app (answers themselves earn nothing).
 -- Same rules as the other boards: untimed and flagged games don't count.
 -- Run this once in the Supabase SQL editor (it is also at the end of schema.sql).
+-- Players an admin has hidden from every leaderboard (cheating, offensive names…)
+create table if not exists public.hidden_players (
+  user_id   uuid primary key references auth.users(id) on delete cascade,
+  hidden_at timestamptz not null default now()
+);
+alter table public.hidden_players enable row level security;   -- no policies: only the admin functions touch it
+
 create or replace function public.get_weekly_board(p_limit integer default 50)
 returns table (
   rank       bigint,
@@ -17,13 +24,14 @@ security definer set search_path = public
 as $$
   with week as (
     select r.user_id,
-           sum(least(r.correct, 200)) * 2 + 15 * count(*) filter (where r.completed) as points,
+           15 * count(*) filter (where r.completed) as points,
            count(*) as games
     from public.game_results r
     where r.played_at >= date_trunc('week', now() at time zone 'utc') at time zone 'utc'
       and r.played_at <= now() + interval '10 minutes'
       and r.total > 0
       and r.flagged = false
+      and not exists (select 1 from public.hidden_players h where h.user_id = r.user_id)
       and coalesce((r.details->>'untimed')::boolean, false) = false
     group by r.user_id
   )
