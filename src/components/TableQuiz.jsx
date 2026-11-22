@@ -479,6 +479,8 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
         )}
       </div>
 
+      {/* everything under the answer bar: on a phone with the keyboard open, only this scrolls */}
+      <div className="tq-scroll">
       <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
 
       {phase === 'done' && !daily && <QuizResultStats mode={quizId} variant={`${region}|${rows.length}`} row={lastRow} prev={prevRef.current} record={!untimed} />}
@@ -528,6 +530,7 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
       {phase === 'done' && !daily && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
 
       {!daily && <QuizComments quiz={quizId} unlocked={phase === 'done'} />}
+      </div>
     </div>
   )
 }

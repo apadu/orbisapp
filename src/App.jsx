@@ -1048,7 +1048,6 @@ export default function App() {
   }, [])
 
   const gameCountryNames = useMemo(() => gameCountries.map(f => f.properties.NAME), [gameCountries])
-  const playQuizFromDaily = useCallback((id) => switchMode(id), [switchMode])
 
   // ── Result tracking for "name them all" games ───────────────────────────
   const names   = (arr) => arr.map(f => f.properties?.NAME ?? f.name)
@@ -1244,7 +1243,7 @@ export default function App() {
             {!QUIZ_MODES.has(mode) ? (
               <QuizHub onSelect={openGame} countryNames={gameCountryNames} />
             ) : mode === 'daily-quiz' ? (
-              <DailyQuiz countryNames={gameCountryNames} onPlayQuiz={playQuizFromDaily} />
+              <DailyQuiz countryNames={gameCountryNames} />
             ) : mode === 'higher-lower' ? (
               <HigherLower key={mode} countryNames={gameCountryNames} />
             ) : mode === 'scale-sort' ? (

@@ -4925,16 +4925,21 @@ h1, h2, .hp-title, .hp-sec-title, .qh-title, .qh-section-head h2, .chub-head h1,
 @media (max-width: 640px) { .ch-name { right: auto; left: 0; } }
 .um-ios-help { margin: 0 10px 6px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); font-size: 0.78rem; color: var(--text-dim); line-height: 1.4; }
 
-/* Phones: while the keyboard is open, a quiz page shrinks to the part of the screen you can
-   see (--vvh, set by useKeyboardInset), so the list scrolls normally above the keyboard and
-   the last rows can be reached. scroll-padding keeps rows scrolled into view clear of the
-   sticky answer bar. */
+/* Phones, keyboard open: the quiz page shrinks to the part of the screen you can see (--vvh,
+   set by useKeyboardInset). The answer bar stays on top and only what's under it (.tq-scroll)
+   scrolls. The bar must not sit inside the scrolling box: iOS scrolls that box back to the
+   text field on every key press. Title, options and banners step aside to leave room. */
+/* the wrapper under the answer bar keeps the same spacing as the rest of the quiz */
+.tq-scroll { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 @media (max-width: 700px) {
   .kb-open .is-mobile.page-quiz { height: var(--vvh, 100dvh); }
-  .is-mobile.page-quiz .quiz-content {
-    padding-bottom: 24px;
-    scroll-padding-top: 96px;
-    scroll-padding-bottom: 16px;
-    overscroll-behavior: contain;
+  .kb-open .is-mobile.page-quiz .quiz-content { overflow: hidden; }
+  .kb-open .is-mobile.page-quiz .quiz-shell:has(.tq:not(.tq-done)) > .quiz-nav-bar { display: none; }
+  .kb-open .is-mobile.page-quiz .tq:not(.tq-done) { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-bottom: 0; }
+  .kb-open .is-mobile.page-quiz .tq:not(.tq-done) > :is(.tq-head, .qr-opts, .qs-attempt, .ch-banner, .dq-banner) { display: none; }
+  .kb-open .is-mobile.page-quiz .tq:not(.tq-done) > .tq-bar { position: static; flex: none; }
+  .kb-open .is-mobile.page-quiz .tq:not(.tq-done) > .tq-scroll {
+    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    padding-bottom: 24px; scroll-padding: 8px;
   }
 }

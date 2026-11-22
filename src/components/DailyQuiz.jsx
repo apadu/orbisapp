@@ -110,7 +110,7 @@ function DailyRank({ day, score, total, record }) {
   )
 }
 
-function ResultCard({ info, res, streak, onPractice, record = false }) {
+function ResultCard({ info, res, streak, record = false }) {
   const [copied, setCopied] = useState(false)
   const [showText, setShowText] = useState(false)
   const left = useCountdown()
@@ -130,7 +130,6 @@ function ResultCard({ info, res, streak, onPractice, record = false }) {
         </div>
         <div className="dq-result-btns">
           <button className="tq-btn tq-btn-primary dq-share-btn" onClick={share}>{copied ? <><Icon name="check" size={16} /> {t('Copied')}</> : t('Share result')}</button>
-          <button className="tq-btn" onClick={onPractice}>{t('Practice this quiz')}</button>
         </div>
       </div>
       <div className={`qs-fever qs-fever-${feverVerdict(pct).cls}`}>{feverVerdict(pct).text}</div>
@@ -147,7 +146,7 @@ function ResultCard({ info, res, streak, onPractice, record = false }) {
   )
 }
 
-export default function DailyQuiz({ countryNames, onPlayQuiz }) {
+export default function DailyQuiz({ countryNames }) {
   const results = useResults()
   const today = dailyNumber()
   const info = useMemo(() => dailyQuizFor(today, countryNames), [today, countryNames])
@@ -162,9 +161,9 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
     onStart: () => setPlaying(true),
     onFinish: (res) => setJustFinished(res),
     renderResult: (res) => (
-      <ResultCard info={info} res={res} streak={dailyStreak(loadResults(), today)} onPractice={() => onPlayQuiz(info.quizId)} record />
+      <ResultCard info={info} res={res} streak={dailyStreak(loadResults(), today)} record />
     ),
-  }), [info, today, onPlayQuiz])
+  }), [info, today])
 
   if (!info) return <StateNote kind="loading">{t('Loading today\'s quiz…')}</StateNote>
 
@@ -175,7 +174,7 @@ export default function DailyQuiz({ countryNames, onPlayQuiz }) {
       <div className="dq">
         <DailyHeader info={info} streak={streak} />
         <div className="dq-done-note">{t('You\'ve played today\'s quiz')}{previous.completed ? '' : t(' (you left before the end)')}{t('. Come back tomorrow for a new one!')}</div>
-        <ResultCard info={info} res={res} streak={streak} onPractice={() => onPlayQuiz(info.quizId)} />
+        <ResultCard info={info} res={res} streak={streak} />
       </div>
     )
   }

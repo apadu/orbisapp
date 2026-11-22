@@ -335,6 +335,8 @@ export default function DiagramQuiz({ quizId, onOpen, daily = null }) {
         )}
       </div>
 
+      {/* everything under the answer bar: on a phone with the keyboard open, only this scrolls */}
+      <div className="tq-scroll">
       <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
 
       {over && !daily && <QuizResultStats mode={quizId} row={lastRow} prev={prevRef.current} record={timed} />}
@@ -362,6 +364,7 @@ export default function DiagramQuiz({ quizId, onOpen, daily = null }) {
 
       {over && !daily && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
       {!daily && <QuizComments quiz={quizId} unlocked={over} />}
+      </div>
     </div>
   )
 }

@@ -233,6 +233,8 @@ export default function TripointQuiz({ quizId, onOpen }) {
         )}
       </div>
 
+      {/* everything under the answer bar: on a phone with the keyboard open, only this scrolls */}
+      <div className="tq-scroll">
       <div className="tq-progress"><div style={{ width: `${pct}%` }} /></div>
 
       {ready && <AttemptNote mode={quizId} />}
@@ -266,6 +268,7 @@ export default function TripointQuiz({ quizId, onOpen }) {
       {over && onOpen && <TryNext mode={quizId} onOpen={onOpen} />}
 
       <QuizComments quiz={quizId} unlocked={over} />
+      </div>
     </div>
   )
 }
