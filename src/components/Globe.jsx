@@ -1,13 +1,14 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 import * as THREE from 'three'
-import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
+import { prepareTexture, SMALL_SCREEN, TEX_SCALE, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
 import { geoEquirectangular, geoPath, geoCentroid } from 'd3-geo'
 import GlobeControls from './GlobeControls'
 import { t } from '../i18n'
 import { plain } from '../utils/plain'
 
-const CANVAS_W = 4096
+const CANVAS_W = 4096   // drawing coordinates (the texture is drawn in these units)
 const CANVAS_H = 2048
+
 
 
 // Countries that get a semi-transparent white ellipse marker.
@@ -220,6 +221,7 @@ function projectedPath(feature, proj) {
 // ─── Draw all countries + tiny-country markers onto an offscreen canvas ──────
 function redrawTexture(canvas, countries, guessMap, mysteryName, gameWon, highlightedName, missedSet, locateMarker, hiddenSet, soloMode, locateCorrectMarker, overlay) {
   const ctx = canvas.getContext('2d')
+  ctx.setTransform(canvas.width / CANVAS_W, 0, 0, canvas.height / CANVAS_H, 0, 0)
   const proj = geoEquirectangular()
     .scale(CANVAS_W / (2 * Math.PI))
     .translate([CANVAS_W / 2, CANVAS_H / 2])
@@ -605,6 +607,7 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
   const sphereRef = useRef(null)
   const texRef    = useRef(null)
   const canvasRef = useRef(null)
+  const sigRef    = useRef({})   // what the texture currently shows (to skip identical redraws)
   const camRef    = useRef(null)
   const animRef   = useRef(null)
   const sceneRef  = useRef(null)
@@ -632,8 +635,8 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     const H = el.clientHeight
 
     const offscreen = document.createElement('canvas')
-    offscreen.width  = CANVAS_W
-    offscreen.height = CANVAS_H
+    offscreen.width  = CANVAS_W * TEX_SCALE
+    offscreen.height = CANVAS_H * TEX_SCALE
     canvasRef.current = offscreen
 
     const scene = new THREE.Scene()
@@ -652,8 +655,9 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
 
     const texture = prepareTexture(new THREE.CanvasTexture(offscreen))
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
-    texture.minFilter = THREE.LinearMipmapLinearFilter
-    texture.generateMipmaps = true
+    // Mipmaps are rebuilt on every upload: worth it on a desktop, too slow on a phone
+    texture.minFilter = SMALL_SCREEN ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter
+    texture.generateMipmaps = !SMALL_SCREEN
     texRef.current = texture
     redrawTexture(offscreen, countries, {}, null, false, null)
     texture.needsUpdate = true
@@ -713,6 +717,7 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
+      renderer.render(scene, camera)   // draw right away: a resized canvas is blank until the next frame
     }
     window.addEventListener('resize', onResize)
 
@@ -735,11 +740,21 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
     const guessMap = {}
     for (const g of guesses) guessMap[g.name] = g.color
     const missedSet = missed?.length ? new Set(missed.map(f => f.properties.NAME)) : null
+    // Parents often pass fresh arrays with the same content (every timer tick re-renders the
+    // game): only redraw when something on the map actually changed
+    const sig = [
+      guesses.map(g => `${g.name}:${g.color}`).join('|'), missedSet ? [...missedSet].join('|') : '',
+      hiddenCountries ? [...hiddenCountries].join('|') : '', mystery?.properties?.NAME ?? '', gameWon, highlighted?.properties?.NAME ?? '', soloMode,
+    ].join('#')
+    const same = sigRef.current.sig === sig && sigRef.current.countries === countries && sigRef.current.locateMarker === locateMarker &&
+      sigRef.current.locateCorrectMarker === locateCorrectMarker && sigRef.current.overlay === drawOverlayMerged && sigRef.current.pending === pending
+    if (same) return
     // Coalesce bursts of state changes (e.g. several answers in one tick) into one redraw per frame
     const raf = requestAnimationFrame(() => {
       if (!canvasRef.current || !texRef.current) return
       redrawTexture(canvasRef.current, countries, guessMap, mystery?.properties?.NAME, gameWon, highlighted?.properties?.NAME ?? null, missedSet, pending && !overlay ? pending : locateMarker, hiddenCountries, soloMode, locateCorrectMarker, drawOverlayMerged)
       texRef.current.needsUpdate = true
+      sigRef.current = { sig, countries, locateMarker, locateCorrectMarker, overlay: drawOverlayMerged, pending }
     })
     return () => cancelAnimationFrame(raf)
   }, [guesses, mystery, gameWon, countries, highlighted, missed, locateMarker, locateCorrectMarker, hiddenCountries, soloMode, drawOverlayMerged, pending])

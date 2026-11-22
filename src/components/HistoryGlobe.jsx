@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import * as THREE from 'three'
-import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER } from '../utils/globeFx'
+import { prepareTexture, globeMaterial, addAtmosphere, addLights, oceanGradient, landColor, SHALLOW_OUTER, SHALLOW_INNER, SMALL_SCREEN, TEX_SCALE } from '../utils/globeFx'
 import { geoEquirectangular, geoPath } from 'd3-geo'
 import GlobeControls from './GlobeControls'
 
@@ -9,6 +9,7 @@ const CANVAS_H = 2048
 
 function redrawHistory(canvas, features, targetNames, foundNames, missedNames) {
   const ctx  = canvas.getContext('2d')
+  ctx.setTransform(canvas.width / CANVAS_W, 0, 0, canvas.height / CANVAS_H, 0, 0)   // drawn in 4096-px units at any texture size
   const proj = geoEquirectangular()
     .scale(CANVAS_W / (2 * Math.PI))
     .translate([CANVAS_W / 2, CANVAS_H / 2])
@@ -90,8 +91,8 @@ export default function HistoryGlobe({ features, targetNames, foundNames, missed
     const H  = el.clientHeight
 
     const offscreen = document.createElement('canvas')
-    offscreen.width  = CANVAS_W
-    offscreen.height = CANVAS_H
+    offscreen.width  = CANVAS_W * TEX_SCALE
+    offscreen.height = CANVAS_H * TEX_SCALE
     canvasRef.current = offscreen
 
     const scene = new THREE.Scene()
@@ -109,8 +110,8 @@ export default function HistoryGlobe({ features, targetNames, foundNames, missed
 
     const texture = prepareTexture(new THREE.CanvasTexture(offscreen))
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
-    texture.minFilter  = THREE.LinearMipmapLinearFilter
-    texture.generateMipmaps = true
+    texture.minFilter  = SMALL_SCREEN ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter
+    texture.generateMipmaps = !SMALL_SCREEN
     texRef.current = texture
 
     redrawHistory(offscreen, features, targetNames, new Set(), new Set())
@@ -146,6 +147,7 @@ export default function HistoryGlobe({ features, targetNames, foundNames, missed
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
+      renderer.render(scene, camera)   // a resized canvas stays blank until drawn
     }
     window.addEventListener('resize', onResize)
 

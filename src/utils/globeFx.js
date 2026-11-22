@@ -7,6 +7,11 @@ import * as THREE from 'three'
  */
 
 /** Call right after `new THREE.CanvasTexture(canvas)` — canvas colours are sRGB. */
+// Phones get a texture half as wide and tall (a quarter of the pixels) and no mipmaps:
+// redrawing and re-uploading the full 4096 px texture after every answer froze the globe there.
+export const SMALL_SCREEN = typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 700px), (pointer: coarse)').matches
+export const TEX_SCALE = SMALL_SCREEN ? 0.5 : 1
+
 export function prepareTexture(texture) {
   texture.colorSpace = THREE.SRGBColorSpace
   return texture

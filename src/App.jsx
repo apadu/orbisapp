@@ -1141,6 +1141,19 @@ export default function App() {
   const extraFlyTo = useMemo(() => globeExtra.flyTo ?? null, [extraFlyKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Render ───────────────────────────────────────────────────────────────
+  // The globes redraw their whole texture whenever these props change: build the sets once
+  // per change, not on every render (the game clock re-renders the app every second)
+  const namesOf = (list) => new Set(list.map(f => f.properties.NAME))
+  const mountainsFoundSet = useMemo(() => namesOf(mountainsFound), [mountainsFound])
+  const mountainsMissedSet = useMemo(() => namesOf(mountainsMissed), [mountainsMissed])
+  const seasFoundSet = useMemo(() => namesOf(seasAllFound), [seasAllFound])
+  const seasMissedSet = useMemo(() => namesOf(seasAllMissed), [seasAllMissed])
+  const riversFoundSet = useMemo(() => namesOf(riversFound), [riversFound])
+  const riversMissedSet = useMemo(() => namesOf(riversMissed), [riversMissed])
+  const histTargetSet = useMemo(() => namesOf(histEuroFeatures), [histEuroFeatures])
+  const histFoundSet = useMemo(() => namesOf(histFound), [histFound])
+  const histMissedSet = useMemo(() => namesOf(histMissed), [histMissed])
+
   if (loading) return (
     <div className="loading-screen">
       <div className="loading-globe"><Icon name="globe" size={56} strokeWidth={1.3} /></div>
@@ -1380,32 +1393,32 @@ export default function App() {
             <MountainGlobe
               countries={countries}
               ranges={mountains}
-              foundNames={new Set(mountainsFound.map(f => f.properties.NAME))}
-              missedNames={new Set(mountainsMissed.map(f => f.properties.NAME))}
+              foundNames={mountainsFoundSet}
+              missedNames={mountainsMissedSet}
               spinEnabled={false}
             />
           ) : mode === 'name-all-seas' ? (
             <NameAllSeaGlobe
               countries={countries}
               seas={seas}
-              foundNames={new Set(seasAllFound.map(f => f.properties.NAME))}
-              missedNames={new Set(seasAllMissed.map(f => f.properties.NAME))}
+              foundNames={seasFoundSet}
+              missedNames={seasMissedSet}
               spinEnabled={false}
             />
           ) : mode === 'name-all-rivers' ? (
             <RiverGlobe
               countries={countries}
               rivers={rivers}
-              foundNames={new Set(riversFound.map(f => f.properties.NAME))}
-              missedNames={new Set(riversMissed.map(f => f.properties.NAME))}
+              foundNames={riversFoundSet}
+              missedNames={riversMissedSet}
               spinEnabled={false}
             />
           ) : mode === 'history-maps' ? (
             <HistoryGlobe
               features={histAllFeatures}
-              targetNames={new Set(histEuroFeatures.map(f => f.properties.NAME))}
-              foundNames={new Set(histFound.map(f => f.properties.NAME))}
-              missedNames={new Set(histMissed.map(f => f.properties.NAME))}
+              targetNames={histTargetSet}
+              foundNames={histFoundSet}
+              missedNames={histMissedSet}
               spinEnabled={false}
             />
           ) : (
@@ -1428,7 +1441,7 @@ export default function App() {
                 mystery={mode === 'mystery' ? mystery : null}
                 gameWon={mode === 'mystery' ? gameWon : false}
                 highlighted={globeHighlighted}
-                missed={mode === 'name-all' ? nameAllMissed : mode === 'name-all-caps' ? capsAllMissed : mode === 'name-all-currencies' ? currenciesMissed : mode === 'name-all-languages' ? languagesMissed : mode === 'missing' ? missingMissedFeatures : mode === 'spotlight' ? spotlightMissedFeatures : []}
+                missed={mode === 'name-all' ? nameAllMissed : mode === 'name-all-caps' ? capsAllMissed : mode === 'name-all-currencies' ? currenciesMissed : mode === 'name-all-languages' ? languagesMissed : mode === 'missing' ? missingMissedFeatures : mode === 'spotlight' ? spotlightMissedFeatures : EMPTY_LIST}
                 hiddenCountries={mode === 'missing' ? missingHidden : undefined}
                 soloMode={mode === 'spotlight' || (mode === 'name-all' && nameAllBlind)}
                 onGlobeClick={mode === 'locate' ? handleLocateClick : null}

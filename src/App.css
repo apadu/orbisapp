@@ -3835,9 +3835,22 @@ button.hp-card:hover, .hp-daily-head:hover { transform: translateY(-2px); border
   html, body { overscroll-behavior: none; }
   .kb-typing.page-game .topbar { display: none; }
   .kb-typing.page-game .globe-pane { top: 0; transition: none; }
-  .kb-typing.page-game .panel.panel-float {
-    overflow: hidden; transition: none;
-    border-radius: 12px 16px 0 0;
+  /* the panel steps aside; only its text box row stays, pinned on top of the keyboard */
+  .app-shell.kb-typing.page-game.is-mobile .panel.panel-float {
+    visibility: hidden; pointer-events: none; overflow: visible; transition: none;
+    background: transparent; border: none; box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  /* nothing between the panel and the row may create a containing box for position: fixed */
+  .app-shell.kb-typing.page-game.is-mobile .panel.panel-float :has(.kb-row) {
+    transform: none !important; animation: none !important; filter: none !important;
+    backdrop-filter: none !important; will-change: auto !important; contain: none !important;
+  }
+  .app-shell.kb-typing.page-game.is-mobile .panel.panel-float .kb-row {
+    visibility: visible; pointer-events: auto;
+    position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); z-index: 40;
+    margin: 0; padding: 8px 10px; border-radius: 14px 14px 0 0;
+    background: rgba(15,11,28,0.97); border-top: 1px solid rgba(255,122,61,0.3);
     box-shadow: 0 -6px 24px rgba(0,0,0,0.5);
   }
   .kb-typing .sheet-handle,

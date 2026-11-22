@@ -69,29 +69,28 @@ export function useKeyboardInset() {
 }
 
 /**
- * While the keyboard is open, the game panel shrinks to just the row with the text box
- * (input + its button), sitting right on top of the keyboard, so the globe keeps the rest
- * of the screen. Returns the compact height (px) to use, or null.
+ * While the keyboard is open, the game's text box row (input + its button) is pinned right on
+ * top of the keyboard and the rest of the panel steps aside (CSS: .kb-typing .kb-row), so the
+ * globe keeps the rest of the screen. Returns the row's height (px) for the globe to leave
+ * free, or null.
  */
 export function useTypingBar(kbOpen, panelRef) {
   const [h, setH] = useState(null)
   useEffect(() => {
-    if (!kbOpen) { setH(null); return }
+    let marked = null
+    const unmark = () => { marked?.classList.remove('kb-row'); marked = null }
+    if (!kbOpen) { setH(null); return unmark }
     const fit = () => {
       const panel = panelRef.current
       const el = document.activeElement
-      if (!panel || !el || !panel.contains(el)) { setH(null); return }
+      if (!panel || !el || !panel.contains(el)) { unmark(); setH(null); return }
       const row = el.closest('.input-wrap, .input-row, .missing-form, .dist-row, .na-input-row, .tq-input, form') ?? el
-      const r = row.getBoundingClientRect()
-      setH(Math.round(Math.min(r.height, 140) + 20))
-      requestAnimationFrame(() => {
-        const pr = panel.getBoundingClientRect(), rr = row.getBoundingClientRect()
-        panel.scrollTop += rr.top - pr.top - 10
-      })
+      if (row !== marked) { unmark(); row.classList.add('kb-row'); marked = row }
+      requestAnimationFrame(() => setH(Math.round(Math.min(row.getBoundingClientRect().height, 140) + 16)))
     }
     fit()
     document.addEventListener('focusin', fit)
-    return () => document.removeEventListener('focusin', fit)
+    return () => { document.removeEventListener('focusin', fit); unmark() }
   }, [kbOpen, panelRef])
   return h
 }
