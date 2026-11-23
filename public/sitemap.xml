@@ -38,6 +38,7 @@
   <url><loc>https://orbisapp.vercel.app/quiz/missing-vowels</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://orbisapp.vercel.app/quiz/flag-colors</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://orbisapp.vercel.app/quiz/connections</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://orbisapp.vercel.app/quiz/emoji-quiz</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://orbisapp.vercel.app/quiz/country-fact</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://orbisapp.vercel.app/quiz/endonyms</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://orbisapp.vercel.app/quiz/flags-crescent</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
@@ -77,4 +78,5 @@
   <url><loc>https://orbisapp.vercel.app/quiz/higher-lower</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://orbisapp.vercel.app/quiz/true-false</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://orbisapp.vercel.app/quiz/country-wordle</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://orbisapp.vercel.app/play/learn</loc><lastmod>2026-10-29</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
 </urlset>

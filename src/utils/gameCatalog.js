@@ -220,6 +220,7 @@ GAME_CATALOG['lakes'] = { label: t('Famous Lakes'), icon: '💧', cat: 'quiz', t
 GAME_CATALOG['deserts'] = { label: t('Famous Deserts'), icon: '🏜️', cat: 'quiz', timed: true }
 GAME_CATALOG['seas-map'] = { label: t('Seas and Gulfs'), icon: '🌊', cat: 'quiz', timed: true }
 GAME_CATALOG['straits'] = { label: t('Famous Straits'), icon: '⚓', cat: 'quiz', timed: true }
+GAME_CATALOG['ports'] = { label: t('Ports and Canals'), icon: '🚢', cat: 'quiz', timed: true }
 GAME_CATALOG["volcanoes"] = { label: t("Famous Volcanoes"), icon: '🌋', cat: 'quiz', timed: true }
 GAME_CATALOG["volcano"] = { label: t("Anatomy of a Volcano"), icon: '🌋', cat: 'quiz', timed: true }
 GAME_CATALOG["plate-boundaries"] = { label: t("Plate Boundaries"), icon: '↔️', cat: 'quiz', timed: true }

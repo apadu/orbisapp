@@ -5,6 +5,8 @@ import { isRo, t } from '../i18n'
 export const CONTACT_EMAIL = ''                       // e.g. 'hello@yourdomain.com'
 const CONTACT_FORM = 'https://forms.gle/hDpMyhns9PD7ghdBA'
 const UPDATED = '2026-11-23'
+// Your Ko-fi / Buy Me a Coffee page. Empty = the "Support GeoFeverr" buttons stay hidden.
+export const DONATE_URL = ''                          // e.g. 'https://ko-fi.com/geofeverr'
 
 function Contact() {
   return CONTACT_EMAIL
@@ -200,6 +202,7 @@ export function InfoLinks({ current, onOpen }) {
         <a key={id} href={`/${id}`} className={current === id ? 'active' : ''}
           onClick={e => { e.preventDefault(); onOpen(id) }}>{p.title()}</a>
       ))}
+      {DONATE_URL && <a href={DONATE_URL} target="_blank" rel="noopener noreferrer" className="info-donate">{t('☕ Support GeoFeverr')}</a>}
       <span>© {new Date().getFullYear()} GeoFeverr</span>
     </nav>
   )

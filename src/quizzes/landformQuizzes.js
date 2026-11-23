@@ -231,5 +231,12 @@ export const LANDFORM_QUIZZES = {
     placeholder: t('Type a place…'),
     set: 'records',
   },
+  'ports': {
+    id: 'ports', file: 'ports.json', icon: '🚢',
+    title: t('Ports and Canals'),
+    prompt: t('Name the ports and canals marked on the map'),
+    placeholder: t('Type a port or canal…'),
+    set: 'ports',
+  },
 }
 export const LANDFORM_IDS = new Set(Object.keys(LANDFORM_QUIZZES))

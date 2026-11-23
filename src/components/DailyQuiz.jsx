@@ -6,11 +6,12 @@ const DiagramQuiz = lazy(() => import('./DiagramQuiz'))
 import { dailyNumber, dailyQuizFor, msToNextDaily, dailyShareText, utcDayStartISO } from '../quizzes/daily'
 import { loadResults, subscribeResults, fetchLeaderboard } from '../utils/results'
 import { useAuth } from '../auth/AuthContext'
-import { t, locale } from '../i18n'
+import { t, locale, continentName } from '../i18n'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import Icon from './Icon'
 import { shareText } from '../utils/share'
+import { makeResultCard, shareImage, SQUARE } from '../utils/shareCard'
 import { feverVerdict } from './QuizStats'
 import { supabase } from '../lib/supabase'
 import StateNote from './StateNote'
@@ -121,6 +122,25 @@ function ResultCard({ info, res, streak, record = false }) {
       if (await shareText(text) === 'copied') { setCopied(true); setTimeout(() => setCopied(false), 2000) }
     } catch { /* cancelled */ }
   }
+  const [imgBusy, setImgBusy] = useState(false)
+  const shareImg = async () => {
+    if (imgBusy) return
+    setImgBusy(true)
+    try {
+      const n = res.total > 0 && res.total <= 20 ? res.total : 10
+      const filled = res.total ? Math.round((res.score / res.total) * n) : 0
+      const blob = await makeResultCard({
+        kicker: `${t('Daily Fever')} #${info.day} · ${info.title}${info.region && info.region !== 'World' ? ` · ${continentName(info.region)}` : ''}`,
+        big: String(res.score), bigSmall: `/${res.total}`,
+        sub: `${pct}% · ${fmtTime(res.durationMs)}${streak > 1 ? ` · ${t('{n} days of fever', { n: streak })}` : ''}`,
+        squares: Array.from({ length: n }, (_, i) => (i < filled ? SQUARE.ok : SQUARE.bad)),
+        verdict: feverVerdict(pct).text,
+        cta: t('Can you beat my score?'),
+        path: '/daily',
+      })
+      await shareImage(blob, { text, filename: `geofeverr-${info.day}.png` })
+    } catch { /* nothing to share */ } finally { setImgBusy(false) }
+  }
   return (
     <div className="dq-result">
       <div className="dq-result-top">
@@ -130,6 +150,7 @@ function ResultCard({ info, res, streak, record = false }) {
         </div>
         <div className="dq-result-btns">
           <button className="tq-btn tq-btn-primary dq-share-btn" onClick={share}>{copied ? <><Icon name="check" size={16} /> {t('Copied')}</> : t('Share result')}</button>
+          <button className="tq-btn dq-share-btn" onClick={shareImg} disabled={imgBusy} title={t('Share as an image')}><Icon name="image" size={16} /> {t('Image')}</button>
         </div>
       </div>
       <div className={`qs-fever qs-fever-${feverVerdict(pct).cls}`}>{feverVerdict(pct).text}</div>

@@ -38,7 +38,7 @@ const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart
 
 // "Peninsula Iberică" / "Iberian Peninsula" / "Insula Baffin" / "Baffin Island" → also "Iberică", "Iberian", "Baffin"
 // (and likewise "Lacul Baikal" → "Baikal", "Strait of Gibraltar" → "Gibraltar", "Gobi Desert" → "Gobi")
-const GENERIC = /^((mount|cascada|cascadele|vârful|varful|insulele|lacurile|ghețarul|ghetarul|fiordul|depresiunea|delta|tropicul|curentul|fosa|groapa|dorsala|riftul|muntele|vulcanul|placa|peninsula|insula|isla|ile|lacul|lake|lago|lac|marea|deșertul|desertul|strâmtoarea|stramtoarea|canalul|pasajul|golful)\s+|(strait|straits|sea|gulf|bay|lake|tropic) of\s+(the\s+)?)|\s+(falls|waterfall|waterfalls|glacier|islands|delta|depression|lakes|current|trench|ridge|rise|plate|peninsula|island|isle|lake|sea|desert|strait|channel|passage|gulf|bay)$/i
+const GENERIC = /^((mount|cascada|cascadele|vârful|varful|insulele|lacurile|ghețarul|ghetarul|fiordul|depresiunea|delta|tropicul|curentul|fosa|groapa|dorsala|riftul|muntele|vulcanul|placa|peninsula|insula|isla|ile|lacul|lake|lago|lac|marea|deșertul|desertul|strâmtoarea|stramtoarea|canalul|pasajul|golful|portul)\s+|(strait|straits|sea|gulf|bay|lake|tropic) of\s+(the\s+)?)|\s+(falls|waterfall|waterfalls|glacier|islands|delta|depression|lakes|current|trench|ridge|rise|plate|peninsula|island|isle|lake|sea|desert|strait|channel|passage|gulf|bay|canal)$/i
 const shortForms = (s) => { const x = s.replace(GENERIC, '').trim(); return x && x !== s ? [s, x] : [s] }
 
 const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '')

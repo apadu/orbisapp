@@ -1,0 +1,12 @@
+Copyright (c) 2026 Alex Pădureanu. All rights reserved.
+
+GeoFeverr (https://orbisapp.vercel.app) — source code, design, texts and quiz content.
+
+The source code is published so that it can be read. It is not open source.
+No permission is granted to copy, modify, distribute, sublicense, sell,
+host or run this software or any substantial part of it, in whole or in part,
+without prior written permission from the copyright holder.
+
+Third-party libraries and data used by the project (map data, flags, fonts,
+open-source packages listed in package.json, and the sources credited in the
+app) remain under their own licenses.

@@ -9,6 +9,7 @@ import { useGameHud } from '../utils/hudStore'
 import { plain } from '../utils/plain'
 import Icon from './Icon'
 import { shareText, siteLink } from '../utils/share'
+import { makeResultCard, shareImage, SQUARE } from '../utils/shareCard'
 import { capName } from '../i18n/names'
 
 export default function GamePanel({ countries, guesses, mystery, gameWon, onGuess, onNewGame, stats, dateLabel, practiceMode, onTogglePractice, gaveUp, onGiveUp }) {
@@ -33,6 +34,26 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
       siteLink('/play/mystery'),
     ].join('\n')
     shareText(text).then(r => { if (r === 'copied') { setCopied(true); setTimeout(() => setCopied(false), 2000) } })
+  }
+
+  // The result as an image (Instagram, WhatsApp…) — the answer itself isn't on it
+  const [imgBusy, setImgBusy] = useState(false)
+  const handleShareImage = async () => {
+    if (imgBusy) return
+    setImgBusy(true)
+    try {
+      const n = guesses.length
+      const blob = await makeResultCard({
+        kicker: `${t('Mystery Country')}${practiceMode ? ` · ${plain(t('🎲 Practice'))}` : dateLabel ? ` · ${dateLabel}` : ''}`,
+        big: String(n),
+        bigSmall: ` ${n === 1 ? t('guess') : t('guesses')}`,
+        sub: gaveUp ? t('Gave up') : t('Found it!'),
+        squares: guesses.map(g => g.km === 0 ? SQUARE.ok : g.km < 1000 ? SQUARE.near : g.km < 3000 ? SQUARE.mid : g.km < 7000 ? SQUARE.far : SQUARE.farthest),
+        cta: t('Can you find it in fewer guesses?'),
+        path: '/play/mystery',
+      })
+      await shareImage(blob, { text: siteLink('/play/mystery'), filename: 'geofeverr-mystery.png' })
+    } catch { /* nothing to share */ } finally { setImgBusy(false) }
   }
 
   // Sorted country names for autocomplete
@@ -148,9 +169,14 @@ export default function GamePanel({ countries, guesses, mystery, gameWon, onGues
               <strong>{t('You got it!')}</strong>
               <p>{cn(mysteryName)} {t('in')} {guesses.length} {guesses.length === 1 ? t('guess') : t('guesses')}</p>
             </div>
-            <button className="share-btn" onClick={handleShare}>
-              {copied ? plain(t('✅ Copied!')) : plain(t('📤 Share'))}
-            </button>
+            <span className="share-btns">
+              <button className="share-btn" onClick={handleShare}>
+                {copied ? plain(t('✅ Copied!')) : plain(t('📤 Share'))}
+              </button>
+              <button className="share-btn" onClick={handleShareImage} disabled={imgBusy} title={t('Share as an image')}>
+                <Icon name="image" size={15} /> {t('Image')}
+              </button>
+            </span>
           </div>
           <div className="country-info-card">
             <span className="country-flag">{mysteryInfo?.flag ?? '🏳️'}</span>

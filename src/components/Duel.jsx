@@ -213,7 +213,9 @@ function useDuelRoom(code, name) {
         ch.send({ type: 'broadcast', event: 'hello', payload: { from: me } })
       } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') setStatus('error')
     })
-    return () => { supabase.removeChannel(ch); chRef.current = null }
+    // a connection that never opens (network, firewall…) shouldn't spin forever
+    const giveUp = setTimeout(() => setStatus(st => (st === 'connecting' ? 'error' : st)), 15000)
+    return () => { clearTimeout(giveUp); supabase.removeChannel(ch); chRef.current = null }
   }, [code, me]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // A new name is shown to the others
@@ -313,7 +315,7 @@ function useCountdown(deadline, active) {
   return left
 }
 
-function Room({ code, name, onLeave }) {
+function Room({ code, name, onLeave, onRetry }) {
   const { me, status, present, g, deadline, isHost, hostId, publish, send, reactions } = useDuelRoom(code, name)
   const [confirmLeave, setConfirmLeave] = useState(false)
   const lastReact = useRef(0)
@@ -419,7 +421,10 @@ function Room({ code, name, onLeave }) {
   if (status === 'error') return (
     <div className="duel-card duel-center">
       <p>{t('Could not connect to the room. Check your connection and try again.')}</p>
-      <button className="duel-btn" onClick={onLeave}>{t('Back')}</button>
+      <div className="duel-join" style={{ justifyContent: 'center' }}>
+        <button className="duel-btn primary" onClick={onRetry}>{t('Try again')}</button>
+        <button className="duel-btn" onClick={onLeave}>{t('Back')}</button>
+      </div>
     </div>
   )
   if (status === 'connecting' || !g) return <div className="duel-card duel-center"><p>{t('Connecting…')}</p></div>
@@ -584,6 +589,7 @@ export default function Duel() {
   const [code, setCode] = useState(roomFromUrl)
   const [entered, setEntered] = useState(() => !!roomFromUrl() && !!savedName())   // an invite link with a known name goes straight in
   const [joinCode, setJoinCode] = useState('')
+  const [attempt, setAttempt] = useState(0)          // "Try again" after a failed connection reconnects
   useEffect(() => { if (!name && profile?.username) setName(profile.username) }, [profile, name])
   useEffect(() => { try { localStorage.setItem('duel-name', name) } catch {} }, [name])
 
@@ -600,7 +606,7 @@ export default function Duel() {
 
   if (!supabase) return <div className="duel"><div className="duel-card duel-center"><p>{t('Multiplayer needs an internet connection to the GeoFeverr server.')}</p></div></div>
 
-  if (code && entered && name.trim()) return <Room key={code} code={code} name={name.trim().slice(0, 20)} onLeave={leave} />
+  if (code && entered && name.trim()) return <Room key={`${code}-${attempt}`} code={code} name={name.trim().slice(0, 20)} onLeave={leave} onRetry={() => setAttempt(a => a + 1)} />
 
   return (
     <div className="duel">

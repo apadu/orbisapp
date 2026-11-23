@@ -5,6 +5,7 @@ import { COUNTRY_GAMES, COUNTRY_GAME_HOME, COUNTRY_PAGES } from '../data/country
 import { loadResults } from '../utils/results'
 import { t } from '../i18n'
 import GameIcon from './GameIcon'
+import AccountNudge from './AccountNudge'
 
 const shuffle = (a) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]] } return b }
 const PICKS = 6
@@ -48,6 +49,7 @@ export default function TryNext({ mode, onOpen }) {
   if (!picks.length) return null
   return (
     <section className="trynext">
+      <AccountNudge compact />
       <h3 className="trynext-title">{t('Try this one next')}</h3>
       <div className="trynext-grid">
         {picks.map(it => {

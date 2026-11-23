@@ -10,6 +10,7 @@ import { dailyNumber, dailyQuizFor } from '../quizzes/daily'
 import { useQuizOverview } from '../utils/quizOverview'
 import Icon, { SECTION_ICON } from './Icon'
 import { InfoLinks } from './InfoPage'
+import AccountNudge from './AccountNudge'
 import { t, continentName } from '../i18n'
 
 import { GLOBE_ROWS as ROWS, GAME_GROUPS, gamesOfTheDay, randomGame } from '../utils/gameRegistry'
@@ -106,6 +107,8 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
           </button>
         </div>
       </section>
+
+      <AccountNudge />
 
       {/* ── Start here / Continue ── */}
       {picks.length > 0 && (

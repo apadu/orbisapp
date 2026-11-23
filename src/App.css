@@ -5126,3 +5126,24 @@ h1, h2, .hp-title, .hp-sec-title, .qh-title, .qh-section-head h2, .chub-head h1,
 .um-beta { font-size: 0.58em; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-left: 3px; color: var(--accent); vertical-align: super; }
 .um-lang button { position: relative; white-space: nowrap; }
 .um-lang .um-beta { position: absolute; top: -7px; right: -5px; margin: 0; padding: 1px 5px; border-radius: 99px; background: var(--accent); color: var(--on-accent); font-size: 0.52rem; line-height: 1.4; vertical-align: baseline; }
+.info-links .info-donate { color: var(--accent); font-weight: 700; }
+.share-btns { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.share-btn svg, .dq-share-btn svg { vertical-align: -3px; }
+/* ── Guest → account nudge ── */
+.acct-nudge { display: flex; align-items: center; gap: 14px; padding: 14px 16px; margin: 0 0 22px; border-radius: 14px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--accent) 14%, var(--surface)), var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.acct-nudge.compact { margin: 0 0 14px; padding: 12px 14px; }
+.acct-nudge-icon { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; flex-shrink: 0; background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+.acct-nudge-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.acct-nudge-text b { font-size: 0.98rem; }
+.acct-nudge-text span { font-size: 0.84rem; color: var(--text-dim); }
+.acct-nudge-btns { display: flex; gap: 8px; flex-shrink: 0; }
+.acct-nudge-go { font: inherit; font-weight: 800; font-size: 0.88rem; padding: 9px 14px; border-radius: 10px; border: none; background: var(--accent); color: var(--on-accent); cursor: pointer; white-space: nowrap; }
+.acct-nudge-later { font: inherit; font-weight: 700; font-size: 0.85rem; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer; }
+.acct-nudge-later:hover { color: var(--text); }
+@media (max-width: 700px) {
+  .acct-nudge { flex-wrap: wrap; }
+  .acct-nudge-icon { display: none; }
+  .acct-nudge-btns { width: 100%; }
+  .acct-nudge-go { flex: 1; }
+}
