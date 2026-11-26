@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Avatar from '../Avatar'
 import { fetchLeaderboard, fetchWeeklyBoard, fetchDuelBoard } from '../../utils/results'
 import { GAME_CATALOG, CAT_LABELS } from '../../utils/gameCatalog'
 import { useAuth } from '../../auth/AuthContext'
@@ -28,9 +29,7 @@ function untilMonday() {
 function Player({ r }) {
   return (
     <span className="lb-player">
-      {r.avatar_url
-        ? <img src={r.avatar_url} alt="" referrerPolicy="no-referrer" />
-        : <span className="lb-avatar-letter">{r.username.charAt(0).toUpperCase()}</span>}
+      <Avatar value={r.avatar_url} name={r.username} />
       {r.username}
     </span>
   )
@@ -232,9 +231,7 @@ function GameBoard({ initialMode }) {
             <div key={r.user_id} className={`lb-row${r.user_id === user?.id ? ' lb-me' : ''}${r.rank <= 3 ? ` lb-top${r.rank}` : ''}`}>
               <span className="lb-rank">{r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</span>
               <span className="lb-player">
-                {r.avatar_url
-                  ? <img src={r.avatar_url} alt="" referrerPolicy="no-referrer" />
-                  : <span className="lb-avatar-letter">{r.username.charAt(0).toUpperCase()}</span>}
+                <Avatar value={r.avatar_url} name={r.username} />
                 {r.username}
               </span>
               <span className="lb-score">{isQuiz ? `${r.correct}/${r.total}` : r.score.toLocaleString()}</span>

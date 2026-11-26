@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Avatar from './Avatar'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
 import { levelForXp, computeXp, feverTemp } from '../utils/profileData'
@@ -18,9 +19,9 @@ function useLevel() {
 
 /**
  * Top-right cluster: level chip + avatar with a dropdown
- * (profile, sound, theme, bug report, sign in/out).
+ * (profile, theme, bug report, sign in/out).
  */
-export default function UserMenu({ displayName, onProfile, soundEnabled, onToggleSound, onOpenInfo }) {
+export default function UserMenu({ displayName, onProfile, onOpenInfo }) {
   const auth = useAuth()
   const level = useLevel()
   const [open, setOpen] = useState(false)
@@ -53,8 +54,8 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
       )}
 
       <button className={`um-avatar${open ? ' open' : ''}`} onClick={() => setOpen(o => !o)} aria-haspopup="menu" aria-expanded={open}>
-        {auth.profile?.avatar_url
-          ? <img src={auth.profile.avatar_url} alt="" referrerPolicy="no-referrer" />
+        {auth.profile
+          ? <Avatar value={auth.profile.avatar_url} name={auth.profile.username} own />
           : <span className="um-avatar-letter">{displayName.charAt(0).toUpperCase()}</span>}
         <span className="um-avatar-name">{displayName}</span>
         <span className="um-caret">▾</span>
@@ -66,8 +67,7 @@ export default function UserMenu({ displayName, onProfile, soundEnabled, onToggl
             <strong>{displayName}</strong>
             <span>{auth.user ? auth.user.email : t('Playing as guest')}</span>
           </div>
-          <button role="menuitem" onClick={item(onProfile)}>{plain(t('👤 Profile & stats'))}</button>
-          <button role="menuitem" onClick={item(onToggleSound)}>{plain(soundEnabled ? plain(t('🔊 Sound on')) : plain(t('🔇 Sound off')))}</button>
+          <button role="menuitem" onClick={item(onProfile)}>{plain(t('My passport'))}</button>
           <div className="um-lang" role="group" aria-label={t('Language')}>
             {LANGS.map(l => (
               <button key={l.id} className={lang === l.id ? 'active' : ''} onClick={() => { if (lang !== l.id) setLang(l.id) }}>

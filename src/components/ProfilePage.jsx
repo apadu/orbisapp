@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
+import AvatarPicker from './AvatarPicker'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults, subscribeResults } from '../utils/results'
-import { computeProfile, levelTitle, feverTemp } from '../utils/profileData'
+import { computeProfile } from '../utils/profileData'
 import { GAME_CATALOG, gameMeta } from '../utils/gameCatalog'
-import { useDailyChallenges } from '../utils/useDailyChallenges'
 import Leaderboard from './profile/Leaderboard'
+import Passport from './profile/Passport'
 import { t, locale, lang, LANGS, setLang } from '../i18n'
 import GameIcon from './GameIcon'
 import { plain } from '../utils/plain'
 import Icon from './Icon'
 import StateNote from './StateNote'
-import { QuestRing, streakLabel } from './StreakBadge'
+import { QuestRing } from './StreakBadge'
+import { computeVisas } from '../utils/visas'
+import IdentityPage from './profile/IdentityPage'
+import PassportCover from './profile/PassportCover'
+import Visas from './profile/Visas'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function useResults() {
@@ -26,11 +31,6 @@ function fmtDuration(ms) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
-function fmtHours(ms) {
-  const m = Math.round(ms / 60000)
-  return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`
-}
-
 function timeAgo(iso) {
   const s = (Date.now() - new Date(iso)) / 1000
   if (s < 60) return t('just now')
@@ -42,9 +42,10 @@ function timeAgo(iso) {
 }
 
 const TABS = [
-  { id: 'overview',     label: t('Overview') },
-  { id: 'games',        label: t('My games') },
+  { id: 'visas',        label: t('Visas') },
+  { id: 'passport',     label: t('Stamps') },
   { id: 'achievements', label: t('Achievements') },
+  { id: 'games',        label: t('My games') },
   { id: 'leaderboards', label: t('Leaderboards') },
 ]
 
@@ -56,67 +57,46 @@ export default function ProfilePage({ onBack, onPlay }) {
   const auth = useAuth()
   const results = useResults()
   const p = useMemo(() => computeProfile(results), [results])
-  const [tab, setTab] = useState('overview')
+  const [tab, setTab] = useState('visas')
   const [settings, setSettings] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [picking, setPicking] = useState(false)
 
   const username = auth.profile?.username ?? t('Guest')
   const joined = auth.profile?.created_at ?? results[results.length - 1]?.played_at
   const unlocked = p.achievements.filter(a => a.unlocked)
+  const visaCount = useMemo(() => {
+    const v = computeVisas(results)
+    return { held: v.filter(x => x.tier > 0).length, total: v.length }
+  }, [results])
 
   return (
     <div className="profile-page pp">
       <button className="profile-back" onClick={onBack}>{t('← Back')}</button>
 
-      {/* ── Header: who you are + level ── */}
-      <section className="pp-hero">
-        <div className="pp-avatar-wrap">
-          {auth.profile?.avatar_url
-            ? <img className="pp-avatar" src={auth.profile.avatar_url} alt="" referrerPolicy="no-referrer" />
-            : <div className="pp-avatar pp-avatar-letter">{username.charAt(0).toUpperCase()}</div>}
-          <span className="pp-level-badge pp-temp-badge">{feverTemp(p.level.level)}</span>
-        </div>
-        <div className="pp-hero-main">
-          <div className="pp-name-row">
-            <h1>{username}</h1>
-            <span className="pp-hero-sub">
-              {levelTitle(p.level.level)}
-              {joined && <> · {t('since {when}', { when: new Date(joined).toLocaleDateString(locale, { month: 'long', year: 'numeric' }) })}</>}
-            </span>
-          </div>
-          <div className="pp-xp">
-            <div className="pp-xp-bar"><div className="pp-xp-fill" style={{ width: `${p.level.pct}%` }} /></div>
-            <span className="pp-xp-label">{t('{temp} · {n} XP to {next}', { temp: feverTemp(p.level.level), n: (p.level.next - p.xp).toLocaleString(locale), next: feverTemp(p.level.level + 1) })}</span>
-          </div>
-        </div>
-        {auth.user
-          ? <button className="pp-account-btn" onClick={() => setSettings(true)}><Icon name="user" size={16} /> {t('Account')}</button>
-          : auth.backendEnabled && <button className="pp-account-btn pp-account-cta" onClick={auth.openAuth}>{t('Sign in to save your progress')}</button>}
-      </section>
+      <PassportCover>
+        <IdentityPage auth={auth} p={p} username={username} joined={joined} visas={visaCount}
+          onPickAvatar={() => setPicking(true)} onAccount={() => setSettings(true)} />
+      </PassportCover>
 
-      {/* ── Key numbers ── */}
-      <section className="pp-stats">
-        <div className="pp-stat"><span className="pp-stat-label">{t('Games played')}</span><span className="pp-stat-num">{p.totals.games.toLocaleString(locale)}</span></div>
-        <div className="pp-stat"><span className="pp-stat-label">{t('Correct answers')}</span><span className="pp-stat-num">{p.totals.correct.toLocaleString(locale)}</span></div>
-        <div className="pp-stat"><span className="pp-stat-label">{t('Time played')}</span><span className="pp-stat-num">{fmtHours(p.totals.timeMs)}</span></div>
-        <div className="pp-stat"><span className="pp-stat-label">{t('Fever streak')}</span><span className="pp-stat-num">{t(p.streak.current === 1 ? '{n} day' : '{n} days', { n: p.streak.current })}</span></div>
-      </section>
-
-      {/* ── Tabs ── */}
-      <nav className="pp-tabs" role="tablist">
+      {/* ── Passport pages ── */}
+      <nav className="pp-tabs pp-tabs-passport" role="tablist">
         {TABS.map(x => (
           <button key={x.id} role="tab" aria-selected={tab === x.id} className={`pp-tab${tab === x.id ? ' active' : ''}`} onClick={() => setTab(x.id)}>
             {x.label}
+            {x.id === 'visas' && <span className="pp-tab-count">{visaCount.held}/{visaCount.total}</span>}
             {x.id === 'achievements' && <span className="pp-tab-count">{unlocked.length}/{p.achievements.length}</span>}
           </button>
         ))}
       </nav>
 
-      {tab === 'overview'     && <Overview p={p} results={results} onPlay={onPlay} goTo={setTab} />}
+      {tab === 'visas'        && <Visas results={results} holder={username} onOpen={onPlay} />}
       {tab === 'games'        && <GamesTab p={p} results={results} onPlay={onPlay} />}
+      {tab === 'passport'     && <Passport />}
       {tab === 'achievements' && <AchievementsTab p={p} />}
       {tab === 'leaderboards' && <Leaderboard initialMode={mostPlayed(p) ?? 'flag'} />}
 
+      {picking && <AvatarPicker onClose={() => setPicking(false)} />}
       {settings && <AccountDialog auth={auth} username={username} onClose={() => setSettings(false)} onDelete={() => { setSettings(false); setDeleting(true) }} />}
       {deleting && <DeleteAccountDialog username={username} onCancel={() => setDeleting(false)} onDelete={auth.deleteAccount} onDone={() => { setDeleting(false); onBack() }} />}
     </div>
@@ -205,86 +185,6 @@ function mostPlayed(p) {
   return Object.entries(p.perMode).sort((a, b) => b[1].plays - a[1].plays)[0]?.[0]
 }
 
-// ── Overview ───────────────────────────────────────────────────────────────
-function Overview({ p, results, onPlay, goTo }) {
-  const { list: daily, streak: dailyStreak } = useDailyChallenges()
-  // one row per game, most recent first
-  const recent = []
-  const seen = new Set()
-  for (const r of results) {
-    if (seen.has(r.mode) || !GAME_CATALOG[r.mode]) continue
-    seen.add(r.mode); recent.push(r)
-    if (recent.length === 6) break
-  }
-  const unlocked = p.achievements.filter(a => a.unlocked)
-  const next = p.achievements.filter(a => !a.unlocked).sort((a, b) => b.value / b.target - a.value / a.target)[0]
-
-  return (
-    <div className="pp-overview">
-      <div className="pp-card">
-        <div className="pp-card-head">
-          <h3>{t('Played recently')}</h3>
-          {recent.length > 0 && <button className="pp-link" onClick={() => goTo('games')}>{t('All my games →')}</button>}
-        </div>
-        {recent.length === 0
-          ? <StateNote compact>{t('No games yet. Go play something!')}</StateNote>
-          : (
-            <div className="pp-rows">
-              {recent.map(r => {
-                const g = gameMeta(r.mode)
-                const m = p.perMode[r.mode]
-                return (
-                  <button key={r.mode} className="pp-row" onClick={() => onPlay(r.mode)} title={t('Play {label}', { label: g.label })}>
-                    <span className="pp-row-icon"><GameIcon id={r.mode} size={20} /></span>
-                    <span className="pp-row-name">{g.label}</span>
-                    <span className="pp-row-best">{t('best {s}', { s: scoreText(r.mode, m?.best) })}</span>
-                    <span className="pp-row-ago">{timeAgo(r.played_at)}</span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-      </div>
-
-      <div className="pp-side">
-        <div className="pp-card">
-          <div className="pp-card-head">
-            <h3>{t('Achievements')}</h3>
-            <button className="pp-link" onClick={() => goTo('achievements')}>{unlocked.length}/{p.achievements.length} →</button>
-          </div>
-          {unlocked.length > 0
-            ? <div className="pp-badges">{unlocked.slice(-8).map(a => <span key={a.id} className="pp-badge" title={a.label}>{a.icon}</span>)}</div>
-            : <StateNote compact>{t('Nothing unlocked yet — your first one is close.')}</StateNote>}
-          {next && (
-            <div className="pp-next">
-              <span className="pp-next-label">{t('Next')}: <strong>{next.label}</strong> <span className="pp-muted">· {next.desc}</span></span>
-              {next.target > 1 && <span className="pp-next-bar"><span style={{ width: `${(next.value / next.target) * 100}%` }} /></span>}
-            </div>
-          )}
-        </div>
-
-        <div className="pp-card">
-          <div className="pp-card-head">
-            <h3>{t('Today\'s challenges')}</h3>
-            {dailyStreak > 0 && <span className="pp-chip"><QuestRing list={daily} size={14} stroke={2} /> {streakLabel(dailyStreak)}</span>}
-          </div>
-          <div className="profile-daily-list">
-            {daily.map(ch => (
-              <div key={ch.id} className={`profile-daily-ch${ch.done ? ' pdc-done' : ''}`}>
-                <span className="pdc-icon"><GameIcon id={ch.mode} size={18} /></span>
-                <div className="pdc-body">
-                  <span className="pdc-label">{ch.task}{ch.tier && <span className="pdc-xp"> · +{ch.xp} XP</span>}</span>
-                  {!ch.done && ch.target > 1 && <div className="pdc-bar"><div className="pdc-bar-fill" style={{ width: `${Math.min((ch.value / ch.target) * 100, 100)}%` }} /></div>}
-                </div>
-                <span className={`pdc-status${ch.done ? ' pdc-check' : ''}`}>{ch.done ? '✓' : `${ch.value}/${ch.target}`}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ── My games ───────────────────────────────────────────────────────────────
 function GamesTab({ p, results, onPlay }) {
@@ -322,27 +222,34 @@ function GamesTab({ p, results, onPlay }) {
 }
 
 // ── Achievements ───────────────────────────────────────────────────────────
-function AchievementRow({ a }) {
-  return (
-    <div className={`pp-ach-row${a.unlocked ? ' unlocked' : ''}`}>
-      <span className="pp-ach-icon">{a.unlocked ? a.icon : '🔒'}</span>
-      <div className="pp-ach-body">
-        <span className="pp-ach-label">{a.label}</span>
-        <span className="pp-ach-desc">{a.desc}</span>
-        {!a.unlocked && a.target > 1 && (
-          <div className="pp-ach-bar"><div style={{ width: `${(a.value / a.target) * 100}%` }} /></div>
-        )}
-      </div>
-      {!a.unlocked && a.target > 1 && <span className="pp-ach-count">{a.value}/{a.target}</span>}
-    </div>
-  )
-}
 
+/** Achievements as a travel journal: a lined notebook page, one entry per achievement. */
 function AchievementsTab({ p }) {
   const sorted = [...p.achievements].sort((a, b) => Number(b.unlocked) - Number(a.unlocked))
+  const done = sorted.filter(a => a.unlocked).length
   return (
-    <div className="pp-ach-grid">
-      {sorted.map(a => <AchievementRow key={a.id} a={a} />)}
-    </div>
+    <section className="journal">
+      <div className="journal-head">
+        <span>{t('TRAVEL JOURNAL')}</span>
+        <span>{t('{n} of {m} entries', { n: done, m: sorted.length })}</span>
+      </div>
+      <ol className="journal-list">
+        {sorted.map(a => (
+          <li key={a.id} className={`jr-entry${a.unlocked ? ' unlocked' : ''}`}>
+            <span className="jr-sticker" aria-hidden="true">{a.icon}</span>
+            <span className="jr-body">
+              <strong className="jr-title">{a.label}</strong>
+              <span className="jr-desc">{a.desc}</span>
+              {!a.unlocked && a.target > 1 && (
+                <span className="jr-progress"><span style={{ width: `${Math.min(100, (a.value / a.target) * 100)}%` }} /></span>
+              )}
+            </span>
+            {a.unlocked
+              ? <span className="jr-check" aria-label={t('Done')}>✓</span>
+              : a.target > 1 && <span className="jr-count">{a.value}/{a.target}</span>}
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }

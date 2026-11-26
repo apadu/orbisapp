@@ -10,7 +10,7 @@ import MobileGamesSheet from './components/MobileGamesSheet'
 import GameHud from './components/GameHud'
 import { useIsMobile, useKeyboardInset, useTypingBar, SheetHandle, useSheet, snapHeights } from './components/MobileSheet'
 import { GAME_GROUPS, SECTION_HUBS, gamesInGroup, groupOf, menuGames } from './utils/gameRegistry'
-import { setSoundEnabled, playCorrect, playWrong, playWin } from './utils/sounds'
+import { playCorrect, playWrong, playWin } from './utils/sounds'
 import StreakBadge from './components/StreakBadge'
 import QuizHub from './components/QuizHub'
 import { getDistanceInfo, computeAdjacency, distanceLabel } from './utils/geoUtils'
@@ -30,6 +30,7 @@ import { GAME_CATALOG } from './utils/gameCatalog'
 import { randomGame } from './utils/gameRegistry'
 import ConfirmLeave from './components/ConfirmLeave'
 import { useListTracking } from './utils/useListTracking'
+import StampToast from './components/StampToast'
 import GlobeFeedback from './components/GlobeFeedback'
 import UserMenu from './components/UserMenu'
 import RulesHint from './components/RulesHint'
@@ -232,12 +233,8 @@ export default function App() {
   useEffect(() => { document.documentElement.setAttribute('data-theme', 'dark'); try { localStorage.removeItem('orbis-theme') } catch {} }, [])
 
   // ── Sound ────────────────────────────────────────────────────────────────
-  const [soundEnabled, setSoundEnabledState] = useState(() => localStorage.getItem('orbis-sound') !== 'off')
-
-  useEffect(() => {
-    setSoundEnabled(soundEnabled)
-    localStorage.setItem('orbis-sound', soundEnabled ? 'on' : 'off')
-  }, [soundEnabled])
+  // the game is silent: drop the old on/off setting
+  useEffect(() => { try { localStorage.removeItem('orbis-sound') } catch {} }, [])
 
   // ── Daily challenges ─────────────────────────────────────────────────────
 
@@ -1208,8 +1205,6 @@ export default function App() {
             displayName={displayName}
             onOpenInfo={openInfo}
             onProfile={() => page === 'profile' ? backFromProfile() : guard(openProfile)}
-            soundEnabled={soundEnabled}
-            onToggleSound={() => setSoundEnabledState(x => !x)}
           />
         </div>
       </header>
@@ -1646,6 +1641,7 @@ export default function App() {
       </div>
     </div>
     </div>
+    <StampToast />
     <Confetti active={(mode === 'mystery' && gameWon) || missingComplete || !!completionStats} />
     <Analytics />
     {/* hidden while playing (globe game or a quiz) — the game needs the bottom of the screen */}

@@ -109,6 +109,7 @@ export function AuthProvider({ children }) {
     authModalOpen, openAuth: () => setAuthModalOpen(true), closeAuth: () => setAuthModalOpen(false),
     recovery, setNewPassword,
     signInWithEmail, signUpWithEmail, resetPassword, signOut, deleteAccount, isUsernameTaken,
+    refreshProfile: () => loadProfile(user),
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

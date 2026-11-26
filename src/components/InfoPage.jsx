@@ -19,7 +19,7 @@ const PRIVACY_EN = () => (
   <>
     <p>GeoFeverr is a geography game. We collect as little as possible and never sell your data. This page explains what we store and why.</p>
     <h2>Playing without an account</h2>
-    <p>As a guest, your progress (game results, XP, settings such as language and sound) is saved only in your browser's local storage, on your device. It is not sent to us. Clearing your browser data deletes it.</p>
+    <p>As a guest, your progress (game results, XP, settings such as the language) is saved only in your browser's local storage, on your device. It is not sent to us. Clearing your browser data deletes it.</p>
     <h2>If you create an account</h2>
     <ul>
       <li><b>Email address</b> — to sign in, confirm your account and reset your password.</li>
@@ -28,7 +28,6 @@ const PRIVACY_EN = () => (
       <li><b>Game results</b> — scores, answers, time played and dates, so your stats, XP and leaderboard positions follow you across devices.</li>
     </ul>
     <p>Your username and best scores are public on leaderboards. Your email is never shown to other players.</p>
-    <p>If you sign in with <b>Google</b>, Google shares your name, email address and profile picture with us. We keep the email, a username made from your name and the picture.</p>
     <h2>Comments and ratings</h2>
     <p>Comments you post under a quiz are public, together with your username and picture. You can edit or delete them at any time. If other players report a comment, we may hide it. Quiz ratings are private: only the average is shown.</p>
     <h2>Playing with friends (“Don't Say What I Say”)</h2>
@@ -58,7 +57,7 @@ const PRIVACY_RO = () => (
   <>
     <p>GeoFeverr este un joc de geografie. Colectăm cât mai puține date și nu le vindem niciodată. Pagina aceasta explică ce stocăm și de ce.</p>
     <h2>Dacă joci fără cont</h2>
-    <p>Ca invitat, progresul tău (rezultatele jocurilor, XP-ul, setări ca limba și sunetul) este salvat doar în memoria locală a browserului, pe dispozitivul tău. Nu ne este trimis. Dacă ștergi datele browserului, se șterge și progresul.</p>
+    <p>Ca invitat, progresul tău (rezultatele jocurilor, XP-ul, setări ca limba) este salvat doar în memoria locală a browserului, pe dispozitivul tău. Nu ne este trimis. Dacă ștergi datele browserului, se șterge și progresul.</p>
     <h2>Dacă îți creezi un cont</h2>
     <ul>
       <li><b>Adresa de email</b> — pentru conectare, confirmarea contului și resetarea parolei.</li>
@@ -67,7 +66,6 @@ const PRIVACY_RO = () => (
       <li><b>Rezultatele jocurilor</b> — scoruri, răspunsuri, durată și date, ca statisticile, XP-ul și locul în clasamente să te urmeze pe orice dispozitiv.</li>
     </ul>
     <p>Numele de utilizator și cele mai bune scoruri sunt publice în clasamente. Emailul nu este afișat niciodată altor jucători.</p>
-    <p>Dacă te conectezi cu <b>Google</b>, Google ne transmite numele, adresa de email și poza de profil. Păstrăm emailul, un nume de utilizator făcut din numele tău și poza.</p>
     <h2>Comentarii și note</h2>
     <p>Comentariile scrise sub un quiz sunt publice, împreună cu numele de utilizator și poza ta. Le poți modifica sau șterge oricând. Dacă alți jucători raportează un comentariu, îl putem ascunde. Notele date quizurilor sunt private: se afișează doar media.</p>
     <h2>Jocul cu prietenii („Nu spune ce spun eu”)</h2>
@@ -144,6 +142,7 @@ const CREDITS = [
   ['geoBoundaries', 'https://www.geoboundaries.org', { en: 'Districts of Moldova (data from UNHCR / OCHA) — CC BY 3.0 IGO', ro: 'Raioanele Republicii Moldova (date UNHCR / OCHA) — CC BY 3.0 IGO' }],
   ['Flagpedia / flagcdn.com', 'https://flagpedia.net', { en: 'Flag images', ro: 'Imaginile steagurilor' }],
   ['historical-basemaps (A. Ourednik)', 'https://github.com/aourednik/historical-basemaps', { en: 'Historical world maps (AD 100, 1279, 1700, 1914, 1920) — GPL-3.0', ro: 'Hărțile istorice ale lumii (anii 100, 1279, 1700, 1914, 1920) — GPL-3.0' }],
+  ['DiceBear — Adventurer (Lisa Wischofsky)', 'https://www.dicebear.com/styles/adventurer/', { en: 'Player avatars — CC BY 4.0, remix of the original', ro: 'Avatarele jucătorilor — CC BY 4.0, adaptare după original' }],
   ['NASA Blue Marble (Visible Earth)', 'https://visibleearth.nasa.gov', { en: 'Elevation data for the shaded relief of the mountain-ranges globe — public domain', ro: 'Datele de altitudine pentru relieful globului cu lanțuri muntoase — domeniu public' }],
   ['PB2002 (Peter Bird) via fraxen/tectonicplates', 'https://github.com/fraxen/tectonicplates', { en: 'Tectonic plates — ODC-By 1.0', ro: 'Plăcile tectonice — ODC-By 1.0' }],
   ['World Bank Open Data', 'https://data.worldbank.org', { en: 'Population figures', ro: 'Datele despre populație' }],

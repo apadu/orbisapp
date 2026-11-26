@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Avatar from './Avatar'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 import { loadResults } from '../utils/results'
@@ -8,8 +9,9 @@ import StateNote from './StateNote'
 
 /**
  * Comments under a quiz (see supabase/comments.sql): one level of replies, likes, reports.
- * Hidden until you've finished (or given up on) the quiz once, so nobody reads the answers
- * before playing. Only signed-in players write; everyone can read.
+ * Hidden while a game is running, so nobody reads the answers before playing: they open when
+ * the game ends (finished or given up). Someone who has finished the quiz before can still open
+ * them on purpose with one click. Only signed-in players write; everyone can read.
  */
 
 const MAX = 500
@@ -31,13 +33,16 @@ function ago(iso) {
 
 const errorText = (e) => /rate_limited/.test(e?.message ?? '') ? t('Slow down a little — try again in a minute.') : t('Could not save. Check your connection and try again.')
 
-/** Has this quiz been played to the end (or given up) at least once on this device / account? */
-const playedBefore = (quiz) => loadResults().some(r => r.mode === quiz && (r.completed || r.details?.answers?.length))
+/** Has this quiz been played to the end (or given up) at least once on this device / account?
+ *  Games left halfway are saved as completed: false and don't count. */
+const playedBefore = (quiz) => loadResults().some(r => r.mode === quiz && r.completed)
 
 export default function QuizComments({ quiz, unlocked }) {
   const auth = useAuth()
   const me = auth.user?.id ?? null
-  const open = unlocked || playedBefore(quiz)
+  const [peek, setPeek] = useState(false)        // finished it before and chose to read anyway
+  const finishedBefore = useMemo(() => playedBefore(quiz), [quiz])
+  const open = unlocked || peek
   const [count, setCount] = useState(null)
   const [rows, setRows] = useState(null)          // all comments (top level + replies), newest first
   const [liked, setLiked] = useState(() => new Set())
@@ -120,8 +125,9 @@ export default function QuizComments({ quiz, unlocked }) {
         <Icon name="speech" size={18} />
         <span>
           {count ? t('{n} comments', { n: count }) : t('Comments')}
-          {' · '}{t('finish the quiz to read them — no spoilers before you play')}
+          {' · '}{finishedBefore ? t('hidden while you play, they may contain answers') : t('finish the quiz to read them — no spoilers before you play')}
         </span>
+        {finishedBefore && <button className="qc-peek" onClick={() => setPeek(true)}>{t('Show anyway')}</button>}
       </section>
     )
   }
@@ -208,9 +214,7 @@ function Comment({ c, me, liked, onLike, onEdit, onDelete, onReport, onReply, on
   const name = c.profiles?.username ?? t('player')
   return (
     <article className={`qc-item${c.hidden ? ' qc-hidden' : ''}`}>
-      {c.profiles?.avatar_url
-        ? <img className="qc-avatar" src={c.profiles.avatar_url} alt="" referrerPolicy="no-referrer" />
-        : <span className="qc-avatar qc-avatar-letter" aria-hidden="true">{name[0]?.toUpperCase()}</span>}
+      <Avatar className="qc-avatar" value={c.profiles?.avatar_url} name={c.profiles?.username} />
       <div className="qc-main">
         <div className="qc-meta">
           <strong>{name}</strong>
