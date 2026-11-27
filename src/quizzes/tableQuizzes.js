@@ -355,6 +355,17 @@ for (const [slug, region, title] of [
   TABLE_QUIZZES[`area-${slug}`] = { ...TABLE_QUIZZES.area, title, region, regions: false }
 }
 
+// Geography from A to Z: one quiz per letter, every answer starts with it (src/quizzes/geoAZ.js)
+export const AZ_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+for (const L of AZ_LETTERS) {
+  TABLE_QUIZZES[`az-${L.toLowerCase()}`] = {
+    title: t('Geography from A to Z: {l}', { l: L }), icon: '🔤', regions: false, timeLimit: 4 * 60,
+    prompt: t('Every answer starts with {l}: countries, cities, rivers, mountains and more', { l: L }),
+    columns: { hint: t('Clue'), answer: t('Answer') },
+    build: () => [], load: () => import('./geoAZ').then(m => () => m.azRows(L)),
+  }
+}
+
 export const TABLE_QUIZ_IDS = new Set(Object.keys(TABLE_QUIZZES))
 
 /** Seconds on the clock: ~6 s per answer, between 1:30 and 15:00. */

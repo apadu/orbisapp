@@ -21,7 +21,7 @@ const MODE = {
 // [input, mode?] — games not listed: typed answers with a timer (the quiz default)
 const TAGS = {
   locate: ['click'], 'capital-drop': ['click'], 'landmark-drop': ['click'], antipodes: ['click'], 'time-zones': ['click'],
-  neighbor: ['type'], spotlight: ['type'], seas: ['type'], 'line-up': ['type'], 'border-chain': ['type'], 'country-wordle': ['type'],
+  neighbor: ['type'], spotlight: ['type'], seas: ['type'], 'line-up': ['type'], 'border-chain': ['type'], 'country-wordle': ['type'], 'name-chain': ['type', 'timed'],
   missing: ['type', 'timed'], silhouette: ['type', 'timed'], mystery: ['type', 'daily'], 'daily-quiz': ['type', 'daily'], 'country-grid': ['type', 'daily'],
   distance: ['estimate'],
   connections: ['choose'], 'true-false': ['choose'], 'higher-lower': ['choose', 'streak'],
@@ -52,6 +52,8 @@ const ADDED = {
   'capitals-europe': '2026-11-20', 'capitals-asia': '2026-11-20', 'capitals-africa': '2026-11-20', 'capitals-americas': '2026-11-20', 'capitals-oceania': '2026-11-20',
   'mx-states': '2026-11-20', 'mx-capitals': '2026-11-20', 'mx-quiz': '2026-11-20', 'country-mx': '2026-11-20', 'in-states': '2026-11-20', 'in-capitals': '2026-11-20', 'in-quiz': '2026-11-20', 'country-in': '2026-11-20', 'cn-provinces': '2026-11-20', 'cn-capitals': '2026-11-20', 'cn-quiz': '2026-11-20', 'country-cn': '2026-11-20', 'ru-subjects': '2026-11-20', 'ru-quiz': '2026-11-20', 'country-ru': '2026-11-20', 'ar-provinces': '2026-11-20', 'ar-capitals': '2026-11-20', 'ar-quiz': '2026-11-20', 'country-ar': '2026-11-20', 'tr-provinces': '2026-11-20', 'tr-quiz': '2026-11-20', 'country-tr': '2026-11-20',
   'ports': '2026-11-23',
+  'name-chain': '2026-11-27', 'country-grid': '2026-11-27',
+  'az-a': '2026-11-28', 'az-b': '2026-11-28', 'az-c': '2026-11-28', 'az-d': '2026-11-28', 'az-e': '2026-11-28', 'az-f': '2026-11-28', 'az-g': '2026-11-28', 'az-h': '2026-11-28', 'az-i': '2026-11-28', 'az-j': '2026-11-28', 'az-k': '2026-11-28', 'az-l': '2026-11-28', 'az-m': '2026-11-28', 'az-n': '2026-11-28', 'az-o': '2026-11-28', 'az-p': '2026-11-28', 'az-q': '2026-11-28', 'az-r': '2026-11-28', 'az-s': '2026-11-28', 'az-t': '2026-11-28', 'az-u': '2026-11-28', 'az-v': '2026-11-28', 'az-w': '2026-11-28', 'az-x': '2026-11-28', 'az-y': '2026-11-28', 'az-z': '2026-11-28',
   'ch-cantons': '2026-11-27', 'ch-capitals': '2026-11-27', 'ch-quiz': '2026-11-27', 'cz-regions': '2026-11-27', 'cz-capitals': '2026-11-27', 'cz-quiz': '2026-11-27', 'be-provinces': '2026-11-27', 'be-capitals': '2026-11-27', 'be-quiz': '2026-11-27', 'sk-regions': '2026-11-27', 'sk-quiz': '2026-11-27', 'ie-counties': '2026-11-27', 'ie-quiz': '2026-11-27', 'country-ch': '2026-11-27', 'country-cz': '2026-11-27', 'country-be': '2026-11-27', 'country-sk': '2026-11-27', 'country-ie': '2026-11-27',
   'area-africa': '2026-11-27', 'area-americas': '2026-11-27', 'area-asia': '2026-11-27', 'area-europe': '2026-11-27',
   'pop-africa': '2026-11-27', 'pop-americas': '2026-11-27', 'pop-asia': '2026-11-27', 'pop-europe': '2026-11-27',

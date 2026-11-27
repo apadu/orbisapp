@@ -95,6 +95,7 @@ const SortQuiz = lazy(() => import('./components/SortQuiz'))
 const Duel = lazy(() => import('./components/Duel'))
 const CountryWordle = lazy(() => import('./components/CountryWordle'))
 const CountryGrid = lazy(() => import('./components/CountryGrid'))
+const NameChain = lazy(() => import('./components/NameChain'))
 
 // Map data: served from /data (see `npm run fetch-maps`), remote fallback in src/data/sources.js
 
@@ -161,7 +162,7 @@ const QUIZ_MODES = new Set([
   ...DIAGRAM_IDS,
   ...COUNTRY_PAGE_IDS,
   'countries', 'globe-hub', 'nameall-hub',
-  'daily-quiz', 'country-grid',
+  'daily-quiz', 'country-grid', 'name-chain',
   'higher-lower', 'true-false', 'country-wordle', 'scale-sort', 'duel',
   'flags-pick', 'flags-sprint', 'flags-survival',
 ])
@@ -1250,6 +1251,8 @@ export default function App() {
               <CountryWordle key={mode} countryNames={gameCountryNames} />
             ) : mode === 'country-grid' ? (
               <CountryGrid key={mode} countryNames={gameCountryNames} />
+            ) : mode === 'name-chain' ? (
+              <NameChain key={mode} countryNames={gameCountryNames} />
             ) : COUNTRY_PAGE_IDS.has(mode) ? (
               <CountryPage key={mode} pageId={mode} onOpen={openGame} />
             ) : mode === 'countries' ? (

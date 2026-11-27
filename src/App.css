@@ -5503,3 +5503,17 @@ h1, h2, .hp-title, .hp-sec-title, .qh-title, .qh-section-head h2, .chub-head h1,
   .cg-flag { font-size: 1.4rem; }
   .cg-name { font-size: 0.7rem; }
 }
+
+/* Name Chain */
+.nc .tf-top { gap: 10px; }
+.nc-inf { font: inherit; font-size: 1.1rem; font-weight: 800; width: 34px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); cursor: pointer; }
+.nc-inf:hover { color: var(--text); border-color: var(--accent); }
+.nc-free { margin-left: auto; font-weight: 800; color: var(--text-dim); }
+.nc-need { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 0 4px; }
+.nc-need-label { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+.nc-letter { font-family: var(--font-display); font-size: 4.2rem; font-weight: 600; line-height: 1; color: var(--accent); }
+.nc-chain { display: flex; flex-wrap: wrap; gap: 6px; }
+.nc-link { font-size: 0.85rem; font-weight: 700; padding: 5px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); }
+.nc-link.nc-start { border-style: dashed; color: var(--text-dim); }
+.nc-chain-done { justify-content: center; margin: 6px 0 4px; }
+.nc-missed { font-size: 0.9rem; color: var(--text-dim); text-align: center; }
