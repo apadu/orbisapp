@@ -265,6 +265,17 @@ TABLE_QUIZZES['ir-quiz'] = countryQuiz(LOAD_PAGE.ir, t("Quiz: Iran"), t("Answer 
 TABLE_QUIZZES['gr-quiz'] = countryQuiz(LOAD_PAGE.gr, t("Quiz: Greece"), t("Answer 20 questions about Greece"))
 TABLE_QUIZZES['se-quiz'] = countryQuiz(LOAD_PAGE.se, t("Quiz: Sweden"), t("Answer 20 questions about Sweden"))
 TABLE_QUIZZES['pt-quiz'] = countryQuiz(LOAD_PAGE.pt, t("Quiz: Portugal"), t("Answer 20 questions about Portugal"))
+TABLE_QUIZZES['ke-quiz'] = countryQuiz(LOAD_PAGE.ke, t("Quiz: Kenya"), t("Answer 20 questions about Kenya"))
+TABLE_QUIZZES['gh-quiz'] = countryQuiz(LOAD_PAGE.gh, t("Quiz: Ghana"), t("Answer 20 questions about Ghana"))
+TABLE_QUIZZES['tn-quiz'] = countryQuiz(LOAD_PAGE.tn, t("Quiz: Tunisia"), t("Answer 20 questions about Tunisia"))
+TABLE_QUIZZES['sn-quiz'] = countryQuiz(LOAD_PAGE.sn, t("Quiz: Senegal"), t("Answer 20 questions about Senegal"))
+TABLE_QUIZZES['cm-quiz'] = countryQuiz(LOAD_PAGE.cm, t("Quiz: Cameroon"), t("Answer 20 questions about Cameroon"))
+TABLE_QUIZZES['nl-quiz'] = countryQuiz(LOAD_PAGE.nl, t("Quiz: Netherlands"), t("Answer 20 questions about the Netherlands"))
+TABLE_QUIZZES['ua-quiz'] = countryQuiz(LOAD_PAGE.ua, t("Quiz: Ukraine"), t("Answer 20 questions about Ukraine"))
+TABLE_QUIZZES['at-quiz'] = countryQuiz(LOAD_PAGE.at, t("Quiz: Austria"), t("Answer 20 questions about Austria"))
+TABLE_QUIZZES['cl-quiz'] = countryQuiz(LOAD_PAGE.cl, t("Quiz: Chile"), t("Answer 20 questions about Chile"))
+TABLE_QUIZZES['nz-quiz'] = countryQuiz(LOAD_PAGE.nz, t("Quiz: New Zealand"), t("Answer 20 questions about New Zealand"))
+TABLE_QUIZZES['sa-quiz'] = countryQuiz(LOAD_PAGE.sa, t("Quiz: Saudi Arabia"), t("Answer 20 questions about Saudi Arabia"))
 
 // Localise country names shown in the tables (keys / ids stay English)
 if (lang !== 'en') {

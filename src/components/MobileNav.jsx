@@ -17,7 +17,7 @@ export default function MobileNav({ page, mode, onHome, onGames, onSearch, onDai
     { id: 'games',   icon: 'grid', label: t('Games'),   on: onGames,   active: page === 'quiz' && mode !== 'daily-quiz' },
     { id: 'search',  icon: 'search', label: t('Search'),  on: onSearch,  active: false },
     { id: 'daily',   icon: 'calendar', label: t('Daily'),   on: onDaily,   active: page === 'quiz' && mode === 'daily-quiz' },
-    { id: 'profile', icon: 'user', label: t('Profile'), on: onProfile, active: page === 'profile' },
+    { id: 'profile', icon: 'user', label: t('Passport'), on: onProfile, active: page === 'profile' },
   ]
   return (
     <nav className="mnav" aria-label={t('Main navigation')}>

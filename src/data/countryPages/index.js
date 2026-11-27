@@ -30,6 +30,17 @@ import { IRAN } from '../countryMaps/iran'
 import { GREECE } from '../countryMaps/greece'
 import { SWEDEN } from '../countryMaps/sweden'
 import { PORTUGAL } from '../countryMaps/portugal'
+import { KENYA } from '../countryMaps/kenya'
+import { GHANA } from '../countryMaps/ghana'
+import { TUNISIA } from '../countryMaps/tunisia'
+import { SENEGAL } from '../countryMaps/senegal'
+import { CAMEROON } from '../countryMaps/cameroon'
+import { NETHERLANDS } from '../countryMaps/netherlands'
+import { UKRAINE } from '../countryMaps/ukraine'
+import { AUSTRIA } from '../countryMaps/austria'
+import { CHILE } from '../countryMaps/chile'
+import { NEW_ZEALAND } from '../countryMaps/newZealand'
+import { SAUDI_ARABIA } from '../countryMaps/saudiArabia'
 
 // What the hubs, menus and icons need is here; the full page (facts, the 20 questions…) is
 // loaded only when the country page or its quiz is opened (see LOAD), to keep it out of the
@@ -66,6 +77,17 @@ const META = {
   gr: { flag: "🇬🇷", name: {"en": "Greece", "ro": "Grecia"}, tagline: {"en": "The Acropolis, Olympus and some 6,000 islands: 13 regions and the monks' republic of Mount Athos.", "ro": "Acropola, Olimpul și circa 6.000 de insule: 13 regiuni și republica monahală de pe Muntele Athos."} },
   se: { flag: "🇸🇪", name: {"en": "Sweden", "ro": "Suedia"}, tagline: {"en": "From the Øresund Bridge to Lapland: 21 counties of lakes, forests and the midnight sun.", "ro": "De la Podul Øresund la Laponia: 21 de comitate cu lacuri, păduri și soarele de la miezul nopții."} },
   pt: { flag: "🇵🇹", name: {"en": "Portugal", "ro": "Portugalia"}, tagline: {"en": "Lisbon, Porto and the Atlantic islands: 18 districts plus the Azores and Madeira.", "ro": "Lisabona, Porto și insulele din Atlantic: 18 districte plus Azorele și Madeira."} },
+  ke: { flag: "🇰🇪", name: {"en": "Kenya", "ro": "Kenya"}, tagline: {"en": "Savannah, the Great Rift Valley and the Indian Ocean coast: 47 counties astride the equator.", "ro": "Savană, Marele Rift și coasta Oceanului Indian: 47 de comitate de-a lungul ecuatorului."} },
+  gh: { flag: "🇬🇭", name: {"en": "Ghana", "ro": "Ghana"}, tagline: {"en": "The old Gold Coast: cocoa, castles and Lake Volta, in 16 regions on the Gulf of Guinea.", "ro": "Fosta Coastă de Aur: cacao, castele și Lacul Volta, în 16 regiuni la Golful Guineei."} },
+  tn: { flag: "🇹🇳", name: {"en": "Tunisia", "ro": "Tunisia"}, tagline: {"en": "Carthage, olive groves and the Sahara: 24 governorates on the tip of North Africa.", "ro": "Cartagina, livezi de măslini și Sahara: 24 de guvernorate în vârful Africii de Nord."} },
+  sn: { flag: "🇸🇳", name: {"en": "Senegal", "ro": "Senegal"}, tagline: {"en": "Africa's westernmost point: Dakar, Gorée and the Senegal River, in 14 regions.", "ro": "Cel mai vestic punct al Africii: Dakar, Gorée și fluviul Senegal, în 14 regiuni."} },
+  cm: { flag: "🇨🇲", name: {"en": "Cameroon", "ro": "Camerun"}, tagline: {"en": "\"Africa in miniature\": rainforest, savannah, volcanoes and two official languages, in 10 regions.", "ro": "„Africa în miniatură”: pădure tropicală, savană, vulcani și două limbi oficiale, în 10 regiuni."} },
+  nl: { flag: "🇳🇱", name: {"en": "Netherlands", "ro": "Țările de Jos"}, tagline: {"en": "Tulips, windmills and land won from the sea: 12 provinces, a quarter of them below sea level.", "ro": "Lalele, mori de vânt și pământ smuls mării: 12 provincii, din care o bună parte sub nivelul mării."} },
+  ua: { flag: "🇺🇦", name: {"en": "Ukraine", "ro": "Ucraina"}, tagline: {"en": "Wheat fields, the Dnieper and the Carpathians: 24 oblasts, Crimea, Kyiv and Sevastopol.", "ro": "Lanuri de grâu, Niprul și Carpații: 24 de regiuni, Crimeea, Kievul și Sevastopolul."} },
+  at: { flag: "🇦🇹", name: {"en": "Austria", "ro": "Austria"}, tagline: {"en": "Alps, the Danube and Vienna's coffee houses: 9 states from Lake Constance to the Pannonian plain.", "ro": "Alpii, Dunărea și cafenelele Vienei: 9 landuri, de la Lacul Constanța la câmpia Panonică."} },
+  cl: { flag: "🇨🇱", name: {"en": "Chile", "ro": "Chile"}, tagline: {"en": "4,300 km of coast between the Andes and the Pacific: 16 regions from the Atacama Desert to Cape Horn.", "ro": "4.300 km de coastă între Anzi și Pacific: 16 regiuni, de la deșertul Atacama la Capul Horn."} },
+  nz: { flag: "🇳🇿", name: {"en": "New Zealand", "ro": "Noua Zeelandă"}, tagline: {"en": "Two main islands, fjords, volcanoes and Māori culture: 16 regions at the far end of the Pacific.", "ro": "Două insule mari, fiorduri, vulcani și cultura maori: 16 regiuni la capătul Pacificului."} },
+  sa: { flag: "🇸🇦", name: {"en": "Saudi Arabia", "ro": "Arabia Saudită"}, tagline: {"en": "Most of the Arabian Peninsula: Mecca, Medina, the Empty Quarter and 13 regions from the Red Sea to the Gulf.", "ro": "Cea mai mare parte a Peninsulei Arabice: Mecca, Medina, Sfertul Gol și 13 regiuni de la Marea Roșie la Golf."} },
 }
 /** The full page data of each country, loaded on demand */
 export const LOAD_PAGE = {
@@ -100,6 +122,17 @@ export const LOAD_PAGE = {
   gr: () => import('./greece').then(m => m.GREECE_PAGE),
   se: () => import('./sweden').then(m => m.SWEDEN_PAGE),
   pt: () => import('./portugal').then(m => m.PORTUGAL_PAGE),
+  ke: () => import('./kenya').then(m => m.KENYA_PAGE),
+  gh: () => import('./ghana').then(m => m.GHANA_PAGE),
+  tn: () => import('./tunisia').then(m => m.TUNISIA_PAGE),
+  sn: () => import('./senegal').then(m => m.SENEGAL_PAGE),
+  cm: () => import('./cameroon').then(m => m.CAMEROON_PAGE),
+  nl: () => import('./netherlands').then(m => m.NETHERLANDS_PAGE),
+  ua: () => import('./ukraine').then(m => m.UKRAINE_PAGE),
+  at: () => import('./austria').then(m => m.AUSTRIA_PAGE),
+  cl: () => import('./chile').then(m => m.CHILE_PAGE),
+  nz: () => import('./newZealand').then(m => m.NEW_ZEALAND_PAGE),
+  sa: () => import('./saudiArabia').then(m => m.SAUDI_ARABIA_PAGE),
 }
 
 /**
@@ -140,6 +173,17 @@ export const COUNTRY_PAGES = {
   'country-gr': { slug: 'greece', page: META.gr, load: LOAD_PAGE.gr, map: GREECE, games: ['gr-regions', 'gr-capitals', 'gr-quiz'] },
   'country-se': { slug: 'sweden', page: META.se, load: LOAD_PAGE.se, map: SWEDEN, games: ['se-counties', 'se-capitals', 'se-quiz'] },
   'country-pt': { slug: 'portugal', page: META.pt, load: LOAD_PAGE.pt, map: PORTUGAL, games: ['pt-districts', 'pt-quiz'] },
+  'country-ke': { slug: 'kenya', page: META.ke, load: LOAD_PAGE.ke, map: KENYA, games: ['ke-counties', 'ke-quiz'] },
+  'country-gh': { slug: 'ghana', page: META.gh, load: LOAD_PAGE.gh, map: GHANA, games: ['gh-regions', 'gh-capitals', 'gh-quiz'] },
+  'country-tn': { slug: 'tunisia', page: META.tn, load: LOAD_PAGE.tn, map: TUNISIA, games: ['tn-governorates', 'tn-quiz'] },
+  'country-sn': { slug: 'senegal', page: META.sn, load: LOAD_PAGE.sn, map: SENEGAL, games: ['sn-regions', 'sn-quiz'] },
+  'country-cm': { slug: 'cameroon', page: META.cm, load: LOAD_PAGE.cm, map: CAMEROON, games: ['cm-regions', 'cm-capitals', 'cm-quiz'] },
+  'country-nl': { slug: 'netherlands', page: META.nl, load: LOAD_PAGE.nl, map: NETHERLANDS, games: ['nl-provinces', 'nl-capitals', 'nl-quiz'] },
+  'country-ua': { slug: 'ukraine', page: META.ua, load: LOAD_PAGE.ua, map: UKRAINE, games: ['ua-oblasts', 'ua-capitals', 'ua-quiz'] },
+  'country-at': { slug: 'austria', page: META.at, load: LOAD_PAGE.at, map: AUSTRIA, games: ['at-states', 'at-capitals', 'at-quiz'] },
+  'country-cl': { slug: 'chile', page: META.cl, load: LOAD_PAGE.cl, map: CHILE, games: ['cl-regions', 'cl-capitals', 'cl-quiz'] },
+  'country-nz': { slug: 'new-zealand', page: META.nz, load: LOAD_PAGE.nz, map: NEW_ZEALAND, games: ['nz-regions', 'nz-quiz'] },
+  'country-sa': { slug: 'saudi-arabia', page: META.sa, load: LOAD_PAGE.sa, map: SAUDI_ARABIA, games: ['sa-regions', 'sa-capitals', 'sa-quiz'] },
 }
 export const COUNTRY_PAGE_IDS = new Set(Object.keys(COUNTRY_PAGES))
 
@@ -232,6 +276,35 @@ export const COUNTRY_GAMES = [
   { id: 'se-quiz', icon: '❓', label: t("Quiz: Sweden"), desc: t("20 questions, from ABBA to the Nobel Prize.") },
   { id: 'pt-districts', icon: '🗺️', label: t("Districts of Portugal"), desc: t("18 districts plus the Azores and Madeira.") },
   { id: 'pt-quiz', icon: '❓', label: t("Quiz: Portugal"), desc: t("20 questions, from Vasco da Gama to fado.") },
+  { id: 'ke-counties', icon: '🗺️', label: t("Counties of Kenya"), desc: t("47 counties, from Turkana to Mombasa.") },
+  { id: 'ke-quiz', icon: '❓', label: t("Quiz: Kenya"), desc: t("20 questions, from the Maasai Mara to Mount Kenya.") },
+  { id: 'gh-regions', icon: '🗺️', label: t("Regions of Ghana"), desc: t("16 regions, six of them new since 2018.") },
+  { id: 'gh-capitals', icon: '🏛️', label: t("Regional Capitals of Ghana"), desc: t("Kumasi, Tamale, Ho… every regional capital.") },
+  { id: 'gh-quiz', icon: '❓', label: t("Quiz: Ghana"), desc: t("20 questions, from the Gold Coast to Lake Volta.") },
+  { id: 'tn-governorates', icon: '🗺️', label: t("Governorates of Tunisia"), desc: t("24 governorates, from Bizerte to Tataouine.") },
+  { id: 'tn-quiz', icon: '❓', label: t("Quiz: Tunisia"), desc: t("20 questions, from Carthage to the Sahara.") },
+  { id: 'sn-regions', icon: '🗺️', label: t("Regions of Senegal"), desc: t("14 regions, from Saint-Louis to Ziguinchor.") },
+  { id: 'sn-quiz', icon: '❓', label: t("Quiz: Senegal"), desc: t("20 questions, from Gorée to the pink lake.") },
+  { id: 'cm-regions', icon: '🗺️', label: t("Regions of Cameroon"), desc: t("10 regions — English or French names.") },
+  { id: 'cm-capitals', icon: '🏛️', label: t("Regional Capitals of Cameroon"), desc: t("Douala, Bamenda, Maroua… every regional capital.") },
+  { id: 'cm-quiz', icon: '❓', label: t("Quiz: Cameroon"), desc: t("20 questions, from Mount Cameroon to makossa.") },
+  { id: 'nl-provinces', icon: '🗺️', label: t("Provinces of the Netherlands"), desc: t("12 provinces, from Groningen to Limburg.") },
+  { id: 'nl-capitals', icon: '🏛️', label: t("Provincial Capitals of the Netherlands"), desc: t("Haarlem, not Amsterdam. Every provincial capital.") },
+  { id: 'nl-quiz', icon: '❓', label: t("Quiz: Netherlands"), desc: t("20 questions, from Rembrandt to the Afsluitdijk.") },
+  { id: 'ua-oblasts', icon: '🗺️', label: t("Oblasts of Ukraine"), desc: t("24 oblasts, Crimea, Kyiv and Sevastopol.") },
+  { id: 'ua-capitals', icon: '🏛️', label: t("Oblast Centres of Ukraine"), desc: t("Lutsk, Uzhhorod, Kropyvnytskyi… every oblast centre.") },
+  { id: 'ua-quiz', icon: '❓', label: t("Quiz: Ukraine"), desc: t("20 questions, from the Dnieper to borscht.") },
+  { id: 'at-states', icon: '🗺️', label: t("States of Austria"), desc: t("9 states, from Vorarlberg to Vienna.") },
+  { id: 'at-capitals', icon: '🏛️', label: t("State Capitals of Austria"), desc: t("Graz, Linz, Bregenz… every state capital.") },
+  { id: 'at-quiz', icon: '❓', label: t("Quiz: Austria"), desc: t("20 questions, from Mozart to the Sachertorte.") },
+  { id: 'cl-regions', icon: '🗺️', label: t("Regions of Chile"), desc: t("16 regions along 4,300 km of coast.") },
+  { id: 'cl-capitals', icon: '🏛️', label: t("Regional Capitals of Chile"), desc: t("From Arica to Punta Arenas — every regional capital.") },
+  { id: 'cl-quiz', icon: '❓', label: t("Quiz: Chile"), desc: t("20 questions, from the Atacama to Cape Horn.") },
+  { id: 'nz-regions', icon: '🗺️', label: t("Regions of New Zealand"), desc: t("16 regions on two main islands.") },
+  { id: 'nz-quiz', icon: '❓', label: t("Quiz: New Zealand"), desc: t("20 questions, from the kiwi to Aoraki.") },
+  { id: 'sa-regions', icon: '🗺️', label: t("Regions of Saudi Arabia"), desc: t("13 regions, from Tabuk to Najran.") },
+  { id: 'sa-capitals', icon: '🏛️', label: t("Regional Capitals of Saudi Arabia"), desc: t("Dammam, Abha, Sakakah… every regional capital.") },
+  { id: 'sa-quiz', icon: '❓', label: t("Quiz: Saudi Arabia"), desc: t("20 questions, from the Empty Quarter to the Kaaba.") },
 ]
 const gameById = Object.fromEntries(COUNTRY_GAMES.map(g => [g.id, g]))
 export const countryGame = (id) => gameById[id] ?? null

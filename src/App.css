@@ -4959,6 +4959,10 @@ h1, h2, .hp-title, .hp-sec-title, .qh-title, .qh-section-head h2, .chub-head h1,
   .kb-open .is-mobile.page-quiz .tq:not(.tq-done) { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-bottom: 0; }
   .kb-open .is-mobile.page-quiz .tq:not(.tq-done) > :is(.tq-head, .qr-opts, .qs-attempt, .ch-banner, .dq-banner) { display: none; }
   .kb-open .is-mobile.page-quiz .tq:not(.tq-done) > .tq-bar { position: static; flex: none; }
+  /* Daily Fever wraps the quiz in its own box (badge, date, leaderboard): it has to shrink with
+     the page too, or the list below the answer bar is cut off instead of scrolling */
+  .kb-open .is-mobile.page-quiz .dq-board:has(> .tq:not(.tq-done)) { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0; }
+  .kb-open .is-mobile.page-quiz .dq-board:has(> .tq:not(.tq-done)) > :not(.tq) { display: none; }
   .kb-open .is-mobile.page-quiz .tq:not(.tq-done) > .tq-scroll {
     flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
     padding-bottom: 24px; scroll-padding: 8px;
@@ -5391,3 +5395,35 @@ h1, h2, .hp-title, .hp-sec-title, .qh-title, .qh-section-head h2, .chub-head h1,
 .jr-entry:not(.unlocked) .jr-sticker { filter: grayscale(1); opacity: .45; box-shadow: none; background: rgba(255,250,240,.5); }
 .jr-entry:not(.unlocked) .jr-title { color: #7a6a50; font-weight: 500; }
 @media (max-width: 520px) { .journal { padding: 14px 12px 14px 44px; background-image: linear-gradient(90deg, transparent 32px, rgba(196,70,60,.45) 32px 34px, transparent 34px), repeating-linear-gradient(180deg, transparent 0 31px, rgba(70,110,160,.22) 31px 32px), radial-gradient(circle at 16px 30px, #0E1626 0 5px, transparent 6px); } .journal-list { grid-template-columns: 1fr; } }
+
+/* ── Regional visas ── */
+.passport .visas-sub { opacity: 1; margin: 14px 0 8px; font-size: 0.72rem; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; color: #7a6a50; }
+.passport .visas-sub:first-of-type { margin-top: 4px; }
+.rvisas-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.rvisa {
+  position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px 10px; border-radius: 12px; color: #33302a;
+  border: 1px solid rgba(60,50,30,.35); background-color: var(--vbg);
+  background-image:
+    repeating-radial-gradient(ellipse at 50% 140%, rgba(90,70,30,.12) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(60deg, rgba(255,255,255,.3) 0 1px, transparent 1px 9px),
+    linear-gradient(135deg, rgba(255,255,255,.45), transparent 60%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 6px 14px rgba(60,40,10,.18);
+}
+.rvisa-t1 { --vbg: #f6e7a6; } .rvisa-t2 { --vbg: #cfe8d4; }
+.rvisa-t3 { --vbg: #f3e2b0; box-shadow: 0 0 0 2px #c79a3c, 0 8px 20px rgba(120,80,10,.35); }
+.rvisa-t1 .visa-type { color: #8a6a12; } .rvisa-t2 .visa-type { color: #2f6b45; } .rvisa-t3 .visa-type { color: #9a2a1e; background: rgba(255,255,255,.35); }
+.rvisa-mid { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rvisa-mid strong { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: #2a261f; }
+.rvisa-mid span { font-size: 0.72rem; color: #5b5240; letter-spacing: 0.4px; }
+.rvisa-flags { display: flex; flex-wrap: wrap; gap: 5px; }
+.rvisa-flags img { width: 30px; height: 20px; object-fit: cover; border-radius: 2px; border: 1px solid rgba(0,0,0,.2); filter: grayscale(1); opacity: .35; }
+.rvisa-flags img.on { filter: none; opacity: 1; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.rvisa-t0 { --vbg: rgba(120,90,40,.06); background-image: none; border-style: dashed; border-color: rgba(90,60,20,.3); box-shadow: none; }
+.rvisa-t0 .visa-top, .rvisa-t0 .rvisa-mid strong { color: #7a6a50; }
+.rvisa-t0 .visa-type { color: #7a6a50; border-color: rgba(90,60,20,.35); }
+.rvisa-mrz { font-size: 0.6rem; }
+@media (max-width: 640px) { .rvisas-grid { grid-template-columns: 1fr; } }
+
+/* Name All / history: ∞ turns the 15-minute countdown into a count-up clock */
+.na-unlimited-btn { min-width: 34px; padding: 0 8px; border-radius: 8px; font-size: 1.1rem; font-weight: 800; line-height: 1; cursor: pointer; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); }
+.na-unlimited-btn:hover { color: var(--text); border-color: #f59e0b; }

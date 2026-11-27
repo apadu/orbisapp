@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { COUNTRY_CURRENCY } from '../utils/countryCurrency'
 import GameIntro from './GameIntro'
-import SetupCard, { TIMER_OPTION } from './SetupCard'
+import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
+import UntimedConfirm from './UntimedConfirm'
 import GameSummary from './GameSummary'
 import { t } from '../i18n'
-import { setPoolSize } from '../utils/results'
+import { setPoolSize, markSession } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
 import { plain } from '../utils/plain'
 import { curName, curSpellings } from '../i18n/names'
@@ -29,6 +30,7 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
   const [timerMode,   setTimerMode]   = useState(null)
   const [elapsed,     setElapsed]     = useState(0)
   const [remaining,   setRemaining]   = useState(COUNTDOWN_SECONDS)
+  const [confirmFree, setConfirmFree] = useState(false)   // ∞ asked, waiting for the confirm
   const [running,     setRunning]     = useState(false)
   const [expired,     setExpired]     = useState(false)
   const [confirmStop, setConfirmStop] = useState(false)
@@ -83,7 +85,7 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
 
   // Ticker
   useEffect(() => {
-    if (!running || !timerMode) return
+    if (!running || !timerMode || confirmFree) return
     tickRef.current = setInterval(() => {
       if (timerMode === 'countdown') {
         setRemaining(t => {
@@ -95,7 +97,7 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
       }
     }, 1000)
     return () => clearInterval(tickRef.current)
-  }, [running, timerMode])
+  }, [running, timerMode, confirmFree])
 
   const revealMissed = useCallback(() => {
     const foundNames = new Set(foundRef.current.map(f => f.currencyName))
@@ -129,6 +131,16 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
       timeLabel, type: 'currencies',
     })
   }, [allFound, timerMode])
+
+  // ∞ during a countdown (after a confirm): no limit from here, the clock counts up from the
+  // time used, and like every untimed game it earns no XP and stays off the leaderboards
+  const goUnlimited = () => {
+    setConfirmFree(false)
+    setElapsed(COUNTDOWN_SECONDS - remaining)
+    setTimerMode('countup')
+    markSession('name-all-currencies', { untimed: true })
+    setTimeout(() => inputRef.current?.focus(), 30)
+  }
 
   const startTimer = (mode) => {
     firedComplete.current = false
@@ -199,7 +211,7 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
       title={t('Name All Currencies')}
       desc={t('143 currencies. Name one and every country using it lights up.')}
       rules={[
-        plain(t('⏱ Choose countdown or free play')),
+        plain(t('⏳ 15 minutes on the clock — tap ∞ to keep going untimed (no XP)')),
         plain(t('💡 Currency codes accepted too (e.g. USD, EUR)')),
         plain(t('🌐 Countries sharing a currency all light up at once')),
       ]}
@@ -214,13 +226,12 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
       title={t('Name All Currencies')}
       desc={t('143 currencies. Name one and every country using it lights up.')}
       rules={[
-        plain(t('⏱ Choose countdown or free play')),
+        plain(t('⏳ 15 minutes on the clock — tap ∞ to keep going untimed (no XP)')),
         plain(t('💡 Currency codes accepted too (e.g. USD, EUR)')),
         plain(t('🌐 Countries sharing a currency all light up at once')),
       ]}
-      options={[TIMER_OPTION]}
       typeToStart
-      onStart={(v, typed) => { startTimer(v.timer); if (typed) setInput(typed) }}
+      onStart={(v, typed) => { startTimer('countdown'); if (typed) setInput(typed) }}
     />
   )
 
@@ -240,9 +251,13 @@ export default function NameAllCurrenciesPanel({ gameCountries, onFoundChange, o
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ count up'))}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : t('∞ Untimed · no XP')}
           </span>
+          {confirmFree && <UntimedConfirm onCancel={() => setConfirmFree(false)} onConfirm={goUnlimited} />}
           <div className="na-timer-controls">
+            {timerMode === 'countdown' && !gameOver && !expired && !allFound && (
+              <button className="na-unlimited-btn" onClick={() => setConfirmFree(true)} title={t('Stop the clock (no XP)')} aria-label={t('No time limit')}>∞</button>
+            )}
             {!gameOver && !expired && !allFound && (
               <GiveUpButton compact onConfirm={() => { clearInterval(tickRef.current); setRunning(false); revealMissed() }} />
             )}

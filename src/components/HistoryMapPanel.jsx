@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { fetchData } from '../utils/fetchData'
 import GameIntro from './GameIntro'
-import SetupCard, { TIMER_OPTION } from './SetupCard'
+import { markSession } from '../utils/results'
+import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
+import UntimedConfirm from './UntimedConfirm'
 import GameSummary from './GameSummary'
 import { t } from '../i18n'
 import { plain } from '../utils/plain'
@@ -205,6 +207,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
   const [timerMode,   setTimerMode]   = useState(null)   // null | 'countdown' | 'countup'
   const [elapsed,     setElapsed]     = useState(0)
   const [remaining,   setRemaining]   = useState(COUNTDOWN_SECONDS)
+  const [confirmFree, setConfirmFree] = useState(false)   // ∞ asked, waiting for the confirm
   const [running,     setRunning]     = useState(false)
   const [expired,     setExpired]     = useState(false)
   const [confirmStop, setConfirmStop] = useState(false)
@@ -268,7 +271,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
 
   // Timer tick
   useEffect(() => {
-    if (!running || !timerMode) return
+    if (!running || !timerMode || confirmFree) return
     tickRef.current = setInterval(() => {
       if (timerMode === 'countdown') {
         setRemaining(t => {
@@ -280,7 +283,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
       }
     }, 1000)
     return () => clearInterval(tickRef.current)
-  }, [running, timerMode])
+  }, [running, timerMode, confirmFree])
 
   const revealMissed = useCallback(() => {
     const foundNames = new Set(foundRef.current.map(f => f.properties.NAME))
@@ -293,6 +296,16 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
   useEffect(() => {
     if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
   }, [allFound, running])
+
+  // ∞ during a countdown (after a confirm): no limit from here, the clock counts up from the
+  // time used, and like every untimed game it earns no XP and stays off the leaderboards
+  const goUnlimited = () => {
+    setConfirmFree(false)
+    setElapsed(COUNTDOWN_SECONDS - remaining)
+    setTimerMode('countup')
+    markSession('history-maps', { untimed: true })
+    setTimeout(() => inputRef.current?.focus(), 30)
+  }
 
   const startTimer = (mode) => {
     onNewGame()
@@ -384,7 +397,7 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
       rules={[
         plain(t('🗺️ Country borders change across different eras')),
         plain(t('💡 Historical names and modern names both accepted')),
-        plain(t('⏱ Choose countdown or free play')),
+        plain(t('⏳ 15 minutes on the clock — tap ∞ to keep going untimed (no XP)')),
         plain(t('📜 Pick an era to begin')),
       ]}
       onStart={() => setStarted(true)}
@@ -404,13 +417,12 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
       ]}
       options={[
         { id: 'era', label: t('Era'), choices: ERAS.map(e => ({ value: e.id, label: `${e.label} · ${e.year}`, hint: e.desc })) },
-        TIMER_OPTION,
       ]}
       typeToStart
       onStart={(v, typed) => {
         const next = ERAS.find(e => e.id === v.era) ?? ERAS[0]
         if (era?.id !== next.id) { setLoadState('loading'); setEra(next) }
-        setPending({ timer: v.timer, typed })
+        setPending({ timer: 'countdown', typed })
       }}
     />
   )
@@ -446,9 +458,13 @@ export default function HistoryMapPanel({ onFeaturesChange, onFoundChange, onMis
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ count up'))}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : t('∞ Untimed · no XP')}
           </span>
+          {confirmFree && <UntimedConfirm onCancel={() => setConfirmFree(false)} onConfirm={goUnlimited} />}
           <div className="na-timer-controls">
+            {timerMode === 'countdown' && !gameOver && !expired && !allFound && (
+              <button className="na-unlimited-btn" onClick={() => setConfirmFree(true)} title={t('Stop the clock (no XP)')} aria-label={t('No time limit')}>∞</button>
+            )}
             {!gameOver && !expired && !allFound && (
               <GiveUpButton compact onConfirm={() => { clearInterval(tickRef.current); setRunning(false); revealMissed() }} />
             )}

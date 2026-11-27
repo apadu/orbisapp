@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { normalizeInput, resolveAlias } from '../utils/aliases'
 import GameIntro from './GameIntro'
-import SetupCard, { TIMER_OPTION } from './SetupCard'
+import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
+import UntimedConfirm from './UntimedConfirm'
 import GameSummary from './GameSummary'
 import { playCorrect, playWin } from '../utils/sounds'
 import { t, cn } from '../i18n'
-import { setPoolSize } from '../utils/results'
+import { setPoolSize, markSession } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
 import { plain } from '../utils/plain'
 
@@ -28,6 +29,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
   const [timerMode, setTimerMode]     = useState(null)
   const [elapsed, setElapsed]         = useState(0)
   const [remaining, setRemaining]     = useState(COUNTDOWN_SECONDS)
+  const [confirmFree, setConfirmFree] = useState(false)   // ∞ asked, waiting for the confirm
   const [running, setRunning]         = useState(false)
   const [expired, setExpired]         = useState(false)
   const [confirmStop, setConfirmStop] = useState(false)
@@ -53,7 +55,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
 
   // Ticker
   useEffect(() => {
-    if (!running || !timerMode) return
+    if (!running || !timerMode || confirmFree) return
     tickRef.current = setInterval(() => {
       if (timerMode === 'countdown') {
         setRemaining(t => {
@@ -65,7 +67,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       }
     }, 1000)
     return () => clearInterval(tickRef.current)
-  }, [running, timerMode])
+  }, [running, timerMode, confirmFree])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (expired) revealMissed() }, [expired])
@@ -94,6 +96,16 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
     const missed = countries.filter(f => !foundSet.has(f.properties.NAME))
     onMissed(missed)
     setGameOver(true)
+  }
+
+  // ∞ during a countdown (after a confirm): no limit from here, the clock counts up from the
+  // time used, and like every untimed game it earns no XP and stays off the leaderboards
+  const goUnlimited = () => {
+    setConfirmFree(false)
+    setElapsed(COUNTDOWN_SECONDS - remaining)
+    setTimerMode('countup')
+    markSession('name-all', { untimed: true })
+    setTimeout(() => inputRef.current?.focus(), 30)
   }
 
   const startTimer = (mode) => {
@@ -165,7 +177,7 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
       title={t('Name All Countries')}
       desc={t('196 countries, one text box. Watch the globe fill in as you type.')}
       rules={[
-        plain(t('⏱ Choose countdown or free play')),
+        plain(t('⏳ 15 minutes on the clock — tap ∞ to keep going untimed (no XP)')),
         plain(t('🙈 Optional: start with an empty globe')),
         plain(t('💡 Alternate spellings and aliases accepted')),
         plain(t('🌐 All 196 countries included')),
@@ -194,10 +206,9 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
             { value: 'blind',  label: plain(t('🙈 Empty')),  hint: t('Blank globe — countries appear only once you name them') },
           ],
         },
-        TIMER_OPTION,
       ]}
       typeToStart
-      onStart={(v, typed) => { handlePickMapStyle(v.map); startTimer(v.timer); if (typed) setInput(typed) }}
+      onStart={(v, typed) => { handlePickMapStyle(v.map); startTimer('countdown'); if (typed) setInput(typed) }}
     />
   )
 
@@ -220,9 +231,13 @@ export default function NameAllPanel({ countries, found, onGuess, onNewGame, onM
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ free play'))}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : t('∞ Untimed · no XP')}
           </span>
+          {confirmFree && <UntimedConfirm onCancel={() => setConfirmFree(false)} onConfirm={goUnlimited} />}
           <div className="na-timer-controls">
+            {timerMode === 'countdown' && !gameOver && !expired && !allFound && (
+              <button className="na-unlimited-btn" onClick={() => setConfirmFree(true)} title={t('Stop the clock (no XP)')} aria-label={t('No time limit')}>∞</button>
+            )}
             {!gameOver && !expired && !allFound && (
               <GiveUpButton compact onConfirm={() => { clearInterval(tickRef.current); setRunning(false); revealMissed() }} />
             )}

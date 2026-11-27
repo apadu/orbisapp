@@ -1,6 +1,7 @@
 import { COUNTRY_PAGES } from '../data/countryPages'
 import { DONE_AT } from './countryProgress'
 import { flagCode } from './flags'
+import { t } from '../i18n'
 
 /**
  * Visas in the passport, one per country page, worked out from the saved results
@@ -29,11 +30,37 @@ export function computeVisas(results) {
   return Object.entries(COUNTRY_PAGES).map(([id, c]) => {
     const games = c.games ?? []
     const half = games.filter(g => g in firstHalf)
-    let tier = 0, date = null
-    if (games.length && games.every(g => g in firstFull)) { tier = 3; date = latest(games.map(g => firstFull[g])) }
-    else if (games.length && half.length === games.length) { tier = 2; date = latest(games.map(g => firstHalf[g])) }
-    else if (half.length) { tier = 1; date = earliest(half.map(g => firstHalf[g])) }
-    return { id, code: flagCode(c.page.flag), page: c.page, games, done: half.length, total: games.length, tier, date }
+    // when each type was reached (a citizenship visa was a residence and a tourist visa before)
+    const dates = {}
+    if (half.length) dates[1] = earliest(half.map(g => firstHalf[g]))
+    if (games.length && half.length === games.length) dates[2] = latest(games.map(g => firstHalf[g]))
+    if (games.length && games.every(g => g in firstFull)) dates[3] = latest(games.map(g => firstFull[g]))
+    const tier = dates[3] ? 3 : dates[2] ? 2 : dates[1] ? 1 : 0
+    return { id, code: flagCode(c.page.flag), page: c.page, games, done: half.length, total: games.length, tier, date: dates[tier] ?? null, dates }
+  })
+}
+
+/**
+ * Regional visas: one per continent, for holding a visa of every country page in it.
+ * Its type is the lowest among those visas (all tourist → tourist, all residence → residence…).
+ * Russia counts as Europe and Turkey as Asia (where most of their people live / as in Natural Earth).
+ */
+export const REGIONS = [
+  { id: 'europe',   code: 'EUR', name: () => t('Europe'),        members: ['ro', 'md', 'hu', 'pl', 'de', 'fr', 'it', 'es', 'pt', 'gb', 'gr', 'se', 'ru', 'nl', 'ua', 'at'] },
+  { id: 'asia',     code: 'ASI', name: () => t('Asia'),          members: ['cn', 'in', 'ir', 'jp', 'kr', 'th', 'tr', 'sa'] },
+  { id: 'africa',   code: 'AFR', name: () => t('Africa'),        members: ['eg', 'ng', 'za', 'ke', 'gh', 'tn', 'sn', 'cm'] },
+  { id: 'namerica', code: 'NAM', name: () => t('North America'), members: ['us', 'ca', 'mx'] },
+  { id: 'samerica', code: 'SAM', name: () => t('South America'), members: ['ar', 'br', 'co', 'pe', 'cl'] },
+  { id: 'oceania',  code: 'OCE', name: () => t('Oceania'),       members: ['au', 'nz'] },
+]
+
+export function computeRegionalVisas(visas) {
+  const byPage = Object.fromEntries(visas.map(v => [v.id.replace(/^country-/, ''), v]))
+  return REGIONS.map(r => {
+    const members = r.members.map(m => byPage[m]).filter(Boolean)
+    const tier = members.length ? Math.min(...members.map(v => v.tier)) : 0
+    const date = tier ? members.map(v => v.dates[tier]).reduce((a, b) => (a > b ? a : b)) : null
+    return { ...r, members, tier, date, done: members.filter(v => v.tier > 0).length, total: members.length }
   })
 }
 

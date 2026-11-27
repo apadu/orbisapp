@@ -1,0 +1,35 @@
+/**
+ * Tunisia: the 24 governorates, keyed by ISO 3166-2 code (= `id` in public/data/maps/tn.json,
+ * from geoBoundaries). No seats quiz: each governorate is named after its seat.
+ */
+export const TUNISIA = {
+  id: 'tn',
+  file: 'tn.json',
+  country: "Tunisia",
+  divisions: [
+    { id: 'TN-11', name: "Tunis" },
+    { id: 'TN-12', name: "Ariana", alt: ["Ariena"] },
+    { id: 'TN-13', name: "Ben Arous" },
+    { id: 'TN-14', name: "Manouba", alt: ["Manubah", "La Manouba"] },
+    { id: 'TN-21', name: "Nabeul" },
+    { id: 'TN-22', name: "Zaghouan" },
+    { id: 'TN-23', name: "Bizerte", alt: ["Bizerta", "Benzart"] },
+    { id: 'TN-31', name: "Béja", alt: ["Beja"] },
+    { id: 'TN-32', name: "Jendouba" },
+    { id: 'TN-33', name: "Kef", alt: ["El Kef", "Le Kef"] },
+    { id: 'TN-34', name: "Siliana" },
+    { id: 'TN-41', name: "Kairouan", alt: ["Kairuan", "Qairawan"] },
+    { id: 'TN-42', name: "Kasserine" },
+    { id: 'TN-43', name: "Sidi Bouzid", alt: ["Sidi Bou Zid"] },
+    { id: 'TN-51', name: "Sousse", alt: ["Susa"] },
+    { id: 'TN-52', name: "Monastir" },
+    { id: 'TN-53', name: "Mahdia" },
+    { id: 'TN-61', name: "Sfax" },
+    { id: 'TN-71', name: "Gafsa" },
+    { id: 'TN-72', name: "Tozeur" },
+    { id: 'TN-73', name: "Kébili", alt: ["Kebili"] },
+    { id: 'TN-81', name: "Gabès", alt: ["Gabes"] },
+    { id: 'TN-82', name: "Médenine", alt: ["Medenine"] },
+    { id: 'TN-83', name: "Tataouine", alt: ["Tatawin"] },
+  ],
+}

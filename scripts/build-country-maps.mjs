@@ -63,6 +63,24 @@ const COUNTRY_CONFIG = {
   GR: { simplify: '15%', minIsland: '15km2' },
   SE: { simplify: '10%', minIsland: '30km2' },
   PT: { simplify: '15%', shift: { 'PT-20': [17.8, -3.0], 'PT-30': [5.3, 5.1] } },   // the Azores and Madeira as insets
+  NL: { simplify: '20%', minIsland: '10km2', filter: "['NL-BQ1','NL-BQ2','NL-BQ3'].indexOf(iso_3166_2) === -1" },   // the 12 provinces, no Caribbean Netherlands
+  // Ukraine within its internationally recognised borders: Natural Earth files Crimea and
+  // Sevastopol under Russia (with their Ukrainian codes), so they're picked up by code
+  UA: { simplify: '15%', include: ['UA-43', 'UA-40'], country: 'Ukraine' },
+  AT: { simplify: '20%' },
+  // Chile is 4,300 km long and ~180 km wide: the far south (Aysén, Magallanes) goes next to the
+  // north as one inset so the map isn't a thin ribbon; no neighbours (the inset sits over Argentina).
+  // No Easter Island / Juan Fernández (thousands of km offshore).
+  CL: { simplify: '10%', minIsland: '250km2', context: false, shift: { 'CL-AI': [12, 26], 'CL-MA': [12, 26] } },
+  NZ: { simplify: '15%', minIsland: '40km2', context: false, filter: "iso_3166_2.indexOf('NZ-X') !== 0 && iso_3166_2 !== 'NZ-CIT'" },   // 16 regions; no Chatham or the subantarctic islands
+  SA: { simplify: '20%' },
+  // Africa. Natural Earth still has Kenya's 8 old provinces, Ghana's 10 regions and 23 Tunisian
+  // governorates, so these three come from geoBoundaries (47 counties, 16 regions, 24 governorates)
+  KE: { simplify: '20%', source: { url: 'https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/KEN/ADM1/geoBoundaries-KEN-ADM1_simplified.geojson', id: 'shapeISO', name: 'shapeName', country: 'Kenya' } },
+  GH: { simplify: '20%', source: { url: 'https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/GHA/ADM1/geoBoundaries-GHA-ADM1_simplified.geojson', id: 'shapeISO', name: 'shapeName', country: 'Ghana' } },
+  TN: { simplify: '20%', source: { url: 'https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/TUN/ADM1/geoBoundaries-TUN-ADM1_simplified.geojson', id: 'shapeISO', name: 'shapeName', country: 'Tunisia' } },
+  SN: { simplify: '20%' },
+  CM: { simplify: '20%' },
 }
 const COUNTRIES = new URL('../public/data/ne_50m_admin_0_countries.geojson', import.meta.url)
 const OUT = new URL('../public/data/maps/', import.meta.url)
@@ -109,7 +127,8 @@ for (const code of codes) {
     countryName = cfg.source.country
   } else {
     const excl = (cfg.exclude ?? []).map(c => `'${c}'`).join(',')
-    const pick = `-filter "iso_a2 === '${code}'${excl ? ` && ![${excl}].includes((region_cod || '').trim())` : ''}${cfg.filter ? ` && (${cfg.filter})` : ''}"`
+    const own = cfg.include ? `(iso_a2 === '${code}' || [${cfg.include.map(c => `'${c}'`).join(',')}].includes(iso_3166_2))` : `iso_a2 === '${code}'`
+    const pick = `-filter "${own}${excl ? ` && ![${excl}].includes((region_cod || '').trim())` : ''}${cfg.filter ? ` && (${cfg.filter})` : ''}"`
     const shape = cfg.group
       ? `-each "${cfg.group.replace(/"/g, '\\"')}" -dissolve grp copy-fields=admin -each "id = grp, name = grp"`
       : cfg.dissolve
@@ -122,7 +141,7 @@ for (const code of codes) {
       `-simplify ${cfg.simplify ?? '20%'} keep-shapes -o out.json format=geojson precision=0.0001`,
       { 'admin1.json': await getAdmin1() })
     fc = JSON.parse(subs['out.json'])
-    countryName = fc.features[0]?.properties.admin          // e.g. "Romania"
+    countryName = cfg.country ?? fc.features[0]?.properties.admin          // e.g. "Romania"
     for (const f of fc.features) {
       delete f.properties.admin
       if (cfg.ids) f.properties.id = cfg.ids[f.properties.name] ?? f.properties.id
@@ -131,17 +150,23 @@ for (const code of codes) {
   if (!fc.features.length) { console.log(`✗ ${code}: no subdivisions found`); process.exitCode = 1; continue }
 
   // 1b. Insets: move far-off islands next to the mainland and frame them
-  const frames = []
+  // features moved by the same amount share one frame
+  const frames = [], groups = new Map()
   for (const f of fc.features) {
     const d = cfg.shift?.[f.properties.id]
     if (!d) continue
-    let [a0, b0, a1, b1] = [180, 90, -180, -90]
+    const key = d.join(',')
+    const g = groups.get(key) ?? { box: [180, 90, -180, -90], ids: [] }
+    groups.set(key, g); g.ids.push(f.properties.id)
     const move = (c) => typeof c[0] === 'number'
-      ? (c[0] = +(c[0] + d[0]).toFixed(4), c[1] = +(c[1] + d[1]).toFixed(4), a0 = Math.min(a0, c[0]), a1 = Math.max(a1, c[0]), b0 = Math.min(b0, c[1]), b1 = Math.max(b1, c[1]))
+      ? (c[0] = +(c[0] + d[0]).toFixed(4), c[1] = +(c[1] + d[1]).toFixed(4),
+         g.box = [Math.min(g.box[0], c[0]), Math.min(g.box[1], c[1]), Math.max(g.box[2], c[0]), Math.max(g.box[3], c[1])])
       : c.forEach(move)
     move(f.geometry.coordinates)
+  }
+  for (const { box: [a0, b0, a1, b1], ids } of groups.values()) {
     const p = 0.35
-    frames.push({ type: 'Feature', properties: { frame: true, of: f.properties.id },
+    frames.push({ type: 'Feature', properties: { frame: true, of: ids[0] },
       geometry: { type: 'LineString', coordinates: [[a0 - p, b0 - p], [a1 + p, b0 - p], [a1 + p, b1 + p], [a0 - p, b1 + p], [a0 - p, b0 - p]] } })
   }
 
@@ -153,7 +178,7 @@ for (const code of codes) {
   const pad = cfg.pad ?? 0.35
   const px = (x1 - x0) * pad, py = (y1 - y0) * pad
   const box = cfg.box ?? [x0 - px, y0 - py, x1 + px, y1 + py].map(v => +v.toFixed(3)).join(',')
-  const ctx = await mapshaper.applyCommands(
+  const ctx = cfg.context === false ? { 'out.json': '{"features":[]}' } : await mapshaper.applyCommands(
     `-i c.json -filter "NAME !== '${countryName.replace(/'/g, "\\'")}'" -clip bbox=${box} -filter-fields NAME ` +
     `-rename-fields name=NAME -each "ctx=true" -o out.json format=geojson precision=0.001`,
     { 'c.json': countries })

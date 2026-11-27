@@ -4,8 +4,7 @@ import { COUNTRY_MAP_QUIZZES } from '../data/countryMaps'
 import { norm } from '../quizzes/tableQuizzes'
 import { startSession, trackAnswer, finishGame, markSession, setPoolSize } from '../utils/results'
 import { playCorrect, playWin, playWrong } from '../utils/sounds'
-import { getSavedSetup, saveSetup } from './SetupCard'
-import { ReadyOptions, StartButton, useTypeToStart } from './QuizReady'
+import { StartButton, useTypeToStart } from './QuizReady'
 import { setRules } from '../utils/rulesStore'
 import { AttemptNote, QuizResultStats, pastRounds } from './QuizStats'
 import GiveUpButton from './GiveUpButton'
@@ -26,13 +25,6 @@ import StateNote from './StateNote'
 
 const PREFIX_WAIT_MS = 700
 const TIME_S = 5 * 60
-const CLOCK_OPTION = () => ({
-  id: 'time', label: t('Clock'),
-  choices: [
-    { value: '5', label: plain(t('⏱ 5 minutes')), hint: t('Earns XP and counts for the leaderboard') },
-    { value: 'free', label: t('∞ No limit'), hint: t('Take your time — no XP, no leaderboard') },
-  ],
-})
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`
 
@@ -65,10 +57,10 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
   }, [items])
 
   const { drawn, error: loadError } = useCountryMap(map)
-  const options = useMemo(() => [CLOCK_OPTION()], [])
   const [phase, setPhase] = useState('setup')        // setup (map shown, not started) · playing · done
-  const [setup, setSetup] = useState(() => getSavedSetup(quizId, options))
-  const [timed, setTimed] = useState(() => setup.time !== 'free')
+  // Every game starts on the 5-minute clock; the ∞ button turns it off for the rest of that game
+  const [timed, setTimed] = useState(true)
+  const [confirmUntimed, setConfirmUntimed] = useState(false)
   const [timeLeft, setTimeLeft] = useState(TIME_S)
   const [found, setFound] = useState(() => new Set())
   const [recent, setRecent] = useState(null)
@@ -83,10 +75,9 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
   const startedAt = useRef(0)
 
   // ── Game flow ────────────────────────────────────────────────────────────
-  const start = useCallback((values, typed) => {
-    const isTimed = values?.time !== 'free'
-    saveSetup(mode, values)
-    setTimed(isTimed)
+  const start = useCallback((typed) => {
+    setTimed(true)
+    setConfirmUntimed(false)
     setTimeLeft(TIME_S)
     const empty = new Set()
     foundRef.current = empty
@@ -100,21 +91,25 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
     setLastRow(null)
     startSession(mode)
     setPoolSize(mode, items.length)   // left half-way: 9/42, not 9/9
-    if (!isTimed) markSession(mode, { untimed: true })   // free play: no XP, medals or leaderboard
     inputRef.current?.focus()   // same input as before the start: keep the next keystrokes
     setTimeout(() => inputRef.current?.focus(), 30)
   }, [mode, items.length])
 
   // Before the start: the blank map, with the clock option in the answer bar
   const ready = phase === 'setup'
-  const changeSetup = (v) => { saveSetup(mode, v); setSetup(v); setTimed(v.time !== 'free') }
-  const beginNow = (typed) => start(setup, typed)
+  const goUntimed = () => {
+    setTimed(false)
+    setConfirmUntimed(false)
+    markSession(mode, { untimed: true })   // whole game: no XP, no medals, no leaderboard
+    setTimeout(() => inputRef.current?.focus(), 30)
+  }
+  const beginNow = (typed) => start(typed)
   useTypeToStart(ready, beginNow)
   const backToStart = () => {
     const empty = new Set()
     foundRef.current = empty
     setFound(empty); setRecent(null); setInput(''); setEndReason(null)
-    setTimeLeft(TIME_S); setTimed(setup.time !== 'free')
+    setTimeLeft(TIME_S); setTimed(true); setConfirmUntimed(false)
     setPhase('setup')
   }
 
@@ -142,10 +137,10 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
   }, [items, mode, map.id, kind])
 
   useEffect(() => {
-    if (phase !== 'playing' || !timed) return
+    if (phase !== 'playing' || !timed || confirmUntimed) return
     const id = setInterval(() => setTimeLeft(s => s - 1), 1000)
     return () => clearInterval(id)
-  }, [phase, timed])
+  }, [phase, timed, confirmUntimed])
   useEffect(() => { if (phase === 'playing' && timed && timeLeft <= 0) finish('time') }, [timeLeft]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => clearTimeout(pendingRef.current), [])
 
@@ -200,7 +195,10 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
   const statsBlock = (
     <div className="tq-stats">
       {timed
-        ? <span className={`tq-timer${playing && timeLeft <= 30 ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
+        ? <>
+            <span className={`tq-timer${playing && timeLeft <= 30 ? ' danger' : ''}`}>⏱ {fmt(timeLeft)}</span>
+            {playing && <button className="tq-untimed-btn" onClick={() => setConfirmUntimed(true)} title={t('Stop the clock (no XP)')}>∞</button>}
+          </>
         : <span className="tq-timer tq-untimed" title={t('Untimed — this game earns no XP')}>{t('∞ Untimed · no XP')}</span>}
       <span className="tq-score"><strong>{score}</strong> / {total}</span>
     </div>
@@ -220,7 +218,23 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
       </header>
       <ChallengeBanner ch={ch} />
 
-      {ready && <ReadyOptions options={options} values={setup} onChange={changeSetup} />}
+      {confirmUntimed && (
+        <div className="tq-modal-backdrop" onClick={() => setConfirmUntimed(false)}>
+          <div className="tq-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+            <div className="tq-modal-icon">∞</div>
+            <h3>{t('Play untimed?')}</h3>
+            <ul>
+              <li>{plain(t('⏸ The clock stops for the rest of this game.'))}</li>
+              <li>{plain(t('🔒 You can\'t turn it back on until you start a new game.'))}</li>
+              <li>{plain(t('🚫 This game earns'))} <strong>{t('no XP')}</strong> {t('and won\'t count for leaderboards.')}</li>
+            </ul>
+            <div className="tq-modal-btns">
+              <button className="tq-btn" onClick={() => setConfirmUntimed(false)}>{t('Keep the timer')}</button>
+              <button className="tq-btn tq-btn-warn" onClick={goUntimed} autoFocus>{t('Yes, play untimed')}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {ready && <AttemptNote mode={quizId} />}
 
       <div className="tq-bar">
@@ -250,7 +264,7 @@ export default function CountryMapQuiz({ quizId, onOpen }) {
             </span>
             <ChallengeResult ch={ch} score={score} total={total} ms={endReason === 'complete' ? elapsed : undefined} />
             <div className="tq-result-btns">
-              <button className="tq-btn tq-btn-primary" onClick={() => start({ time: timed ? '5' : 'free' })}>{t('▶ Play again')}</button>
+              <button className="tq-btn tq-btn-primary" onClick={() => start()}>{t('▶ Play again')}</button>
               <button className="tq-btn" onClick={backToStart}>{plain(t('⚙ Settings'))}</button>
               <ShareButton text={() => resultText({ title: quiz.title, score, total, extra: endReason === 'complete' ? fmt(Math.round(elapsed / 1000)) : null })} />
               <ChallengeButton mode={quizId} title={quiz.title} score={score} total={total} ms={endReason === 'complete' ? elapsed : undefined} rematch={!!ch} />

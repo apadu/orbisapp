@@ -6,11 +6,12 @@ import { capName, capitalAnswers } from '../i18n/names'
 // lower-case, single spaces, no diacritics: "Bucuresti" finds București
 const capKey = (s) => normalizeInput(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 import GameIntro from './GameIntro'
-import SetupCard, { TIMER_OPTION } from './SetupCard'
+import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
+import UntimedConfirm from './UntimedConfirm'
 import GameSummary from './GameSummary'
 import { t } from '../i18n'
-import { setPoolSize } from '../utils/results'
+import { setPoolSize, markSession } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
 import { plain } from '../utils/plain'
 
@@ -29,6 +30,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
   const [timerMode,   setTimerMode]   = useState(null) // null | 'countdown' | 'countup'
   const [elapsed,     setElapsed]     = useState(0)
   const [remaining,   setRemaining]   = useState(COUNTDOWN_SECONDS)
+  const [confirmFree, setConfirmFree] = useState(false)   // ∞ asked, waiting for the confirm
   const [running,     setRunning]     = useState(false)
   const [expired,     setExpired]     = useState(false)
   const [confirmStop, setConfirmStop] = useState(false)
@@ -73,7 +75,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
 
   // Ticker
   useEffect(() => {
-    if (!running || !timerMode) return
+    if (!running || !timerMode || confirmFree) return
     tickRef.current = setInterval(() => {
       if (timerMode === 'countdown') {
         setRemaining(t => {
@@ -85,7 +87,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       }
     }, 1000)
     return () => clearInterval(tickRef.current)
-  }, [running, timerMode])
+  }, [running, timerMode, confirmFree])
 
   const revealMissed = useCallback(() => {
     const missed = eligiblePairs.filter(p => !foundRef.current.some(f => f.name === p.name)).map(p => p.feature)
@@ -117,6 +119,16 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       setRunning(false)
     }
   }, [allFound, running])
+
+  // ∞ during a countdown (after a confirm): no limit from here, the clock counts up from the
+  // time used, and like every untimed game it earns no XP and stays off the leaderboards
+  const goUnlimited = () => {
+    setConfirmFree(false)
+    setElapsed(COUNTDOWN_SECONDS - remaining)
+    setTimerMode('countup')
+    markSession('name-all-caps', { untimed: true })
+    setTimeout(() => inputRef.current?.focus(), 30)
+  }
 
   const startTimer = (mode) => {
     firedComplete.current = false
@@ -190,7 +202,7 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       title={t('Name All Capitals')}
       desc={t('Every capital on Earth. Careful: South Africa has three.')}
       rules={[
-        plain(t('⏱ Choose countdown or free play')),
+        plain(t('⏳ 15 minutes on the clock — tap ∞ to keep going untimed (no XP)')),
         plain(t('💡 Countries light up when you name their capital')),
         plain(t('✅ Common spelling variants accepted')),
       ]}
@@ -205,13 +217,12 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
       title={t('Name All Capitals')}
       desc={t('Every capital on Earth. Careful: South Africa has three.')}
       rules={[
-        plain(t('⏱ Choose countdown or free play')),
+        plain(t('⏳ 15 minutes on the clock — tap ∞ to keep going untimed (no XP)')),
         plain(t('💡 Countries light up when you name their capital')),
         plain(t('✅ Common spelling variants accepted')),
       ]}
-      options={[TIMER_OPTION]}
       typeToStart
-      onStart={(v, typed) => { startTimer(v.timer); if (typed) setInput(typed) }}
+      onStart={(v, typed) => { startTimer('countdown'); if (typed) setInput(typed) }}
     />
   )
 
@@ -231,9 +242,13 @@ export default function NameAllCapitalsPanel({ gameCountries, countryInfo, onFou
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ count up'))}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : t('∞ Untimed · no XP')}
           </span>
+          {confirmFree && <UntimedConfirm onCancel={() => setConfirmFree(false)} onConfirm={goUnlimited} />}
           <div className="na-timer-controls">
+            {timerMode === 'countdown' && !gameOver && !expired && !allFound && (
+              <button className="na-unlimited-btn" onClick={() => setConfirmFree(true)} title={t('Stop the clock (no XP)')} aria-label={t('No time limit')}>∞</button>
+            )}
             {!gameOver && !expired && !allFound && (
               <GiveUpButton compact onConfirm={() => { clearInterval(tickRef.current); setRunning(false); revealMissed() }} />
             )}

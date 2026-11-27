@@ -7,7 +7,7 @@ const MAX_TOASTS = 3
 
 /**
  * Live feedback layered over the globe:
- *  - a floating toast per answer (+pts, country, streak)
+ *  - a floating toast per answer (✓/✗ and the name)
  *  - a soft green/red edge flash
  * Listens to every trackAnswer() call, so every game gets it for free.
  */
@@ -35,7 +35,6 @@ export default function GlobeFeedback() {
                 {x.ok ? '✓' : '✗'}
               </span>
               {label && <span className="gf-label">{label}</span>}
-              {x.ok && x.streak >= 3 && <span className="gf-streak">🔥 ×{x.streak}</span>}
             </div>
           )
         })}

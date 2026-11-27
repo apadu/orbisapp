@@ -30,6 +30,17 @@ import { IRAN } from './iran'
 import { GREECE } from './greece'
 import { SWEDEN } from './sweden'
 import { PORTUGAL } from './portugal'
+import { KENYA } from './kenya'
+import { GHANA } from './ghana'
+import { TUNISIA } from './tunisia'
+import { SENEGAL } from './senegal'
+import { CAMEROON } from './cameroon'
+import { NETHERLANDS } from './netherlands'
+import { UKRAINE } from './ukraine'
+import { AUSTRIA } from './austria'
+import { CHILE } from './chile'
+import { NEW_ZEALAND } from './newZealand'
+import { SAUDI_ARABIA } from './saudiArabia'
 
 /**
  * "Country maps" quizzes: a flat 2D map of one country split into its subdivisions.
@@ -375,6 +386,114 @@ export const COUNTRY_MAP_QUIZZES = {
     title: t("Districts of Portugal"),
     prompt: t("Type the 18 districts — and the Azores and Madeira"),
     placeholder: t("Type a district…"),
+  },
+  'nl-provinces': {
+    map: NETHERLANDS, kind: 'divisions', icon: '🇳🇱',
+    title: t("Provinces of the Netherlands"),
+    prompt: t("Type all 12 provinces"),
+    placeholder: t("Type a province…"),
+  },
+  'nl-capitals': {
+    map: NETHERLANDS, kind: 'seats', icon: '🏛️',
+    title: t("Provincial Capitals of the Netherlands"),
+    prompt: t("Type the capital of every province — its province lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'ua-oblasts': {
+    map: UKRAINE, kind: 'divisions', icon: '🇺🇦',
+    title: t("Oblasts of Ukraine"),
+    prompt: t("Type the 24 oblasts — plus Crimea, Kyiv and Sevastopol"),
+    placeholder: t("Type an oblast…"),
+  },
+  'ua-capitals': {
+    map: UKRAINE, kind: 'seats', icon: '🏛️',
+    title: t("Oblast Centres of Ukraine"),
+    prompt: t("Type the centre of every oblast — its oblast lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'at-states': {
+    map: AUSTRIA, kind: 'divisions', icon: '🇦🇹',
+    title: t("States of Austria"),
+    prompt: t("Type all 9 states"),
+    placeholder: t("Type a state…"),
+  },
+  'at-capitals': {
+    map: AUSTRIA, kind: 'seats', icon: '🏛️',
+    title: t("State Capitals of Austria"),
+    prompt: t("Type the capital of every state — its state lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'cl-regions': {
+    map: CHILE, kind: 'divisions', icon: '🇨🇱',
+    title: t("Regions of Chile"),
+    prompt: t("Type all 16 regions"),
+    placeholder: t("Type a region…"),
+  },
+  'cl-capitals': {
+    map: CHILE, kind: 'seats', icon: '🏛️',
+    title: t("Regional Capitals of Chile"),
+    prompt: t("Type the capital of every region — its region lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'nz-regions': {
+    map: NEW_ZEALAND, kind: 'divisions', icon: '🇳🇿',
+    title: t("Regions of New Zealand"),
+    prompt: t("Type all 16 regions"),
+    placeholder: t("Type a region…"),
+  },
+  'sa-regions': {
+    map: SAUDI_ARABIA, kind: 'divisions', icon: '🇸🇦',
+    title: t("Regions of Saudi Arabia"),
+    prompt: t("Type all 13 regions"),
+    placeholder: t("Type a region…"),
+  },
+  'sa-capitals': {
+    map: SAUDI_ARABIA, kind: 'seats', icon: '🏛️',
+    title: t("Regional Capitals of Saudi Arabia"),
+    prompt: t("Type the capital of every region — its region lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'ke-counties': {
+    map: KENYA, kind: 'divisions', icon: '🇰🇪',
+    title: t("Counties of Kenya"),
+    prompt: t("Type all 47 counties"),
+    placeholder: t("Type a county…"),
+  },
+  'gh-regions': {
+    map: GHANA, kind: 'divisions', icon: '🇬🇭',
+    title: t("Regions of Ghana"),
+    prompt: t("Type all 16 regions"),
+    placeholder: t("Type a region…"),
+  },
+  'gh-capitals': {
+    map: GHANA, kind: 'seats', icon: '🏛️',
+    title: t("Regional Capitals of Ghana"),
+    prompt: t("Type the capital of every region — its region lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'tn-governorates': {
+    map: TUNISIA, kind: 'divisions', icon: '🇹🇳',
+    title: t("Governorates of Tunisia"),
+    prompt: t("Type all 24 governorates"),
+    placeholder: t("Type a governorate…"),
+  },
+  'sn-regions': {
+    map: SENEGAL, kind: 'divisions', icon: '🇸🇳',
+    title: t("Regions of Senegal"),
+    prompt: t("Type all 14 regions"),
+    placeholder: t("Type a region…"),
+  },
+  'cm-regions': {
+    map: CAMEROON, kind: 'divisions', icon: '🇨🇲',
+    title: t("Regions of Cameroon"),
+    prompt: t("Type all 10 regions"),
+    placeholder: t("Type a region…"),
+  },
+  'cm-capitals': {
+    map: CAMEROON, kind: 'seats', icon: '🏛️',
+    title: t("Regional Capitals of Cameroon"),
+    prompt: t("Type the capital of every region — its region lights up"),
+    placeholder: t("Type a city…"),
   },
 }
 export const COUNTRY_MAP_IDS = new Set(Object.keys(COUNTRY_MAP_QUIZZES))

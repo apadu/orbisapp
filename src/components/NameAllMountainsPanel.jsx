@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import GameIntro from './GameIntro'
-import SetupCard, { TIMER_OPTION } from './SetupCard'
+import SetupCard from './SetupCard'
 import GiveUpButton from './GiveUpButton'
+import UntimedConfirm from './UntimedConfirm'
 import GameSummary from './GameSummary'
 import { t } from '../i18n'
-import { setPoolSize } from '../utils/results'
+import { setPoolSize, markSession } from '../utils/results'
 import { useGameHud } from '../utils/hudStore'
 import { plain } from '../utils/plain'
 import { rangeName, rangeSpellings, plainKey } from '../i18n/names'
@@ -31,6 +32,7 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
   const [timerMode,   setTimerMode]   = useState(null)
   const [elapsed,     setElapsed]     = useState(0)
   const [remaining,   setRemaining]   = useState(COUNTDOWN_SECONDS)
+  const [confirmFree, setConfirmFree] = useState(false)   // ∞ asked, waiting for the confirm
   const [running,     setRunning]     = useState(false)
   const [expired,     setExpired]     = useState(false)
   const [confirmStop, setConfirmStop] = useState(false)
@@ -70,7 +72,7 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
 
   // Ticker
   useEffect(() => {
-    if (!running || !timerMode) return
+    if (!running || !timerMode || confirmFree) return
     tickRef.current = setInterval(() => {
       if (timerMode === 'countdown') {
         setRemaining(t => {
@@ -82,7 +84,7 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
       }
     }, 1000)
     return () => clearInterval(tickRef.current)
-  }, [running, timerMode])
+  }, [running, timerMode, confirmFree])
 
   const revealMissed = useCallback(() => {
     const foundNames = new Set(foundRef.current.map(f => f.properties.NAME))
@@ -96,6 +98,16 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
   useEffect(() => {
     if (allFound && running) { clearInterval(tickRef.current); setRunning(false) }
   }, [allFound, running])
+
+  // ∞ during a countdown (after a confirm): no limit from here, the clock counts up from the
+  // time used, and like every untimed game it earns no XP and stays off the leaderboards
+  const goUnlimited = () => {
+    setConfirmFree(false)
+    setElapsed(COUNTDOWN_SECONDS - remaining)
+    setTimerMode('countup')
+    markSession('mountains', { untimed: true })
+    setTimeout(() => inputRef.current?.focus(), 30)
+  }
 
   const startTimer = (mode) => {
     onNewGame()
@@ -167,7 +179,7 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
       title={t('Name All Mountain Ranges')}
       desc={t('40 mountain ranges, from the Himalayas to the Andes. Name them all.')}
       rules={[
-        plain(t('⏱ Choose countdown or free play')),
+        plain(t('⏳ 15 minutes on the clock — tap ∞ to keep going untimed (no XP)')),
         plain(t('🏔️ All major ranges across all continents')),
         plain(t('💡 Abbreviations and nicknames accepted')),
       ]}
@@ -182,13 +194,12 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
       title={t('Name All Mountain Ranges')}
       desc={t('40 mountain ranges, from the Himalayas to the Andes. Name them all.')}
       rules={[
-        plain(t('⏱ Choose countdown or free play')),
+        plain(t('⏳ 15 minutes on the clock — tap ∞ to keep going untimed (no XP)')),
         plain(t('🏔️ All major ranges across all continents')),
         plain(t('💡 Abbreviations and nicknames accepted')),
       ]}
-      options={[TIMER_OPTION]}
       typeToStart
-      onStart={(v, typed) => { startTimer(v.timer); if (typed) setInput(typed) }}
+      onStart={(v, typed) => { startTimer('countdown'); if (typed) setInput(typed) }}
     />
   )
 
@@ -208,9 +219,13 @@ export default function NameAllMountainsPanel({ ranges, onFoundChange, onMissedC
             {timerMode === 'countdown' ? formatTime(remaining) : formatTime(elapsed)}
           </span>
           <span className="na-timer-type">
-            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : plain(t('⏱ count up'))}
+            {timerMode === 'countdown' ? plain(t('⏳ countdown')) : t('∞ Untimed · no XP')}
           </span>
+          {confirmFree && <UntimedConfirm onCancel={() => setConfirmFree(false)} onConfirm={goUnlimited} />}
           <div className="na-timer-controls">
+            {timerMode === 'countdown' && !gameOver && !expired && !allFound && (
+              <button className="na-unlimited-btn" onClick={() => setConfirmFree(true)} title={t('Stop the clock (no XP)')} aria-label={t('No time limit')}>∞</button>
+            )}
             {!gameOver && !expired && !allFound && (
               <GiveUpButton compact onConfirm={() => { clearInterval(tickRef.current); setRunning(false); revealMissed() }} />
             )}
