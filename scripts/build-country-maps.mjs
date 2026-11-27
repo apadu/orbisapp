@@ -74,6 +74,19 @@ const COUNTRY_CONFIG = {
   CL: { simplify: '10%', minIsland: '250km2', context: false, shift: { 'CL-AI': [12, 26], 'CL-MA': [12, 26] } },
   NZ: { simplify: '15%', minIsland: '40km2', context: false, filter: "iso_3166_2.indexOf('NZ-X') !== 0 && iso_3166_2 !== 'NZ-CIT'" },   // 16 regions; no Chatham or the subantarctic islands
   SA: { simplify: '20%' },
+  MY: { simplify: '15%', minIsland: '30km2', shift: { 'MY-13': [-4.5, 0], 'MY-12': [-4.5, 0], 'MY-15': [-4.5, 0] } },   // East Malaysia closer to the peninsula, as one inset
+  // Sri Lanka: Natural Earth has the 25 districts; their codes start with the province digit
+  LK: { simplify: '15%', group: "grp = iso_3166_2.slice(0, 4)" },
+  MN: { simplify: '15%' },
+  EC: { simplify: '15%', minIsland: '20km2', shift: { 'EC-W': [8, 0] } },   // the Galápagos, 1,000 km offshore, as an inset
+  BO: { simplify: '15%' },
+  BG: { simplify: '20%' },
+  CH: { simplify: '20%' },
+  CZ: { simplify: '20%' },
+  BE: { simplify: '20%' },
+  SK: { simplify: '20%' },
+  // Ireland: Natural Earth splits Dublin into 4 councils and Tipperary into 2 (sharing codes): merge them back into the 26 counties
+  IE: { simplify: '20%', minIsland: '10km2', group: "grp = iso_3166_2" },
   // Africa. Natural Earth still has Kenya's 8 old provinces, Ghana's 10 regions and 23 Tunisian
   // governorates, so these three come from geoBoundaries (47 counties, 16 regions, 24 governorates)
   KE: { simplify: '20%', source: { url: 'https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/KEN/ADM1/geoBoundaries-KEN-ADM1_simplified.geojson', id: 'shapeISO', name: 'shapeName', country: 'Kenya' } },

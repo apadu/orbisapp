@@ -94,8 +94,8 @@ export const TABLE_QUIZZES = {
   },
 
   'cap-to-country': {
-    title: t('Countries by Capital'), icon: '🗺️',
-    prompt: t('Name the country for each capital'),
+    title: t('Countries by Capital'), icon: '🗺️', regions: false, sample: 20, sizes: false, keepOrder: true,   // 20 random capitals, a fresh set every game
+    prompt: t('20 random capitals from around the world — a new set every game'),
     columns: { hint: t('Capital'), answer: t('Country') },
     build: ({ countries, region }) => countries
       .filter(n => CAPITALS[n] && inRegion(n, region))
@@ -119,8 +119,8 @@ export const TABLE_QUIZZES = {
   },
 
   currency: {
-    title: t('Currencies'), icon: '💰',
-    prompt: t('Type the currency of each country (name or code)'),
+    title: t('Currencies'), icon: '💰', regions: false, sample: 20, sizes: false, keepOrder: true,
+    prompt: t('Type the currency of 20 random countries (name or code) — a new set every game'),
     columns: { hint: t('Country'), answer: t('Currency') },
     build: ({ countries, region }) => countries
       .filter(n => COUNTRY_CURRENCY[n] && inRegion(n, region))
@@ -136,8 +136,8 @@ export const TABLE_QUIZZES = {
   },
 
   language: {
-    title: t('Languages'), icon: '🗣️',
-    prompt: t('Type the main official language of each country'),
+    title: t('Languages'), icon: '🗣️', regions: false, sample: 20, sizes: false, keepOrder: true,
+    prompt: t('Type the main official language of 20 random countries — a new set every game'),
     columns: { hint: t('Country'), answer: t('Language') },
     build: ({ countries, region }) => countries
       .filter(n => COUNTRY_LANGUAGES[n]?.length && inRegion(n, region))
@@ -146,8 +146,8 @@ export const TABLE_QUIZZES = {
   },
 
   endonyms: {
-    title: t('Endonyms'), icon: '🔠', sample: 30,
-    prompt: t('Name each country from what it calls itself'),
+    title: t('Endonyms'), icon: '🔠', regions: false, sample: 20, sizes: false, keepOrder: true,
+    prompt: t('Name 20 random countries from what they call themselves — a new set every game'),
     columns: { hint: t('Endonym'), answer: t('Country') },
     build: ({ countries, region }) => ENDONYMS
       .filter(e => countries.includes(e.country) && inRegion(e.country, region))
@@ -155,24 +155,24 @@ export const TABLE_QUIZZES = {
   },
 
   'missing-vowels': {
-    title: t('Missing Vowels'), icon: '🔡', sample: 30,
-    prompt: t('Only the consonants are left — name each country'),
+    title: t('Missing Vowels'), icon: '🔡', regions: false, sample: 20, sizes: false,
+    prompt: t('Only the consonants are left — name 20 random countries, a new set every game'),
     columns: { hint: t('Consonants'), answer: t('Country') },
     build: ({ countries, region }) => seededShuffle(countries.filter(n => !word(n).includes(' ') && word(n).length >= 4 && inRegion(n, region)), 5)
       .map(n => ({ id: n, country: n, hint: { type: 'text', value: word(n).toUpperCase().replace(/[AEIOUĂÂÎ]/g, ''), mono: true }, answers: [n, word(n)], display: word(n) })),
   },
 
   scramble: {
-    title: t('Scramble'), icon: '🔀', sample: 30,
-    prompt: t('Unscramble every country name'),
+    title: t('Scramble'), icon: '🔀', regions: false, sample: 20, sizes: false,
+    prompt: t('Unscramble 20 random country names — a new set every game'),
     columns: { hint: t('Scrambled'), answer: t('Country') },
     build: ({ countries, region }) => seededShuffle(countries.filter(n => !word(n).includes(' ') && word(n).length >= 5 && inRegion(n, region)), 3)
       .map((n, i) => ({ id: n, country: n, hint: { type: 'text', value: scramble(word(n), i + 1), mono: true }, answers: [n, word(n)], display: word(n) })),
   },
 
   'country-fact': {
-    title: t('Country by Fact'), icon: '📖', sample: 30,
-    prompt: t('Name the country each fact describes'),
+    title: t('Country by Fact'), icon: '📖', regions: false, sample: 20, sizes: false,
+    prompt: t('Name the country each fact describes — 20 random facts, a new set every game'),
     columns: { hint: t('Fact'), answer: t('Country') },
     build: ({ countries, region }) => {
       const seen = new Set()
@@ -183,15 +183,15 @@ export const TABLE_QUIZZES = {
   },
 
   'flag-colors': {
-    title: t('Flag Colors'), icon: '🎨', sample: 30,
-    prompt: t('Name the country from its flag\'s colour mix'),
+    title: t('Flag Colors'), icon: '🎨', regions: false, sample: 20, sizes: false,
+    prompt: t('Name the country from its flag\'s colour mix — 20 random flags, a new set every game'),
     columns: { hint: t('Colours'), answer: t('Country') },
     build: ({ countries, region }) => seededShuffle(Object.keys(FLAG_COLORS).filter(n => countries.includes(n) && inRegion(n, region)), 9)
       .map(n => ({ id: n, country: n, hint: { type: 'colors', value: FLAG_COLORS[n] }, answers: countryAnswers(n), display: n })),
   },
 
   'pop-order': {
-    title: t('Most Populous Countries'), icon: '📊', ranked: true, limit: 30,
+    title: t('Most Populous Countries'), icon: '📊', ranked: true, limit: 30, regions: false,   // the world; each continent has its own quiz below
     prompt: t('Name the most populous countries — ranks and populations are your clues'),
     columns: { hint: '#', extra: t('Population'), answer: t('Country') },
     build: ({ countries, region }) => countries
@@ -202,7 +202,7 @@ export const TABLE_QUIZZES = {
   },
 
   area: {
-    title: t('Largest Countries'), icon: '📏', ranked: true, limit: 30,
+    title: t('Largest Countries'), icon: '📏', ranked: true, limit: 30, regions: false,   // the world; each continent has its own quiz below
     prompt: t('Name the largest countries by area'),
     columns: { hint: '#', extra: t('Area'), answer: t('Country') },
     build: ({ countries, region }) => countries
@@ -265,6 +265,17 @@ TABLE_QUIZZES['ir-quiz'] = countryQuiz(LOAD_PAGE.ir, t("Quiz: Iran"), t("Answer 
 TABLE_QUIZZES['gr-quiz'] = countryQuiz(LOAD_PAGE.gr, t("Quiz: Greece"), t("Answer 20 questions about Greece"))
 TABLE_QUIZZES['se-quiz'] = countryQuiz(LOAD_PAGE.se, t("Quiz: Sweden"), t("Answer 20 questions about Sweden"))
 TABLE_QUIZZES['pt-quiz'] = countryQuiz(LOAD_PAGE.pt, t("Quiz: Portugal"), t("Answer 20 questions about Portugal"))
+TABLE_QUIZZES['ch-quiz'] = countryQuiz(LOAD_PAGE.ch, t("Quiz: Switzerland"), t("Answer 20 questions about Switzerland"))
+TABLE_QUIZZES['cz-quiz'] = countryQuiz(LOAD_PAGE.cz, t("Quiz: Czechia"), t("Answer 20 questions about Czechia"))
+TABLE_QUIZZES['be-quiz'] = countryQuiz(LOAD_PAGE.be, t("Quiz: Belgium"), t("Answer 20 questions about Belgium"))
+TABLE_QUIZZES['sk-quiz'] = countryQuiz(LOAD_PAGE.sk, t("Quiz: Slovakia"), t("Answer 20 questions about Slovakia"))
+TABLE_QUIZZES['ie-quiz'] = countryQuiz(LOAD_PAGE.ie, t("Quiz: Ireland"), t("Answer 20 questions about Ireland"))
+TABLE_QUIZZES['my-quiz'] = countryQuiz(LOAD_PAGE.my, t("Quiz: Malaysia"), t("Answer 20 questions about Malaysia"))
+TABLE_QUIZZES['lk-quiz'] = countryQuiz(LOAD_PAGE.lk, t("Quiz: Sri Lanka"), t("Answer 20 questions about Sri Lanka"))
+TABLE_QUIZZES['mn-quiz'] = countryQuiz(LOAD_PAGE.mn, t("Quiz: Mongolia"), t("Answer 20 questions about Mongolia"))
+TABLE_QUIZZES['ec-quiz'] = countryQuiz(LOAD_PAGE.ec, t("Quiz: Ecuador"), t("Answer 20 questions about Ecuador"))
+TABLE_QUIZZES['bo-quiz'] = countryQuiz(LOAD_PAGE.bo, t("Quiz: Bolivia"), t("Answer 20 questions about Bolivia"))
+TABLE_QUIZZES['bg-quiz'] = countryQuiz(LOAD_PAGE.bg, t("Quiz: Bulgaria"), t("Answer 20 questions about Bulgaria"))
 TABLE_QUIZZES['ke-quiz'] = countryQuiz(LOAD_PAGE.ke, t("Quiz: Kenya"), t("Answer 20 questions about Kenya"))
 TABLE_QUIZZES['gh-quiz'] = countryQuiz(LOAD_PAGE.gh, t("Quiz: Ghana"), t("Answer 20 questions about Ghana"))
 TABLE_QUIZZES['tn-quiz'] = countryQuiz(LOAD_PAGE.tn, t("Quiz: Tunisia"), t("Answer 20 questions about Tunisia"))
@@ -298,7 +309,7 @@ Object.assign(TABLE_QUIZZES, {
   rocks: lazyTable('rocks', { title: t('Rock Types'), icon: '🪨', prompt: t('Name each rock from its description'), columns: { hint: t('Description'), extra: t('Type'), answer: t('Rock') } }),
   minerals: lazyTable('minerals', { title: t('Minerals'), icon: '💎', prompt: t('Name each mineral — its Mohs hardness is in the middle'), columns: { hint: t('Description'), extra: t('Hardness'), answer: t('Mineral') } }),
   'earth-records': lazyTable('earth-records', { title: t('Records of the Earth'), icon: '🏆', prompt: t('Name the place that holds each record'), columns: { hint: t('Record'), extra: t('Value'), answer: t('Place') } }),
-  phenomena: lazyTable('phenomena', { title: t('Natural Phenomena'), icon: '🌪️', prompt: t('Name each natural phenomenon from its description'), columns: { hint: t('Description'), extra: t('Type'), answer: t('Phenomenon') } }),
+  phenomena: lazyTable('phenomena', { title: t('Natural Phenomena'), icon: '🌪️', prompt: t('Name each natural phenomenon from its description'), columns: { hint: t('Description'), answer: t('Phenomenon') } }),
   'geologic-time': lazyTable('geologic-time', { title: t('Geological Time'), icon: '🦕', prompt: t('Name the periods of Earth\'s history, oldest first'), columns: { hint: t('What happened'), extra: t('Million years ago'), answer: t('Period') } }),
   planets: lazyTable('planets', { title: t('Planets by Clues'), icon: '🪐', prompt: t('Name each planet, dwarf planet or other body of the Solar System'), columns: { hint: t('Clue'), extra: t('Diameter'), answer: t('Name') } }),
   moons: lazyTable('moons', { title: t('Moons of the Solar System'), icon: '🌙', prompt: t('Name each moon — the planet it orbits is in the middle'), columns: { hint: t('Description'), extra: t('Planet'), answer: t('Moon') } }),
@@ -322,6 +333,26 @@ for (const [slug, region, title, icon] of [
   ['oceania', 'Oceania', t('Capitals of Oceania'), '🌊'],
 ]) {
   TABLE_QUIZZES[`capitals-${slug}`] = { ...TABLE_QUIZZES.capital, title, icon, region, regions: false }
+}
+
+// Most populous countries, one quiz per continent (no Oceania: it has too few countries)
+for (const [slug, region, title] of [
+  ['africa', 'Africa', t('Most Populous Countries of Africa')],
+  ['americas', 'Americas', t('Most Populous Countries of the Americas')],
+  ['asia', 'Asia', t('Most Populous Countries of Asia')],
+  ['europe', 'Europe', t('Most Populous Countries of Europe')],
+]) {
+  TABLE_QUIZZES[`pop-${slug}`] = { ...TABLE_QUIZZES['pop-order'], title, region, regions: false }
+}
+
+// Largest countries by area, one quiz per continent (no Oceania)
+for (const [slug, region, title] of [
+  ['africa', 'Africa', t('Largest Countries of Africa')],
+  ['americas', 'Americas', t('Largest Countries of the Americas')],
+  ['asia', 'Asia', t('Largest Countries of Asia')],
+  ['europe', 'Europe', t('Largest Countries of Europe')],
+]) {
+  TABLE_QUIZZES[`area-${slug}`] = { ...TABLE_QUIZZES.area, title, region, regions: false }
 }
 
 export const TABLE_QUIZ_IDS = new Set(Object.keys(TABLE_QUIZZES))

@@ -52,7 +52,7 @@ export default function MobileGamesSheet({ open, page, mode, onClose, onOpen, on
 
         <button className="mgs-random" onClick={() => { const g = randomGame(mode); if (g) go(g.id) }}>
           <Icon name="dice" size={20} /> {t('Surprise me')}
-          <span>{t('A random game — on the globe, a quiz or a country')}</span>
+          <span>{t('A random quiz')}</span>
         </button>
 
         <div className="mgs-sections">

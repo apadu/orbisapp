@@ -19,7 +19,7 @@ export const QUIZ_FAMILIES = [
 ]
 export const QUIZ_CATEGORIES = [
   { id: 'flags',    family: 'countries', label: t('Flags & symbols'), icon: '🚩', color: '#D98C7A' },
-  { id: 'capitals', family: 'countries', label: t('Capitals'),        icon: '🏛️', color: '#5FB7A8' },
+  { id: 'capitals', family: 'countries', label: t('Capitals & cities'), icon: '🏛️', color: '#5FB7A8' },
   { id: 'culture',  family: 'countries', label: t('Culture & facts'), icon: '📖', color: '#D9C49A' },
   { id: 'lists',    family: 'countries', label: t('Lists & groups'),  icon: '📋', color: '#8CC18F' },
   { id: 'numbers',  family: 'countries', label: t('Size & numbers'),  icon: '📊', color: '#6FA8DC' },
@@ -42,6 +42,9 @@ export const QUIZ_ITEMS = [
   { id: 'capitals-americas', cat: 'capitals', icon: '🗽', label: t('Capitals of the Americas'), desc: t("From Ottawa to Buenos Aires \u2014 Bras\u00edlia, not Rio.") },
   { id: 'capitals-oceania', cat: 'capitals', icon: '🌊', label: t('Capitals of Oceania'), desc: t("Canberra, Wellington and the Pacific islands.") },
   { id: 'cap-to-country', cat: 'capitals', icon: '🗺️', label: t('Countries by Capital'), desc: t('Ouagadougou, Thimphu, Vaduz… which country does each one belong to?') },
+  { id: 'cities-world', cat: 'capitals', icon: '🏙️', label: t("Great Cities of the World"), desc: t("Tokyo, Lagos, Lima, Sydney \u2014 34 big cities marked on the world map.") },
+  { id: 'cities-europe', cat: 'capitals', icon: '🏰', label: t("Cities of Europe"), desc: t("From Lisbon to Moscow \u2014 33 European cities on the map.") },
+  { id: 'cities-romania', cat: 'capitals', icon: '🇷🇴', label: t("Cities of Romania"), desc: t("Bucure\u0219ti, Cluj, Timi\u0219oara, Ia\u0219i \u2014 30 Romanian cities on the map.") },
   { id: 'scramble',       cat: 'words',    icon: '🔀', label: t('Scramble'),             desc: t('RAMONIA is Romania. Can you untangle 30 more country names?') },
   { id: 'missing-vowels', cat: 'words',    icon: '🔡', label: t('Missing Vowels'),       desc: t('MXC is Mexico, BRZL is Brazil. Only the consonants are left.') },
   { id: 'endonyms',       cat: 'words',    icon: '🔠', label: t('Endonyms'),             desc: t('Suomi, Sverige, Deutschland — countries by the names they call themselves.') },
@@ -49,7 +52,15 @@ export const QUIZ_ITEMS = [
   { id: 'currency',       cat: 'culture',  icon: '💰', label: t('Currencies'),           desc: t('Lek, kwacha, ngultrum… name the money of every country.') },
   { id: 'language',       cat: 'culture',  icon: '🗣️', label: t('Languages'),            desc: t('Dari, Catalan, Dzongkha… name each country\'s main language.') },
   { id: 'pop-order',      cat: 'numbers',  icon: '📊', label: t('Most Populous Countries'),        desc: t('The top 30 by population. Ranks and head counts are your only clues.') },
+  { id: 'pop-africa', cat: 'numbers', icon: '📊', label: t('Most Populous Countries of Africa'), desc: t('The 30 most populous countries of Africa.') },
+  { id: 'pop-americas', cat: 'numbers', icon: '📊', label: t('Most Populous Countries of the Americas'), desc: t('The 30 most populous countries of the Americas.') },
+  { id: 'pop-asia', cat: 'numbers', icon: '📊', label: t('Most Populous Countries of Asia'), desc: t('The 30 most populous countries of Asia.') },
+  { id: 'pop-europe', cat: 'numbers', icon: '📊', label: t('Most Populous Countries of Europe'), desc: t('The 30 most populous countries of Europe.') },
   { id: 'area',           cat: 'numbers',  icon: '📏', label: t('Largest Countries'),    desc: t('The 30 largest countries. Algeria is #10 — bigger than Saudi Arabia.') },
+  { id: 'area-africa', cat: 'numbers', icon: '📏', label: t('Largest Countries of Africa'), desc: t('The 30 largest countries of Africa.') },
+  { id: 'area-americas', cat: 'numbers', icon: '📏', label: t('Largest Countries of the Americas'), desc: t('The 30 largest countries of the Americas.') },
+  { id: 'area-asia', cat: 'numbers', icon: '📏', label: t('Largest Countries of Asia'), desc: t('The 30 largest countries of Asia.') },
+  { id: 'area-europe', cat: 'numbers', icon: '📏', label: t('Largest Countries of Europe'), desc: t('The 30 largest countries of Europe.') },
   { id: 'flags-crescent', cat: 'flags', icon: '☪️', label: t('Flags with a Crescent'), desc: t('13 flags with a crescent, from Algeria to Singapore.') },
   { id: 'flags-cross', cat: 'flags', icon: '✝️', label: t('Flags with a Cross'), desc: t('13 flags with a cross — and not all of them are in Europe.') },
   { id: 'flags-sun', cat: 'flags', icon: '☀️', label: t('Flags with a Sun'), desc: t('12 flags with a sun. Argentina\'s and Uruguay\'s even have faces.') },
@@ -124,7 +135,7 @@ export const QUIZ_ITEMS = [
   { id: 'eclipses', cat: 'space', icon: '🌑', label: t("Eclipses"), desc: t("Solar and lunar eclipses: umbra, penumbra, corona and the blood moon.") },
   { id: 'sun-anatomy', cat: 'space', icon: '☀️', label: t("Inside the Sun"), desc: t("Core, radiative and convective zones, sunspots, prominences, solar wind.") },
   { id: 'moons', cat: 'space', icon: '🌙', label: t("Moons of the Solar System"), desc: t("Titan, Europa, Io, Triton, Charon \u2014 15 moons and the worlds they orbit.") },
-  { id: 'sky-map', cat: 'space', icon: '🌌', label: t("The Night Sky"), desc: t("Ursa Major, Orion, Cassiopeia, the Milky Way \u2014 24 things to find in the sky over Romania.") },
+  { id: 'sky-map', cat: 'space', icon: '🌌', label: t("The Night Sky"), desc: t("Ursa Major, Orion, Cassiopeia, the Milky Way \u2014 24 things to find in the northern sky.") },
   { id: 'stars-constellations', cat: 'space', icon: '✨', label: t("Stars and Constellations"), desc: t("Sirius, Polaris, Betelgeuse, the Pleiades \u2014 20 stars, constellations and galaxies.") },
   { id: 'missions', cat: 'space', icon: '🚀', label: t("Space Exploration"), desc: t("From Sputnik and Gagarin to Dumitru Prunariu and James Webb \u2014 21 missions in order.") },
   { id: 'phys-europe', cat: 'maps', icon: '🏔️', label: t("Physical Map of Europe"), desc: t("The Danube, the Alps, the Carpathians, the Urals \u2014 20 rivers, ranges and plains.") },
@@ -136,9 +147,6 @@ export const QUIZ_ITEMS = [
   { id: 'rivers-world', cat: 'maps', icon: '🏞️', label: t("Great Rivers of the World"), desc: t("The Nile, the Amazon, the Yangtze, the Danube \u2014 25 rivers drawn on the map.") },
   { id: 'wonders-ancient', cat: 'maps', icon: '🏛️', label: t("Seven Wonders of the Ancient World"), desc: t("The pyramids, the Colossus, the Lighthouse of Alexandria \u2014 where they stood.") },
   { id: 'wonders-new', cat: 'maps', icon: '🗿', label: t("New Seven Wonders"), desc: t("The Great Wall, Petra, Machu Picchu, the Taj Mahal \u2014 and the pyramids of Giza.") },
-  { id: 'cities-world', cat: 'maps', icon: '🏙️', label: t("Great Cities of the World"), desc: t("Tokyo, Lagos, Lima, Sydney \u2014 34 big cities marked on the world map.") },
-  { id: 'cities-europe', cat: 'maps', icon: '🏰', label: t("Cities of Europe"), desc: t("From Lisbon to Moscow \u2014 33 European cities on the map.") },
-  { id: 'cities-romania', cat: 'maps', icon: '🇷🇴', label: t("Cities of Romania"), desc: t("Bucure\u0219ti, Cluj, Timi\u0219oara, Ia\u0219i \u2014 30 Romanian cities on the map.") },
   { id: 'hist-100', cat: 'history', icon: '🏛️', label: t("The World in AD 100"), desc: t("Rome, the Han, the Parthians \u2014 and Dacia, just before Trajan. 16 states.") },
   { id: 'hist-1279', cat: 'history', icon: '🐎', label: t("The Mongol Empire, 1279"), desc: t("The four Mongol khanates and their neighbours, at the empire's peak. 16 states.") },
   { id: 'hist-1700', cat: 'history', icon: '👑', label: t("The World in 1700"), desc: t("Ottomans, Mughals, Qing, Spain and Russia \u2014 16 great powers.") },
@@ -177,15 +185,19 @@ export const QUIZ_ITEMS = [
  * Each group sits in its members' category, where its first member would be.
  */
 export const QUIZ_GROUPS = [
-  { id: 'grp-capitals-continents', label: t('Capitals by continent'), desc: t('Europe, Asia, Africa, the Americas and Oceania — one quiz each.'),
+  { id: 'grp-population', chips: [t('World'), t('Africa'), t('Americas'), t('Asia'), t('Europe')], label: t('Most Populous Countries'), icon: '📊',
+    members: ['pop-order', 'pop-africa', 'pop-americas', 'pop-asia', 'pop-europe'] },
+  { id: 'grp-area', chips: [t('World'), t('Africa'), t('Americas'), t('Asia'), t('Europe')], label: t('Largest Countries'), icon: '📏',
+    members: ['area', 'area-africa', 'area-americas', 'area-asia', 'area-europe'] },
+  { id: 'grp-capitals-continents', chips: [t('Europe'), t('Asia'), t('Africa'), t('Americas'), t('Oceania')], label: t('Capitals by continent'), desc: t('Europe, Asia, Africa, the Americas and Oceania — one quiz each.'),
     members: ['capitals-europe', 'capitals-asia', 'capitals-africa', 'capitals-americas', 'capitals-oceania'] },
-  { id: 'grp-flag-symbols', label: t('Flags with symbols'), desc: t('Crescents, crosses and suns — three flag hunts.'),
+  { id: 'grp-flag-symbols', chips: [t('Crescent'), t('Cross'), t('Sun')], label: t('Flags with symbols'), desc: t('Crescents, crosses and suns — three flag hunts.'),
     members: ['flags-crescent', 'flags-cross', 'flags-sun'] },
-  { id: 'grp-wars', label: t('World Wars'), desc: t('Every country that fought, under its name at the time.'),
+  { id: 'grp-wars', chips: ['1914–18', '1939–45'], label: t('World Wars'), desc: t('Every country that fought, under its name at the time.'),
     members: ['ww1', 'ww2'] },
-  { id: 'grp-shared-money', label: t('Shared currencies'), desc: t('Who pays in euros? Who uses the US dollar without being the US?'),
+  { id: 'grp-shared-money', chips: [t('Euro'), t('Dollar')], label: t('Shared currencies'), desc: t('Who pays in euros? Who uses the US dollar without being the US?'),
     members: ['euro-users', 'dollar-users'] },
-  { id: 'grp-languages', label: t('Countries by language'), desc: t('Where English, Spanish, French, Portuguese and Arabic are official.'),
+  { id: 'grp-languages', chips: [t('English'), t('Spanish'), t('French'), t('Portuguese'), t('Arabic')], label: t('Countries by language'), desc: t('Where English, Spanish, French, Portuguese and Arabic are official.'),
     members: ['english-speaking', 'spanish-speaking', 'french-speaking', 'portuguese-speaking', 'arabic-speaking'] },
   { id: 'grp-orgs', label: t('Organisations'), desc: t('EU, NATO and G20 members.'),
     members: ['eu-members', 'nato-members', 'g20'] },
@@ -197,13 +209,13 @@ export const QUIZ_GROUPS = [
     members: ['islands', 'peninsulas', 'deserts'] },
   { id: 'grp-world-waters', label: t('Lakes, seas and rivers'), desc: t('Lakes, seas and gulfs, straits, ports and canals, and the great rivers of the world.'),
     members: ['lakes', 'seas-map', 'straits', 'ports', 'rivers-world'] },
-  { id: 'grp-phys-continents', label: t('Physical maps by continent'), desc: t('Rivers, mountains and plains — one map for each continent.'),
+  { id: 'grp-phys-continents', chips: [t('Europe'), t('Asia'), t('Africa'), t('North America'), t('South America'), t('Oceania')], label: t('Physical maps by continent'), desc: t('Rivers, mountains and plains — one map for each continent.'),
     members: ['phys-europe', 'phys-asia', 'phys-africa', 'phys-namerica', 'phys-samerica', 'phys-oceania'] },
-  { id: 'grp-wonders', label: t('Wonders of the World'), desc: t('The seven ancient wonders and the New Seven Wonders.'),
+  { id: 'grp-wonders', chips: [t('Ancient'), t('New 7')], label: t('Wonders of the World'), desc: t('The seven ancient wonders and the New Seven Wonders.'),
     members: ['wonders-ancient', 'wonders-new'] },
-  { id: 'grp-cities', label: t('Cities on the map'), desc: t('The great cities of the world, of Europe and of Romania.'),
+  { id: 'grp-cities', chips: [t('World'), t('Europe'), t('Romania')], label: t('Cities on the map'), desc: t('The great cities of the world, of Europe and of Romania.'),
     members: ['cities-world', 'cities-europe', 'cities-romania'] },
-  { id: 'grp-empires', label: t('Empires through time'), desc: t('The world in AD 100, 1279, 1700 and 1914 — name the empires on the map.'),
+  { id: 'grp-empires', chips: ['100', '1279', '1700', '1914'], label: t('Empires through time'), desc: t('The world in AD 100, 1279, 1700 and 1914 — name the empires on the map.'),
     members: ['hist-100', 'hist-1279', 'hist-1700', 'hist-1914'] },
   { id: 'grp-nature-wonders', label: t('Peaks, glaciers and natural wonders'), desc: t('Famous summits, waterfalls, glaciers, natural wonders, extreme points and record-breaking places.'),
     members: ['peaks', 'waterfalls', 'glaciers', 'natural-wonders', 'extreme-points', 'records-map'] },
@@ -226,7 +238,7 @@ export const QUIZ_GROUPS = [
   { id: 'grp-other-worlds', label: t('Maps of other worlds'), desc: t('The seas and craters of the Moon, the volcanoes and canyons of Mars.'),
     members: ['moon-map', 'mars-map'] },
   { id: 'grp-tripoints', label: t('Tripoints'), desc: t('Three countries meet at one point. Zoomed-in maps, 10 points per quiz — name all three.'),
-    members: Object.keys(TRIPOINT_QUIZZES), numbered: true },
+    members: Object.keys(TRIPOINT_QUIZZES), numbered: true, chips: Object.keys(TRIPOINT_QUIZZES).map((_, i) => String(i + 1)) },
 ].map(g => {
   const members = g.members.map(id => QUIZ_ITEMS.find(q => q.id === id)).filter(Boolean)
   return { ...g, members, cat: members[0]?.cat }
@@ -235,16 +247,21 @@ export const QUIZ_GROUPS = [
 const GROUP_OF = Object.fromEntries(QUIZ_GROUPS.flatMap(g => g.members.map(m => [m.id, g])))
 const CAP = 4   // cards per category on the "All" view
 
-/** A category's cards: single quizzes, plus one card per group (where its first member sits). */
-function entriesFor(catId) {
-  const out = [], seen = new Set()
+/**
+ * A category's cards. Groups with variants ("same game, another region") are one card;
+ * themed groups become sub-headed sections in the category view, loose cards elsewhere.
+ */
+function entriesFor(catId, { sections = false } = {}) {
+  const out = [], groups = [], seen = new Set()
   for (const it of QUIZ_ITEMS) {
     if (it.cat !== catId) continue
     const g = GROUP_OF[it.id]
-    if (!g) out.push({ type: 'quiz', item: it })
-    else if (!seen.has(g.id)) { seen.add(g.id); out.push({ type: 'group', group: g }) }
+    if (!g) { out.push({ type: 'quiz', item: it }); continue }
+    if (g.chips) { if (!seen.has(g.id)) { seen.add(g.id); out.push({ type: 'variants', group: g }) } continue }
+    if (!sections) { out.push({ type: 'quiz', item: it }); continue }
+    if (!seen.has(g.id)) { seen.add(g.id); groups.push(g) }
   }
-  return out
+  return { cards: out, groups }
 }
 
 // Medal = best accuracy in a "real" session (finished, or at least 10 answers)
@@ -454,14 +471,12 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
       {!filtering && cat === 'all' && sort === 'default' && newest.length > 0 && (
         <section className="qh-new">
           <div className="qh-section-head">
-            <span className="qh-section-icon">✨</span>
             <h2>{t('New quizzes')}</h2>
             <span className="qh-section-count">{newest.length}</span>
           </div>
           <div className="qh-new-strip">
             {newest.map(it => (
               <button key={it.id} className="qh-new-card" onClick={() => onSelect(it.id)} style={{ '--cat': QUIZ_CATEGORIES.find(c => c.id === it.cat)?.color }}>
-                <span className="qh-new-icon"><GameIcon id={it.id} size={22} /></span>
                 <span className="qh-new-body">
                   <span className="qh-new-name">{it.label}</span>
                   <span className="qh-new-cat">{QUIZ_CATEGORIES.find(c => c.id === it.cat)?.label}</span>
@@ -491,29 +506,43 @@ export default function QuizHub({ onSelect, countryNames = [] }) {
         <StateNote action={{ label: t('Clear filters'), onClick: () => setQuery('') }}>{t('No quizzes match.')}</StateNote>
       ) : QUIZ_CATEGORIES.filter(c => showsCat(c.id)).map(c => {
         const catAll = QUIZ_ITEMS.filter(it => it.cat === c.id)
-        // Searching / "not played": every matching quiz, ungrouped
-        const entries = filtering
-          ? visible.filter(it => it.cat === c.id).map(item => ({ type: 'quiz', item }))
-          : entriesFor(c.id)
-        if (!entries.length) return null
-        const capped = !filtering && !QUIZ_CATEGORIES.some(x => x.id === cat) && entries.length > CAP
-        const shown = capped ? entries.slice(0, CAP) : entries
-        const open = shown.find(e => e.type === 'group' && e.group.id === openGroup)?.group
+        const single = QUIZ_CATEGORIES.some(x => x.id === cat)   // one category open: sub-headed sections
+        // Searching: every matching quiz, ungrouped
+        const { cards, groups } = filtering
+          ? { cards: visible.filter(it => it.cat === c.id).map(item => ({ type: 'quiz', item })), groups: [] }
+          : entriesFor(c.id, { sections: single })
+        if (!cards.length && !groups.length) return null
+        const capped = !filtering && !single && cards.length > CAP
+        const shown = capped ? cards.slice(0, CAP) : cards
+        const card = (e) => e.type === 'quiz'
+          ? <QuizTile key={e.item.id} item={e.item} st={stats[e.item.id]} onSelect={onSelect} rating={overview[e.item.id]} />
+          : <VariantTile key={e.group.id} group={e.group} stats={stats} onSelect={onSelect} />
         return (
           <section key={c.id} className="qh-section" style={{ '--cat': c.color }}>
             <div className="qh-section-head">
-              <span className="qh-section-icon"><GameIcon id={QUIZ_ITEMS.find(q => q.cat === c.id)?.id} size={18} /></span>
               <h2>{c.label}</h2>
               <span className="qh-section-count">{catAll.length}</span>
-              {capped && <button className="qh-see-all" onClick={() => chooseCat(c.id)}>{t('See all ({n})', { n: entries.length })} ›</button>}
+              {capped && <button className="qh-see-all" onClick={() => chooseCat(c.id)}>{t('See all ({n})', { n: cards.length })} ›</button>}
             </div>
-            <div className="qh-grid">
-              {shown.map(e => e.type === 'quiz'
-                ? <QuizTile key={e.item.id} item={e.item} st={stats[e.item.id]} onSelect={onSelect} rating={overview[e.item.id]} />
-                : <QuizGroupTile key={e.group.id} group={e.group} stats={stats} open={openGroup === e.group.id}
-                    onToggle={() => setOpenGroup(o => (o === e.group.id ? null : e.group.id))} />)}
-            </div>
-            {open && <GroupPanel group={open} stats={stats} onSelect={onSelect} onClose={() => setOpenGroup(null)} />}
+            {shown.length > 0 && <div className="qh-grid">{shown.map(card)}</div>}
+            {groups.map(g => {
+              const more = g.members.length > CAP && openGroup !== g.id
+              const list = more ? g.members.slice(0, CAP - 1) : g.members
+              return (
+                <div key={g.id} className="qh-subsection">
+                  <h3 className="qh-subhead">{g.label}</h3>
+                  <div className="qh-grid">
+                    {list.map(m => <QuizTile key={m.id} item={m} st={stats[m.id]} onSelect={onSelect} rating={overview[m.id]} />)}
+                    {more && (
+                      <button className="qh-tile qh-more" onClick={() => setOpenGroup(g.id)}>
+                        <span className="qh-more-n">+{g.members.length - list.length}</span>
+                        <span className="qh-tile-play">{t('Show all ▾')}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </section>
         )
       })}
@@ -526,7 +555,6 @@ export function QuizTile({ item, st, onSelect, rating = null }) {
   return (
     <button className={`qh-tile${fresh ? ' qh-tile-new' : ''}`} onClick={() => onSelect(item.id)}>
       <span className="qh-tile-top">
-        <span className="qh-tile-icon"><GameIcon id={item.id} size={26} /></span>
         {rating?.ratings > 0 ? <span className="qh-tile-rating" title={t(rating.ratings === 1 ? '{r} average · 1 rating' : '{r} average · {n} ratings', { r: rating.rating.toLocaleString(locale), n: rating.ratings })}>★ {rating.rating.toLocaleString(locale, { maximumFractionDigits: 1 })}</span>
           : fresh && <span className="qh-tile-new-badge">{t('New')}</span>}
       </span>
@@ -547,51 +575,40 @@ export function QuizTile({ item, st, onSelect, rating = null }) {
   )
 }
 
-/** One card for a set of quizzes; opens the GroupPanel. */
-function QuizGroupTile({ group, stats, open, onToggle }) {
+const VAR_KEY = (id) => `orbis-qh-var-${id}`
+
+/** One card for "the same game, another region": pick a variant, then play it. */
+function VariantTile({ group, stats, onSelect }) {
   const ids = group.members.map(m => m.id)
-  const played = ids.filter(id => stats[id]).length
-  const fresh = !played && ids.some(id => isNewGame(id))
+  const [pick, setPick] = useState(() => {
+    try { const v = localStorage.getItem(VAR_KEY(group.id)); return ids.includes(v) ? v : ids[0] } catch { return ids[0] }
+  })
+  const choose = (id) => { setPick(id); try { localStorage.setItem(VAR_KEY(group.id), id) } catch { /* private mode */ } }
+  const item = group.members.find(m => m.id === pick)
+  const st = stats[pick]
+  const fresh = !ids.some(id => stats[id]) && ids.some(id => isNewGame(id))
   return (
-    <button className={`qh-tile qh-group${open ? ' open' : ''}${fresh ? ' qh-tile-new' : ''}`} onClick={onToggle} aria-expanded={open}>
+    <div className={`qh-tile qh-variant${fresh ? ' qh-tile-new' : ''}`} role="button" tabIndex={0}
+      onClick={() => onSelect(pick)} onKeyDown={e => { if (e.key === 'Enter' && e.target === e.currentTarget) onSelect(pick) }}>
       <span className="qh-tile-top">
-        <span className="qh-tile-icon"><GameIcon id={ids[0]} size={26} /></span>
         {fresh && <span className="qh-tile-new-badge">{t('New')}</span>}
       </span>
       <span className="qh-tile-name">{group.label}</span>
-      <span className="qh-tile-foot">
-        <span className="qh-tile-tag">{t('{n} quizzes', { n: ids.length })}</span>
-        <span className="qh-tile-play">{open ? t('Close ▴') : t('Open ▾')}</span>
+      <span className="qh-chips-var" role="radiogroup" aria-label={group.label}>
+        {group.members.map((m, i) => (
+          <button key={m.id} role="radio" aria-checked={m.id === pick} title={m.label}
+            className={`qh-var-chip${m.id === pick ? ' on' : ''}${stats[m.id] ? ' played' : ''}`}
+            onClick={e => { e.stopPropagation(); choose(m.id) }}>
+            {group.chips[i]}
+          </button>
+        ))}
       </span>
-    </button>
-  )
-}
-
-/** The parts of an open group: numbered buttons for a series, quiz cards for a themed set. */
-function GroupPanel({ group, stats, onSelect, onClose }) {
-  return (
-    <div className="qh-group-panel">
-      <div className="qh-group-panel-head">
-        <h3>{group.label}</h3>
-        <button className="qh-group-close" onClick={onClose} aria-label={t('Close')}>✕</button>
-      </div>
-      {group.numbered ? (
-        <div className="qh-series">
-          {group.members.map((m, i) => {
-            const st = stats[m.id]
-            return (
-              <button key={m.id} className={`qh-series-btn${st ? ' played' : ''}`} onClick={() => onSelect(m.id)} title={m.label}>
-                <span className="qh-series-num">#{i + 1}</span>
-                <span className="qh-series-score">{st ? `${st.bestCorrect}/${st.bestTotal}` : t('Play ▸')}</span>
-              </button>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="qh-grid">
-          {group.members.map(m => <QuizTile key={m.id} item={m} st={stats[m.id]} onSelect={onSelect} />)}
-        </div>
-      )}
+      <span className="qh-tile-foot">
+        <span className="qh-tile-tag" title={item.label}>{item.label}</span>
+        {st
+          ? <span className="qh-tile-stats">🏆 {st.bestCorrect}/{st.bestTotal}</span>
+          : <span className="qh-tile-play">{t('Play ▸')}</span>}
+      </span>
     </div>
   )
 }

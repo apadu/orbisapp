@@ -176,8 +176,8 @@ function drawPhases({ cls }) {
 // ── Eclipses ────────────────────────────────────────────────────────────────
 const ECLIPSES = [
   { id: 'solar-eclipse', name: 'Solar eclipse', ro: 'Eclipsă de Soare', alt: ['Eclipse of the Sun', 'Total solar eclipse'], roAlt: ['Eclipsa de Soare', 'Eclipsă solară', 'Eclipsa solara', 'Eclipsă totală de Soare'],
-    info: 'The Moon passes between the Sun and the Earth and blocks the Sun; the last total one seen from Romania was on 11 August 1999',
-    roInfo: 'Luna trece între Soare și Pământ și acoperă Soarele; ultima totală văzută din România a fost pe 11 august 1999', badge: [40, 38] },
+    info: 'The Moon passes between the Sun and the Earth and blocks the Sun; a total eclipse lasts at most about 7 minutes',
+    roInfo: 'Luna trece între Soare și Pământ și acoperă Soarele; o eclipsă totală durează cel mult circa 7 minute', badge: [40, 38] },
   { id: 'umbra', name: 'Umbra', ro: 'Umbra', alt: ['Full shadow', 'Shadow'], roAlt: ['Conul de umbră', 'Umbră', 'Umbra totală'],
     info: 'The dark inner part of the shadow, where the Sun is completely hidden',
     roInfo: 'Partea interioară, întunecată, a umbrei, unde Soarele e acoperit complet', badge: [640, 132] },
@@ -324,7 +324,7 @@ function drawSun({ cls }) {
   )
 }
 
-// ── The night sky over Romania ──────────────────────────────────────────────
+// ── The northern night sky ───────────────────────────────────────────────────
 // A round star chart centred on the North Star, as you see it looking up and facing north:
 // declination +90° in the middle down to −35° at the rim, right ascension going clockwise.
 const KX = 500, KY = 500, KR = 470, DEC_MIN = -35
@@ -354,7 +354,7 @@ const CONST = {
   'scorpius': { stars: [[16.49, -26.43, 3], [16.01, -22.62, 2.1], [16.09, -19.81, 2.1], [15.98, -26.11, 1.7], [16.35, -25.59, 1.7], [16.60, -28.22, 1.7], [16.84, -34.29, 2]], lines: [[2, 1], [1, 3], [1, 4], [4, 0], [0, 5], [5, 6]] },
 }
 const CONST_NAMES = {
-  'ursa-minor': ['Ursa Minor', 'Ursa Mică', ['Little Dipper', 'Little Bear'], ['Carul Mic', 'Ursa Minor', 'Ursa Mica'], 'Holds the North Star at the end of its tail; it never sets over Romania', 'Are Steaua Polară în vârful cozii; nu apune niciodată deasupra României'],
+  'ursa-minor': ['Ursa Minor', 'Ursa Mică', ['Little Dipper', 'Little Bear'], ['Carul Mic', 'Ursa Minor', 'Ursa Mica'], 'Holds the North Star at the end of its tail; it never sets as seen from Europe or North America', 'Are Steaua Polară în vârful cozii; nu apune niciodată pentru cine o privește din Europa sau America de Nord'],
   'ursa-major': ['Ursa Major', 'Ursa Mare', ['Big Dipper', 'Great Bear', 'Plough'], ['Carul Mare', 'Ursa Major'], 'The two stars at the front of the "saucepan" point straight to the North Star', 'Cele două stele din fața „carului” arată direct spre Steaua Polară'],
   'cassiopeia': ['Cassiopeia', 'Cassiopeia', [], ['Cașiopeea', 'Casiopeea'], 'The W-shaped queen, on the far side of the North Star from the Big Dipper', 'Regina în formă de W, de partea cealaltă a Stelei Polare față de Carul Mare'],
   'cepheus': ['Cepheus', 'Cefeu', [], ['Cefeul', 'Cepheus'], 'A faint "house" shape, the king next to his wife Cassiopeia', 'O formă slabă de „căsuță”, regele de lângă soția lui, Cassiopeia'],
@@ -494,7 +494,7 @@ export const SPACE_DIAGRAMS = {
   'sky-map': {
     id: 'sky-map', icon: '🌌',
     title: t('The Night Sky'),
-    prompt: t('Name the constellations and stars of the sky over Romania'),
+    prompt: t('Name the constellations and stars of the northern sky'),
     placeholder: t('Type a constellation or a star…'),
     note: t('The chart is centred on the North Star, as you see it looking up and facing north; the rim reaches the stars low in the south.'),
     viewBox: [0, 0, 1000, 1000],

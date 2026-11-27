@@ -16,8 +16,7 @@ import QuizHub from './components/QuizHub'
 import { getDistanceInfo, computeAdjacency, distanceLabel } from './utils/geoUtils'
 import { resolveAlias } from './utils/aliases'
 import { geoDistance, geoCentroid, geoContains, geoBounds } from 'd3-geo'
-import { union } from '@turf/union'
-import { featureCollection } from '@turf/helpers'
+import { feature as topoFeature } from 'topojson-client'
 import { MOUNTAIN_RANGES } from './utils/mountainRanges'
 import { WORLD_RIVERS } from './utils/rivers'
 import { COUNTRY_INFO } from './utils/countryInfo'
@@ -95,6 +94,7 @@ const FlagArena = lazy(() => import('./components/FlagArena'))
 const SortQuiz = lazy(() => import('./components/SortQuiz'))
 const Duel = lazy(() => import('./components/Duel'))
 const CountryWordle = lazy(() => import('./components/CountryWordle'))
+const CountryGrid = lazy(() => import('./components/CountryGrid'))
 
 // Map data: served from /data (see `npm run fetch-maps`), remote fallback in src/data/sources.js
 
@@ -102,8 +102,6 @@ const DROP_TYPES = new Set(['Dependency', 'Lease', 'Occupied Territory', 'Indete
 // Always keep these even if their TYPE would normally drop them
 const KEEP_ALWAYS = new Set(['Kosovo', 'Israel', 'W. Sahara', 'Antarctica'])
 
-// Merge these territories into the named target country (geometry union)
-const MERGE_INTO = {}
 // Rendered on the globe but not guessable in any game
 const DISPLAY_ONLY = new Set(['Greenland', 'W. Sahara', 'Antarctica', 'N. Pole'])
 
@@ -163,7 +161,7 @@ const QUIZ_MODES = new Set([
   ...DIAGRAM_IDS,
   ...COUNTRY_PAGE_IDS,
   'countries', 'globe-hub', 'nameall-hub',
-  'daily-quiz',
+  'daily-quiz', 'country-grid',
   'higher-lower', 'true-false', 'country-wordle', 'scale-sort', 'duel',
   'flags-pick', 'flags-sprint', 'flags-survival',
 ])
@@ -378,7 +376,9 @@ export default function App() {
   useEffect(() => {
     fetchData('countries')
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
-      .then(data => {
+      .then(raw => {
+        // The local copy is TopoJSON (half the download); the remote fallback is plain GeoJSON
+        const data = raw.type === 'Topology' ? topoFeature(raw, raw.objects.countries) : raw
         const features = data.features
           .filter(f =>
             f.geometry &&
@@ -390,23 +390,6 @@ export default function App() {
             if (override) f.properties.NAME = override
             return f
           })
-        // Merge territories into their target country (dissolves shared borders)
-        for (const [srcName, targetName] of Object.entries(MERGE_INTO)) {
-          const srcIdx    = features.findIndex(f => f.properties.NAME === srcName)
-          const targetIdx = features.findIndex(f => f.properties.NAME === targetName)
-          if (srcIdx === -1 || targetIdx === -1) continue
-          try {
-            const merged = union(featureCollection([features[targetIdx], features[srcIdx]]))
-            if (merged) {
-              merged.properties = features[targetIdx].properties
-              features[targetIdx] = merged
-            }
-          } catch (e) {
-            console.warn(`Could not merge ${srcName} into ${targetName}:`, e)
-          }
-          features.splice(srcIdx, 1)
-        }
-
         const game = features.filter(f => !DISPLAY_ONLY.has(f.properties.NAME))
         setCountries(features)
         setGameCountries(game)
@@ -1243,7 +1226,7 @@ export default function App() {
                 : <button className="quiz-nav-back" onClick={goHome}>{t('← Home')}</button>
             )}
             <span className="quiz-nav-title">
-              {mode === 'daily-quiz' ? t('Daily Fever') : mode === 'countries' ? t('Countries') : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all') : COUNTRY_PAGE_IDS.has(mode) ? (isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en) : COUNTRY_MAP_IDS.has(mode) ? COUNTRY_MAP_QUIZZES[mode].title : TRIPOINT_IDS.has(mode) ? TRIPOINT_QUIZZES[mode].title : LANDFORM_IDS.has(mode) ? GAME_CATALOG[mode]?.label : DIAGRAM_IDS.has(mode) ? GAME_CATALOG[mode]?.label : TABLE_QUIZ_IDS.has(mode) ? TABLE_QUIZZES[mode].title : QUIZ_MODES.has(mode) ? GAME_CATALOG[mode]?.label ?? t(QUIZ_LABELS[mode]) : t('Quiz Hub')}
+              {mode === 'daily-quiz' ? t('Daily Fever') : mode === 'country-grid' ? t('Country Grid') : mode === 'countries' ? t('Countries') : mode === 'globe-hub' ? t('Globe games') : mode === 'nameall-hub' ? t('Name them all') : COUNTRY_PAGE_IDS.has(mode) ? (isRo ? COUNTRY_PAGES[mode].page.name.ro : COUNTRY_PAGES[mode].page.name.en) : COUNTRY_MAP_IDS.has(mode) ? COUNTRY_MAP_QUIZZES[mode].title : TRIPOINT_IDS.has(mode) ? TRIPOINT_QUIZZES[mode].title : LANDFORM_IDS.has(mode) ? GAME_CATALOG[mode]?.label : DIAGRAM_IDS.has(mode) ? GAME_CATALOG[mode]?.label : TABLE_QUIZ_IDS.has(mode) ? TABLE_QUIZZES[mode].title : QUIZ_MODES.has(mode) ? GAME_CATALOG[mode]?.label ?? t(QUIZ_LABELS[mode]) : t('Quiz Hub')}
             </span>
             {QUIZ_MODES.has(mode) && mode !== 'duel' && !TABLE_QUIZ_IDS.has(mode) && !COUNTRY_PAGE_IDS.has(mode) && !SECTION_PAGES.has(mode) && <RulesHint className="rules-hint-quiz" />}
           </div>
@@ -1265,6 +1248,8 @@ export default function App() {
               <FlagArena key={mode} mode={mode} countryNames={gameCountryNames} />
             ) : mode === 'country-wordle' ? (
               <CountryWordle key={mode} countryNames={gameCountryNames} />
+            ) : mode === 'country-grid' ? (
+              <CountryGrid key={mode} countryNames={gameCountryNames} />
             ) : COUNTRY_PAGE_IDS.has(mode) ? (
               <CountryPage key={mode} pageId={mode} onOpen={openGame} />
             ) : mode === 'countries' ? (

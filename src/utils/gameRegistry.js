@@ -51,6 +51,7 @@ export const GLOBE_ROWS = [
 // Extra entries that aren't on the Home rows
 const EXTRA = [
   { id: 'daily-quiz', icon: '📅', label: t('Daily Fever'), desc: t('Daily Fever'), group: 'quizzes' },
+  { id: 'country-grid', icon: '🔲', label: t('Country Grid'), desc: t('A new 3×3 grid every day'), group: 'quizzes' },
   { id: 'quiz-hub',   icon: '🎯', label: t('Quiz Hub'),   desc: t('Open Hub →'), group: 'quizzes' },
 ]
 
@@ -78,7 +79,7 @@ const catLabel = Object.fromEntries(QUIZ_CATEGORIES.map(c => [c.id, c.label]))
 /** Every playable thing: { id, icon, label, desc, group, sub } */
 export const ALL_GAMES = [
   ...GLOBE_ROWS.flatMap(r => r.items.map(i => ({ ...i, group: ROW_GROUP[r.id] }))),
-  ...EXTRA.filter(e => e.group !== 'quizzes' || e.id === 'daily-quiz'),
+  ...EXTRA.filter(e => e.group !== 'quizzes' || e.id === 'daily-quiz' || e.id === 'country-grid'),
   ...QUIZ_ITEMS.map(q => ({ id: q.id, icon: q.icon, label: q.label, desc: q.desc, group: 'quizzes', sub: catLabel[q.cat] })),
   ...EXTRA.filter(e => e.id === 'quiz-hub'),
   { id: 'countries', icon: '🗺️', label: t('All countries'), desc: t('Maps by county and state, and a quiz for every country'), group: 'countries' },
@@ -102,12 +103,15 @@ export const groupOf = (id) => ALL_GAMES.find(x => x.id === id)?.group ?? null
 
 // ── Random picks ────────────────────────────────────────────────────────────
 // Every game you can jump into: not the Daily Fever (one attempt a day) and not the section pages
-const NOT_RANDOM = new Set(['daily-quiz', 'quiz-hub', ...GAME_GROUPS.map(g => g.page)])
+const NOT_RANDOM = new Set(['daily-quiz', 'country-grid', 'quiz-hub', ...GAME_GROUPS.map(g => g.page)])
 export const playableGames = () => ALL_GAMES.filter(g => !NOT_RANDOM.has(g.id))
 
-/** One game at random (never the one you're on). */
+// "Surprise me" picks a quiz: Quiz Hub and the country quizzes, not the globe games
+const RANDOM_GROUPS = new Set(['quizzes', 'countries'])
+
+/** One quiz at random (never the one you're on). */
 export function randomGame(notId = null) {
-  const pool = playableGames().filter(g => g.id !== notId)
+  const pool = playableGames().filter(g => g.id !== notId && RANDOM_GROUPS.has(g.group) && !COUNTRY_PAGES[g.id])
   return pool[Math.floor(Math.random() * pool.length)]
 }
 

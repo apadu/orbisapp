@@ -95,7 +95,6 @@ export default function CommandPalette({ open, onClose, onSelect }) {
                     <span className="cp-item-icon"><GameIcon id={g.id} size={18} /></span>
                     <span className="cp-item-text">
                       <span className="cp-item-label">{g.label}</span>
-                      <span className="cp-item-desc">{g.desc}</span>
                     </span>
                     <span className="cp-item-group">{g.sub ?? GAME_GROUPS.find(x => x.id === g.group)?.label}</span>
                   </button>

@@ -5,7 +5,7 @@
  */
 export const DATA_SOURCES = {
   countries: {
-    file: 'ne_50m_admin_0_countries.geojson',
+    file: 'countries.topo.json',   // TopoJSON built by scripts/build-countries-topo.mjs (the remote fallback is GeoJSON)
     url: 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson',
   },
   marine: {

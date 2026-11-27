@@ -34,7 +34,6 @@ export default function GamesSection({ section, onOpen }) {
         <section key={row.id} className="qh-section" style={{ '--cat': row.color }}>
           {rows.length > 1 && (
             <div className="qh-section-head">
-              <span className="qh-section-icon"><Icon name={row.id === 'challenges' ? 'target' : row.id === 'nameall' ? 'list' : 'globe'} size={18} /></span>
               <h2>{row.label}</h2>
               <span className="qh-section-count">{row.items.filter(i => stats[i.id]).length}/{row.items.length}</span>
             </div>

@@ -527,7 +527,6 @@ export const MORE_DIAGRAMS = {
     title: t('Our Galaxy, the Milky Way'),
     prompt: t('Name the parts of the Milky Way and find the Sun'),
     placeholder: t('Type a part of the galaxy…'),
-    note: t('Seen from far above. Nobody has ever photographed it like this: the map comes from measuring stars from inside.'),
     viewBox: [0, 0, 1000, 660],
     items: MILKY_WAY,
     draw: drawMilkyWay,

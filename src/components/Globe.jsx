@@ -682,6 +682,8 @@ export default function Globe({ countries, guesses, mystery, gameWon, highlighte
 
     const animate = () => {
       animRef.current = requestAnimationFrame(animate)
+      // Hidden (quiz pages keep the globe mounted under display:none): don't spend GPU on it
+      if (!el.offsetWidth) return
       if (flyTarget.current) {
         const t = flyTarget.current
         // Shortest-path lerp on Y (handles wrapping)

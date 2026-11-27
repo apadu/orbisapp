@@ -7,6 +7,7 @@ import { levelForXp, levelTitle, computeXp, feverTemp } from '../utils/profileDa
 import { gameMeta } from '../utils/gameCatalog'
 import { useDailyChallenges } from '../utils/useDailyChallenges'
 import { dailyNumber, dailyQuizFor } from '../quizzes/daily'
+import { gridNumber } from '../quizzes/countryGrid'
 import { useQuizOverview } from '../utils/quizOverview'
 import Icon, { SECTION_ICON } from './Icon'
 import { InfoLinks } from './InfoPage'
@@ -64,6 +65,8 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
   const todaysGames = useMemo(() => gamesOfTheDay(), [today]) // eslint-disable-line react-hooks/exhaustive-deps
   const dailyInfo = useMemo(() => dailyQuizFor(today), [today])
   const dailyPlayed = results.find(r => r.mode === 'daily-quiz' && r.details?.day === today)
+  const gridDay = gridNumber()
+  const gridPlayed = results.find(r => r.mode === 'country-grid' && r.details?.day === gridDay)
   // "Start here" for newcomers (popular quizzes when we know them), "Continue" for everyone else
   const picks = useMemo(() => {
     if (!isNew) return recent
@@ -81,7 +84,7 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
             {name ? t('Welcome back, {name}', { name: name }) : isNew ? t('Welcome to GeoFeverr') : t('Welcome back, explorer')}
           </p>
           <h1 className="hp-title">{t('Geography fever.')}<br /><span>{t('No cure.')}</span></h1>
-          <p className="hp-tagline">{t('Flags, capitals, maps, mountains, empires and planets: hundreds of games on a 3D globe. Play every day and watch your temperature rise.')}</p>
+          <p className="hp-tagline">{t('Play your way around the world: collect stamps and visas, and see how many countries you can conquer.')}</p>
           <div className="hp-ctas">
             <button className="hp-cta-primary" onClick={() => onSelectMode('mystery')}>
               {t('Guess the Mystery Country')} <Icon name="arrow" size={18} />
@@ -96,6 +99,7 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
               {dailyInfo.title}{dailyInfo.region !== 'World' ? ` · ${continentName(dailyInfo.region)}` : ''}
             </p>
           )}
+          <div className="hp-cards">
           {/* Multiplayer: a compact card under the main buttons */}
           <button className="hp-duel" onClick={() => onSelectMode('duel')}>
             <span className="hp-duel-icon"><Icon name="people" size={20} /></span>
@@ -105,6 +109,16 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
             </span>
             <Icon name="arrow" size={16} />
           </button>
+          {/* The daily Country Grid */}
+          <button className="hp-duel hp-grid" onClick={() => onSelectMode('country-grid')}>
+            <span className="hp-duel-icon"><Icon name="grid" size={20} /></span>
+            <span className="hp-duel-body">
+              <span className="hp-duel-kicker">{t('Country Grid')} #{gridDay} {!gridPlayed && <span className="hp-duel-new">{t('New')}</span>}</span>
+              <span className="hp-duel-title">{gridPlayed ? t('Today: {s}', { s: `${gridPlayed.correct}/9` }) : t('Play today\'s grid')}</span>
+            </span>
+            {gridPlayed ? <Icon name="check" size={16} /> : <Icon name="arrow" size={16} />}
+          </button>
+          </div>
         </div>
       </section>
 
@@ -136,7 +150,6 @@ export default function HomePage({ onSelectMode, onProfile, onDailyQuiz, onOpenI
             const sec = GAME_GROUPS.find(x => x.id === g.group)
             return (
               <button key={g.id} className="hp-today-card" style={{ '--cat': sec?.color, animationDelay: `${0.03 + i * 0.03}s` }} onClick={() => onSelectMode(g.id)}>
-                <span className="hp-today-icon"><GameIcon id={g.id} size={22} /></span>
                 <span className="hp-today-body">
                   <span className="hp-today-name">{g.label}</span>
                   <span className="hp-today-sec">{g.sub ?? sec?.short ?? ''}</span>

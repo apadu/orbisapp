@@ -23,6 +23,7 @@ export function routeFor(page, mode, quizModes) {
   if (INFO_PAGES.has(page)) return `/${page}`
   if (page === 'quiz') {
     if (mode === 'daily-quiz') return '/daily'
+    if (mode === 'country-grid') return '/grid'
     if (mode === 'countries') return '/countries'
     if (mode === 'globe-hub') return '/globe'
     if (mode === 'nameall-hub') return '/name-all'
@@ -40,6 +41,7 @@ export function parseRoute(pathname, { quizModes, globeModes }) {
   if (head === 'profile' && !id) return { page: 'profile' }
   if (INFO_PAGES.has(head) && !id) return { page: head }
   if (head === 'daily' && !id) return { page: 'quiz', mode: 'daily-quiz' }
+  if (head === 'grid' && !id) return { page: 'quiz', mode: 'country-grid' }
   if (head === 'globe' && !id) return { page: 'quiz', mode: 'globe-hub' }
   if (head === 'name-all' && !id) return { page: 'quiz', mode: 'nameall-hub' }
   if (head === 'countries') {

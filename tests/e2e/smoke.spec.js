@@ -5,13 +5,14 @@ test('home page loads without errors', async ({ page }) => {
   const errors = await setup(page)
   await page.goto('/')
   await expect(page.locator('h1').first()).toBeVisible()
-  await expect(page.locator('.hp-duel')).toBeVisible()
+  await expect(page.locator('.hp-duel:not(.hp-grid)')).toBeVisible()
+  await expect(page.locator('.hp-grid')).toBeVisible()
   expect(errors).toEqual([])
 })
 
 test('the main pages open without errors', async ({ page }) => {
   const errors = await setup(page)
-  for (const path of ['/quiz', '/countries', '/countries/romania', '/play/mountains', '/play/name-all', '/profile', '/privacy', '/quiz/duel']) {
+  for (const path of ['/quiz', '/countries', '/countries/romania', '/play/mountains', '/play/name-all', '/profile', '/privacy', '/quiz/duel', '/grid']) {
     await page.goto(path)
     await page.waitForTimeout(1500)
   }

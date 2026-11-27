@@ -18,7 +18,7 @@ const BY_ID = {
   scramble: 'shuffle', 'missing-vowels': 'letters', endonyms: 'speech', alphabet: 'letters',
   'country-fact': 'book', currency: 'coin', 'euro-users': 'coin', 'dollar-users': 'coin', language: 'speech',
   'spanish-speaking': 'speech', 'portuguese-speaking': 'speech', 'french-speaking': 'speech', 'english-speaking': 'speech', 'arabic-speaking': 'speech',
-  'pop-order': 'people', 'least-populous': 'person', area: 'expand', smallest: 'shrink',
+  'pop-order': 'people', 'pop-africa': 'people', 'pop-americas': 'people', 'pop-asia': 'people', 'pop-europe': 'people', 'least-populous': 'person', area: 'expand', 'area-africa': 'expand', 'area-americas': 'expand', 'area-asia': 'expand', 'area-europe': 'expand', smallest: 'shrink',
   landlocked: 'lock', 'island-nations': 'island', 'eu-members': 'stars', 'nato-members': 'shield', g20: 'briefcase',
   'former-ussr': 'history', 'former-yugoslavia': 'puzzle', equator: 'equator', stans: 'map', 'named-after': 'person',
   'former-names': 'scroll', monarchies: 'crown', 'drive-left': 'car', ww1: 'sword', ww2: 'sword',
@@ -34,7 +34,7 @@ const BY_ID = {
   glaciers: 'snow', 'records-map': 'pin', 'bright-stars': 'star', zodiac: 'stars', 'scale-sort': 'sort', duel: 'people',
   'earth-layers': 'layers', 'rock-cycle': 'cycle', plates: 'puzzle', rocks: 'mountain',
   islands: 'island', peninsulas: 'map', lakes: 'map', deserts: 'map', 'seas-map': 'map', straits: 'map', ports: 'map',
-  'daily-quiz': 'calendar', 'quiz-hub': 'flag', countries: 'map', 'globe-hub': 'globe', 'nameall-hub': 'list',
+  'daily-quiz': 'calendar', 'country-grid': 'grid', 'quiz-hub': 'flag', countries: 'map', 'globe-hub': 'globe', 'nameall-hub': 'list',
 }
 const BY_CAT = { tripoints: 'tripoint', flags: 'flag', capitals: 'building', words: 'letters', culture: 'book', numbers: 'chart', lists: 'list', arcade: 'bolt', puzzles: 'puzzle', maps: 'map', science: 'layers', space: 'stars', history: 'history' }
 

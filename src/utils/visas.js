@@ -46,11 +46,11 @@ export function computeVisas(results) {
  * Russia counts as Europe and Turkey as Asia (where most of their people live / as in Natural Earth).
  */
 export const REGIONS = [
-  { id: 'europe',   code: 'EUR', name: () => t('Europe'),        members: ['ro', 'md', 'hu', 'pl', 'de', 'fr', 'it', 'es', 'pt', 'gb', 'gr', 'se', 'ru', 'nl', 'ua', 'at'] },
-  { id: 'asia',     code: 'ASI', name: () => t('Asia'),          members: ['cn', 'in', 'ir', 'jp', 'kr', 'th', 'tr', 'sa'] },
+  { id: 'europe',   code: 'EUR', name: () => t('Europe'),        members: ['ro', 'md', 'hu', 'pl', 'de', 'fr', 'it', 'es', 'pt', 'gb', 'gr', 'se', 'ru', 'nl', 'ua', 'at', 'bg', 'ch', 'cz', 'be', 'sk', 'ie'] },
+  { id: 'asia',     code: 'ASI', name: () => t('Asia'),          members: ['cn', 'in', 'ir', 'jp', 'kr', 'th', 'tr', 'sa', 'my', 'lk', 'mn'] },
   { id: 'africa',   code: 'AFR', name: () => t('Africa'),        members: ['eg', 'ng', 'za', 'ke', 'gh', 'tn', 'sn', 'cm'] },
   { id: 'namerica', code: 'NAM', name: () => t('North America'), members: ['us', 'ca', 'mx'] },
-  { id: 'samerica', code: 'SAM', name: () => t('South America'), members: ['ar', 'br', 'co', 'pe', 'cl'] },
+  { id: 'samerica', code: 'SAM', name: () => t('South America'), members: ['ar', 'br', 'co', 'pe', 'cl', 'ec', 'bo'] },
   { id: 'oceania',  code: 'OCE', name: () => t('Oceania'),       members: ['au', 'nz'] },
 ]
 

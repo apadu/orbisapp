@@ -22,7 +22,7 @@ const ofMode = (R, mode) => R.filter(r => r.mode === mode)
 const sumCorrect = (R, mode) => ofMode(R, mode).reduce((s, r) => s + (r.correct ?? 0), 0)
 const bestScore = (R, mode) => ofMode(R, mode).reduce((m, r) => Math.max(m, r.score ?? 0), 0)
 const bestCorrect = (R, mode) => ofMode(R, mode).reduce((m, r) => Math.max(m, r.correct ?? 0), 0)
-const QUIZ_EXCLUDE = new Set(['daily-quiz', 'connections', 'border-chain', 'higher-lower', 'true-false', 'country-wordle'])
+const QUIZ_EXCLUDE = new Set(['daily-quiz', 'country-grid', 'connections', 'border-chain', 'higher-lower', 'true-false', 'country-wordle'])
 
 // ── The pool ───────────────────────────────────────────────────────────────
 // slot: 'daily' (a once-a-day game) | 'skill' (a specific game) | 'general' (any game)

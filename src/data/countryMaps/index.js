@@ -30,6 +30,17 @@ import { IRAN } from './iran'
 import { GREECE } from './greece'
 import { SWEDEN } from './sweden'
 import { PORTUGAL } from './portugal'
+import { SWITZERLAND } from './switzerland'
+import { CZECHIA } from './czechia'
+import { BELGIUM } from './belgium'
+import { SLOVAKIA } from './slovakia'
+import { IRELAND } from './ireland'
+import { MALAYSIA } from './malaysia'
+import { SRI_LANKA } from './sriLanka'
+import { MONGOLIA } from './mongolia'
+import { ECUADOR } from './ecuador'
+import { BOLIVIA } from './bolivia'
+import { BULGARIA } from './bulgaria'
 import { KENYA } from './kenya'
 import { GHANA } from './ghana'
 import { TUNISIA } from './tunisia'
@@ -494,6 +505,114 @@ export const COUNTRY_MAP_QUIZZES = {
     title: t("Regional Capitals of Cameroon"),
     prompt: t("Type the capital of every region — its region lights up"),
     placeholder: t("Type a city…"),
+  },
+  'my-states': {
+    map: MALAYSIA, kind: 'divisions', icon: '🇲🇾',
+    title: t("States of Malaysia"),
+    prompt: t("Type all 13 states and 3 federal territories"),
+    placeholder: t("Type a state…"),
+  },
+  'my-capitals': {
+    map: MALAYSIA, kind: 'seats', icon: '🏛️',
+    title: t("State Capitals of Malaysia"),
+    prompt: t("Type the capital of every state — its state lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'lk-provinces': {
+    map: SRI_LANKA, kind: 'divisions', icon: '🇱🇰',
+    title: t("Provinces of Sri Lanka"),
+    prompt: t("Type all 9 provinces"),
+    placeholder: t("Type a province…"),
+  },
+  'lk-capitals': {
+    map: SRI_LANKA, kind: 'seats', icon: '🏛️',
+    title: t("Provincial Capitals of Sri Lanka"),
+    prompt: t("Type the capital of every province — its province lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'mn-aimags': {
+    map: MONGOLIA, kind: 'divisions', icon: '🇲🇳',
+    title: t("Aimags of Mongolia"),
+    prompt: t("Type all 21 aimags and Ulaanbaatar"),
+    placeholder: t("Type an aimag…"),
+  },
+  'mn-capitals': {
+    map: MONGOLIA, kind: 'seats', icon: '🏛️',
+    title: t("Aimag Centres of Mongolia"),
+    prompt: t("Type the centre of every aimag — its aimag lights up"),
+    placeholder: t("Type a town…"),
+  },
+  'ec-provinces': {
+    map: ECUADOR, kind: 'divisions', icon: '🇪🇨',
+    title: t("Provinces of Ecuador"),
+    prompt: t("Type all 24 provinces"),
+    placeholder: t("Type a province…"),
+  },
+  'ec-capitals': {
+    map: ECUADOR, kind: 'seats', icon: '🏛️',
+    title: t("Provincial Capitals of Ecuador"),
+    prompt: t("Type the capital of every province — its province lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'bo-departments': {
+    map: BOLIVIA, kind: 'divisions', icon: '🇧🇴',
+    title: t("Departments of Bolivia"),
+    prompt: t("Type all 9 departments"),
+    placeholder: t("Type a department…"),
+  },
+  'bg-provinces': {
+    map: BULGARIA, kind: 'divisions', icon: '🇧🇬',
+    title: t("Provinces of Bulgaria"),
+    prompt: t("Type all 28 provinces"),
+    placeholder: t("Type a province…"),
+  },
+  'ch-cantons': {
+    map: SWITZERLAND, kind: 'divisions', icon: '🇨🇭',
+    title: t("Cantons of Switzerland"),
+    prompt: t("Type all 26 cantons"),
+    placeholder: t("Type a canton…"),
+  },
+  'ch-capitals': {
+    map: SWITZERLAND, kind: 'seats', icon: '🏛️',
+    title: t("Cantonal Capitals of Switzerland"),
+    prompt: t("Type the capital of every canton — its canton lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'cz-regions': {
+    map: CZECHIA, kind: 'divisions', icon: '🇨🇿',
+    title: t("Regions of Czechia"),
+    prompt: t("Type all 13 regions and Prague"),
+    placeholder: t("Type a region…"),
+  },
+  'cz-capitals': {
+    map: CZECHIA, kind: 'seats', icon: '🏛️',
+    title: t("Regional Capitals of Czechia"),
+    prompt: t("Type the capital of every region — its region lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'be-provinces': {
+    map: BELGIUM, kind: 'divisions', icon: '🇧🇪',
+    title: t("Provinces of Belgium"),
+    prompt: t("Type all 10 provinces and Brussels"),
+    placeholder: t("Type a province…"),
+  },
+  'be-capitals': {
+    map: BELGIUM, kind: 'seats', icon: '🏛️',
+    title: t("Provincial Capitals of Belgium"),
+    prompt: t("Type the capital of every province — its province lights up"),
+    placeholder: t("Type a city…"),
+  },
+  'sk-regions': {
+    map: SLOVAKIA, kind: 'divisions', icon: '🇸🇰',
+    title: t("Regions of Slovakia"),
+    prompt: t("Type all 8 regions"),
+    placeholder: t("Type a region…"),
+  },
+  'ie-counties': {
+    map: IRELAND, kind: 'divisions', icon: '🇮🇪',
+    title: t("Counties of Ireland"),
+    prompt: t("Type all 26 counties"),
+    placeholder: t("Type a county…"),
   },
 }
 export const COUNTRY_MAP_IDS = new Set(Object.keys(COUNTRY_MAP_QUIZZES))

@@ -257,6 +257,14 @@ function listQuiz({ title, icon, prompt, names, hint = continentOf, hintLabel = 
 }
 
 // ── Catalogue ──────────────────────────────────────────────────────────────
+/** The sets above, for the Country Grid's criteria (src/quizzes/countryGrid.js). */
+export const GRID_SETS = {
+  landlocked: LANDLOCKED, island: ISLAND_NATIONS, equator: EQUATOR, driveLeft: DRIVE_LEFT,
+  monarchy: Object.keys(MONARCHIES), eu: Object.keys(EU), nato: Object.keys(NATO), g20: G20, euro: Object.keys(EURO),
+  spanish: SPANISH, french: FRENCH, portuguese: PORTUGUESE,
+  flagCross: FLAG_CROSS, flagCrescent: FLAG_CRESCENT, flagSun: FLAG_SUN,
+}
+
 export const LIST_QUIZZES = {
   'former-names': {
     title: t('Former Country Names'), icon: '📜', regions: false,

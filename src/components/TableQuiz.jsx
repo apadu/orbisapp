@@ -139,7 +139,7 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
         hint: quiz.sample ? t('{v} countries in the pool — each game picks a fresh random set', { v: regionCounts[r] }) : undefined,
       })),
     }]
-    if (quiz.sample) opts.push({
+    if (quiz.sample && quiz.sizes !== false) opts.push({
       id: 'size', label: quiz.focus ? t('Flags per game') : t('Countries per game'), default: '20',
       choices: quiz.sizes ?? [
         { value: '20', label: '20', hint: t('Quick round') },
@@ -198,7 +198,9 @@ function TableQuizBoard({ quizId, countryNames, onDaily, daily = null, onOpen })
       seedRef.current = seed
       const rnd = seededRandom(seed)
       for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
+      const order = new Map(built.map((r, i) => [r.id, i]))
       built = a.slice(0, n)
+      if (quiz.keepOrder) built.sort((x, y) => order.get(x.id) - order.get(y.id))   // the pick is random, the list stays sorted
     }
     setRegion(reg)
     setRows(built)

@@ -125,7 +125,7 @@ export default function QuizComments({ quiz, unlocked }) {
         <Icon name="speech" size={18} />
         <span>
           {count ? t('{n} comments', { n: count }) : t('Comments')}
-          {' · '}{finishedBefore ? t('hidden while you play, they may contain answers') : t('finish the quiz to read them — no spoilers before you play')}
+          {' · '}{finishedBefore ? t('hidden') : t('hidden until you finish')}
         </span>
         {finishedBefore && <button className="qc-peek" onClick={() => setPeek(true)}>{t('Show anyway')}</button>}
       </section>
